@@ -16,6 +16,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Send, ArrowLeft, Upload, FileText, AlertCircle, X } from 'lucide-react';
 import { proposalApi, cycleApi, type GrantCycle } from '../../services/api';
+import { useAuth } from '../auth/AuthContext';
 
 /** Shape of the local form state — matches backend ProposalSerializer fields. */
 interface ProposalFormData {
@@ -39,8 +40,11 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const ProposalForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { role } = useAuth();
     // When id is present in the URL, we're editing an existing draft
     const isEditing = !!id;
+    const returnPath = role === 'SRC_Chair' ? '/admin/proposals' : '/pi/dashboard';
+    const returnLabel = role === 'SRC_Chair' ? 'Back to Proposals' : 'Back to Dashboard';
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -99,13 +103,13 @@ const ProposalForm: React.FC = () => {
                 } catch (err) {
                     console.error("Failed to load proposal", err);
                     setError("Failed to load proposal details.");
-                    navigate('/pi/dashboard');
+                    navigate(returnPath);
                 }
             }
         } finally {
             setLoading(false);
         }
-    }, [id, navigate]);
+    }, [id, navigate, returnPath]);
 
     useEffect(() => {
         loadData();
@@ -218,7 +222,7 @@ const ProposalForm: React.FC = () => {
             }
 
             alert('Draft saved successfully!');
-            navigate('/pi/dashboard');
+            navigate(returnPath);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Failed to save draft');
         } finally {
@@ -260,7 +264,7 @@ const ProposalForm: React.FC = () => {
             await proposalApi.submit(proposalId);
 
             alert('Proposal submitted successfully!');
-            navigate('/pi/dashboard');
+            navigate(returnPath);
         } catch (err: any) {
             setError(err.response?.data?.error || err.message || 'Failed to submit proposal');
         } finally {
@@ -281,11 +285,11 @@ const ProposalForm: React.FC = () => {
             {/* Header */}
             <div>
                 <button
-                    onClick={() => navigate('/pi/dashboard')}
+                    onClick={() => navigate(returnPath)}
                     className="flex items-center text-gray-600 hover:text-gray-900 mb-2"
                 >
                     <ArrowLeft size={16} className="mr-1" />
-                    Back to Dashboard
+                    {returnLabel}
                 </button>
                 <h1 className="text-2xl font-bold text-gray-900">
                     {isEditing ? 'Edit Proposal' : 'New Proposal'}
@@ -540,7 +544,7 @@ const ProposalForm: React.FC = () => {
             {/* Actions */}
             <div className="flex justify-between items-center">
                 <button
-                    onClick={() => navigate('/pi/dashboard')}
+                    onClick={() => navigate(returnPath)}
                     className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                 >
                     Cancel

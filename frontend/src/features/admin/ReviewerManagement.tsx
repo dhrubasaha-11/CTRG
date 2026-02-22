@@ -3,9 +3,10 @@
  * View and manage reviewer profiles and workloads.
  */
 import React, { useState, useEffect } from 'react';
-import { Users, Mail, BarChart3, CheckCircle, XCircle, AlertCircle, Edit2, ToggleLeft, ToggleRight, Plus, Upload } from 'lucide-react';
+import { Users, Mail, BarChart3, CheckCircle, XCircle, AlertCircle, Edit2, ToggleLeft, ToggleRight, Plus, Upload, Send } from 'lucide-react';
 import { reviewerApi, type Reviewer } from '../../services/api';
 import { register, importReviewersFromExcel } from '../../services/authService';
+import EmailReviewersModal from './EmailReviewersModal';
 
 const ReviewerManagement: React.FC = () => {
     const [reviewers, setReviewers] = useState<Reviewer[]>([]);
@@ -17,6 +18,8 @@ const ReviewerManagement: React.FC = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [excelFile, setExcelFile] = useState<File | null>(null);
     const [importingExcel, setImportingExcel] = useState(false);
+    const [selectedForEmail, setSelectedForEmail] = useState<Set<number>>(new Set());
+    const [showEmailModal, setShowEmailModal] = useState(false);
     const [addFormData, setAddFormData] = useState({
         first_name: '',
         last_name: '',
@@ -113,7 +116,15 @@ const ReviewerManagement: React.FC = () => {
             });
             alert('Reviewer added successfully');
         } catch (err: any) {
-            alert(err.message || 'Failed to add reviewer');
+            const data = err.response?.data;
+            if (data && typeof data === 'object') {
+                const messages = Object.entries(data)
+                    .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
+                    .join('\n');
+                alert(messages || 'Failed to add reviewer');
+            } else {
+                alert(err.message || 'Failed to add reviewer');
+            }
         } finally {
             setSaving(false);
         }
@@ -179,16 +190,26 @@ const ReviewerManagement: React.FC = () => {
                     <h1 className="text-2xl font-bold text-gray-900">Reviewer Management</h1>
                     <p className="text-gray-500 mt-1">Manage reviewer profiles and track workloads</p>
                 </div>
-                <button
-                    onClick={() => {
-                        setExcelFile(null);
-                        setShowAddModal(true);
-                    }}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition-colors"
-                >
-                    <Plus size={18} className="mr-2" />
-                    Add Reviewer
-                </button>
+                <div className="flex items-center space-x-3">
+                    <button
+                        onClick={() => setShowEmailModal(true)}
+                        disabled={selectedForEmail.size === 0}
+                        className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Send size={18} className="mr-2" />
+                        Email Selected ({selectedForEmail.size})
+                    </button>
+                    <button
+                        onClick={() => {
+                            setExcelFile(null);
+                            setShowAddModal(true);
+                        }}
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition-colors"
+                    >
+                        <Plus size={18} className="mr-2" />
+                        Add Reviewer
+                    </button>
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -275,6 +296,20 @@ const ReviewerManagement: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
+                                <th className="px-4 py-3 text-left">
+                                    <input
+                                        type="checkbox"
+                                        checked={filteredReviewers.length > 0 && filteredReviewers.every(r => selectedForEmail.has(r.id))}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setSelectedForEmail(new Set(filteredReviewers.map(r => r.id)));
+                                            } else {
+                                                setSelectedForEmail(new Set());
+                                            }
+                                        }}
+                                        className="h-4 w-4 text-emerald-600 border-gray-300 rounded"
+                                    />
+                                </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Reviewer
                                 </th>
@@ -298,6 +333,24 @@ const ReviewerManagement: React.FC = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {filteredReviewers.map((reviewer) => (
                                 <tr key={reviewer.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-4">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedForEmail.has(reviewer.id)}
+                                            onChange={() => {
+                                                setSelectedForEmail(prev => {
+                                                    const next = new Set(prev);
+                                                    if (next.has(reviewer.id)) {
+                                                        next.delete(reviewer.id);
+                                                    } else {
+                                                        next.add(reviewer.id);
+                                                    }
+                                                    return next;
+                                                });
+                                            }}
+                                            className="h-4 w-4 text-emerald-600 border-gray-300 rounded"
+                                        />
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
@@ -357,6 +410,16 @@ const ReviewerManagement: React.FC = () => {
                                             className="text-gray-600 hover:text-gray-900"
                                         >
                                             <Edit2 size={14} className="inline mr-1" />Edit
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedForEmail(new Set([reviewer.id]));
+                                                setShowEmailModal(true);
+                                            }}
+                                            className="text-emerald-600 hover:text-emerald-800"
+                                            title="Send email"
+                                        >
+                                            <Mail size={14} className="inline mr-1" />Email
                                         </button>
                                         <button
                                             onClick={() => handleToggleActive(reviewer)}
@@ -540,6 +603,18 @@ const ReviewerManagement: React.FC = () => {
                     </div>
                 </div>
             )}
+            {/* Email Reviewers Modal */}
+            {showEmailModal && (
+                <EmailReviewersModal
+                    reviewers={reviewers.filter(r => selectedForEmail.has(r.id))}
+                    onClose={() => setShowEmailModal(false)}
+                    onSuccess={() => {
+                        setShowEmailModal(false);
+                        setSelectedForEmail(new Set());
+                    }}
+                />
+            )}
+
             {selectedReviewer && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                     <div className="w-[min(760px,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">

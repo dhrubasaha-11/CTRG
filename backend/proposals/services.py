@@ -699,3 +699,75 @@ CTRG Grant Review System
         except Exception:
             logger.exception("Bulk email send failed for subject '%s'", subject)
             return False
+
+    @staticmethod
+    def send_reviewer_proposal_details_email(reviewer_ids, custom_subject=None, custom_message=''):
+        """
+        Send personalized emails to reviewers with their pending proposal assignments.
+
+        Args:
+            reviewer_ids: list of User IDs to email
+            custom_subject: optional custom subject line
+            custom_message: optional additional message from SRC Chair
+
+        Returns:
+            dict with sent_count, failed_count, errors
+        """
+        from django.contrib.auth import get_user_model
+        from reviews.models import ReviewAssignment
+
+        User = get_user_model()
+        subject = custom_subject or 'Review Assignment Reminder - Pending Proposals'
+        sent_count = 0
+        failed_count = 0
+        errors = []
+
+        reviewers = User.objects.filter(id__in=reviewer_ids)
+
+        for reviewer in reviewers:
+            assignments = ReviewAssignment.objects.filter(
+                reviewer=reviewer,
+                status=ReviewAssignment.Status.PENDING
+            ).select_related('proposal')
+
+            # Build assignment list
+            if assignments.exists():
+                lines = []
+                for i, a in enumerate(assignments, 1):
+                    stage_label = f"Stage {a.stage}"
+                    deadline_str = a.deadline.strftime('%B %d, %Y %H:%M') if a.deadline else 'Not set'
+                    lines.append(
+                        f"{i}. {a.proposal.title}\n"
+                        f"   Proposal Code: {a.proposal.proposal_code}\n"
+                        f"   Review Stage: {stage_label}\n"
+                        f"   Deadline: {deadline_str}"
+                    )
+                assignment_section = '\n\n'.join(lines)
+            else:
+                assignment_section = 'You currently have no pending review assignments.'
+
+            name = reviewer.get_full_name() or reviewer.username
+
+            # Build email body
+            parts = [f"Dear {name},"]
+            if custom_message:
+                parts.append(custom_message)
+            parts.append("Your Pending Review Assignments:\n" + "─" * 35)
+            parts.append(assignment_section)
+            parts.append("Please log in to the system to complete your review(s).")
+            parts.append("Best regards,\nCTRG Grant Review System")
+
+            body = '\n\n'.join(parts)
+
+            success = EmailService._send_email(subject, body, [reviewer.email])
+            if success:
+                sent_count += 1
+            else:
+                failed_count += 1
+                errors.append(f"Failed to send to {reviewer.email}")
+
+        return {
+            'sent_count': sent_count,
+            'failed_count': failed_count,
+            'errors': errors,
+        }

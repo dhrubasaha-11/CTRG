@@ -339,6 +339,8 @@ export const reviewerApi = {
     getWorkloads: () => api.get<Reviewer[]>('/reviewers/workloads/'),
     getMyProfile: () => api.get<Reviewer>('/reviewers/my_profile/'),
     update: (id: number, data: Partial<Reviewer>) => api.patch<Reviewer>(`/reviewers/${id}/`, data),
+    emailReviewers: (reviewer_ids: number[], subject?: string, message?: string) =>
+        api.post('/reviewers/email_reviewers/', { reviewer_ids, subject, message }),
 };
 
 // ===== Review Assignment APIs =====

@@ -104,6 +104,7 @@ function App() {
             <Route element={<ProtectedRoute allowedRoles={['SRC_Chair']} />}>
               <Route path="/admin/dashboard" element={<Suspense fallback={<LoadingFallback />}><SRCChairDashboard /></Suspense>} />
               <Route path="/admin/proposals" element={<Suspense fallback={<LoadingFallback />}><ProposalList /></Suspense>} />
+              <Route path="/admin/proposals/new" element={<Suspense fallback={<LoadingFallback />}><ProposalForm /></Suspense>} />
               <Route path="/admin/proposals/:id" element={<Suspense fallback={<LoadingFallback />}><ProposalList /></Suspense>} />
               <Route path="/admin/cycles" element={<Suspense fallback={<LoadingFallback />}><GrantCycleManagement /></Suspense>} />
               <Route path="/admin/reviewers" element={<Suspense fallback={<LoadingFallback />}><ReviewerManagement /></Suspense>} />

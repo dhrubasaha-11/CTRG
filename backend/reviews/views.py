@@ -11,7 +11,7 @@ from .serializers import (
     ReviewerProfileSerializer, ReviewAssignmentSerializer,
     ReviewAssignmentCreateSerializer, AutoAssignReviewersSerializer,
     Stage1ScoreSerializer, Stage2ReviewSerializer,
-    ReviewerWorkloadSerializer
+    ReviewerWorkloadSerializer, EmailReviewersSerializer
 )
 from proposals.services import ReviewerService, EmailService, ProposalService
 
@@ -40,6 +40,21 @@ class ReviewerProfileViewSet(viewsets.ModelViewSet):
         serializer = ReviewerWorkloadSerializer(stats, many=True)
         return Response(serializer.data)
     
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def email_reviewers(self, request):
+        """Send proposal details email to selected reviewers."""
+        serializer = EmailReviewersSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        result = EmailService.send_reviewer_proposal_details_email(
+            reviewer_ids=serializer.validated_data['reviewer_ids'],
+            custom_subject=serializer.validated_data.get('subject') or None,
+            custom_message=serializer.validated_data.get('message', '')
+        )
+
+        return Response(result)
+
     @action(detail=False, methods=['get'])
     def my_profile(self, request):
         """Get current user's reviewer profile."""

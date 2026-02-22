@@ -248,3 +248,10 @@ class ReviewerWorkloadSerializer(serializers.Serializer):
     completed = serializers.IntegerField()
     stage1_pending = serializers.IntegerField()
     stage2_pending = serializers.IntegerField()
+
+
+class EmailReviewersSerializer(serializers.Serializer):
+    """Validates the request payload for emailing reviewers with proposal details."""
+    reviewer_ids = serializers.ListField(child=serializers.IntegerField(), min_length=1)
+    subject = serializers.CharField(required=False, default='', max_length=255)
+    message = serializers.CharField(required=False, default='')

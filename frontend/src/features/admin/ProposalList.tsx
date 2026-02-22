@@ -3,7 +3,8 @@
  * View all proposals with filtering, search, and actions.
  */
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Eye, UserPlus, CheckSquare, FileText, Mail, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Filter, Download, Eye, Plus, UserPlus, CheckSquare, FileText, Mail, Clock } from 'lucide-react';
 import { proposalApi, assignmentApi, type Proposal, cycleApi, type GrantCycle } from '../../services/api';
 import ReviewerAssignmentModal from './ReviewerAssignmentModal';
 import Stage1DecisionModal from './Stage1DecisionModal';
@@ -194,6 +195,13 @@ const ProposalList: React.FC = () => {
                     <h1 className="text-2xl font-bold text-gray-900">All Proposals</h1>
                     <p className="text-gray-500 mt-1">{filteredProposals.length} proposals found</p>
                 </div>
+                <Link
+                    to="/admin/proposals/new"
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm"
+                >
+                    <Plus size={18} className="mr-2" />
+                    Create Proposal
+                </Link>
             </div>
 
             {/* Filters */}
