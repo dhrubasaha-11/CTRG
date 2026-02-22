@@ -398,6 +398,14 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 0 0 3px rgba(30, 42, 74, 0.1);
 }
 
+.input.has-icon-left {
+    padding-left: 2.75rem;
+}
+
+.input.has-icon-right {
+    padding-right: 2.75rem;
+}
+
 .input-error {
     border-color: var(--error);
 }

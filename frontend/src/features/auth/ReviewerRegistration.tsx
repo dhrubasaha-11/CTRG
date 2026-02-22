@@ -307,7 +307,7 @@ const ReviewerRegistration: React.FC = () => {
                                         type="text"
                                         name="firstName"
                                         placeholder="John"
-                                        className="input pl-11"
+                                        className="input has-icon-left"
                                         value={formData.firstName}
                                         onChange={handleChange}
                                         required
@@ -341,7 +341,7 @@ const ReviewerRegistration: React.FC = () => {
                                     type="text"
                                     name="username"
                                     placeholder="john.doe"
-                                    className="input pl-11"
+                                    className="input has-icon-left"
                                     value={formData.username}
                                     onChange={handleChange}
                                     required
@@ -360,7 +360,7 @@ const ReviewerRegistration: React.FC = () => {
                                     type="email"
                                     name="email"
                                     placeholder="your.email@nsu.edu"
-                                    className="input pl-11"
+                                    className="input has-icon-left"
                                     value={formData.email}
                                     onChange={handleChange}
                                     required
@@ -379,7 +379,7 @@ const ReviewerRegistration: React.FC = () => {
                                     type={showPassword ? 'text' : 'password'}
                                     name="password"
                                     placeholder="********"
-                                    className="input pl-11 pr-11"
+                                    className="input has-icon-left has-icon-right"
                                     value={formData.password}
                                     onChange={handleChange}
                                     required
@@ -405,7 +405,7 @@ const ReviewerRegistration: React.FC = () => {
                                     type={showConfirmPassword ? 'text' : 'password'}
                                     name="confirmPassword"
                                     placeholder="********"
-                                    className="input pl-11 pr-11"
+                                    className="input has-icon-left has-icon-right"
                                     value={formData.confirmPassword}
                                     onChange={handleChange}
                                     required

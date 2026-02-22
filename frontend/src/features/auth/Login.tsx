@@ -195,7 +195,7 @@ const Login: React.FC = () => {
                                         <input
                                             type="email"
                                             placeholder="your.email@nsu.edu"
-                                            className="input rounded-xl border-[#cbd5e5] bg-[#f8fafd] pl-10 text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white"
+                                            className="input has-icon-left rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             required
@@ -210,7 +210,7 @@ const Login: React.FC = () => {
                                         <input
                                             type={showPassword ? 'text' : 'password'}
                                             placeholder="Enter your password"
-                                            className="input rounded-xl border-[#cbd5e5] bg-[#f8fafd] pl-10 pr-11 text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white"
+                                            className="input has-icon-left has-icon-right rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             required
