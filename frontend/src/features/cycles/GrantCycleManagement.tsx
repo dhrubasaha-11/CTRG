@@ -65,17 +65,29 @@ const GrantCycleManagement: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const payload = {
+                ...formData,
+                stage1_review_start_date: formData.stage1_review_start_date || null,
+                stage1_review_end_date: formData.stage1_review_end_date || null,
+                stage2_review_start_date: formData.stage2_review_start_date || null,
+                stage2_review_end_date: formData.stage2_review_end_date || null,
+            } as unknown as Record<string, unknown>;
+
             if (editingId) {
-                await cycleApi.update(editingId, formData as unknown as Record<string, unknown>);
+                await cycleApi.update(editingId, payload);
             } else {
-                await cycleApi.create(formData as unknown as Record<string, unknown>);
+                await cycleApi.create(payload);
             }
             loadCycles();
             setShowForm(false);
             setFormData(initialFormData);
             setEditingId(null);
-        } catch {
-            setError('Failed to save grant cycle');
+        } catch (err: any) {
+            const data = err?.response?.data;
+            const firstFieldError = data && typeof data === 'object'
+                ? Object.values(data).flat().find(Boolean)
+                : null;
+            setError(typeof firstFieldError === 'string' ? firstFieldError : 'Failed to save grant cycle');
         }
     };
 
@@ -134,15 +146,15 @@ const GrantCycleManagement: React.FC = () => {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                    <div className="w-full min-w-[320px] max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
                         <div className="p-6 border-b border-gray-200">
                             <h2 className="text-xl font-semibold text-gray-900">
                                 {editingId ? 'Edit Grant Cycle' : 'Create New Grant Cycle'}
                             </h2>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Cycle Name</label>
                                     <input
@@ -167,7 +179,7 @@ const GrantCycleManagement: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Cycle Start Date</label>
                                     <input
@@ -192,7 +204,7 @@ const GrantCycleManagement: React.FC = () => {
 
                             <div className="border-t pt-4 mt-4">
                                 <h3 className="text-sm font-semibold text-gray-700 mb-3">Stage 1 Review Period</h3>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                                         <input
@@ -216,7 +228,7 @@ const GrantCycleManagement: React.FC = () => {
 
                             <div className="border-t pt-4">
                                 <h3 className="text-sm font-semibold text-gray-700 mb-3">Stage 2 Review Period</h3>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                                         <input
@@ -240,7 +252,7 @@ const GrantCycleManagement: React.FC = () => {
 
                             <div className="border-t pt-4">
                                 <h3 className="text-sm font-semibold text-gray-700 mb-3">Configuration</h3>
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Revision Window (days)</label>
                                         <input

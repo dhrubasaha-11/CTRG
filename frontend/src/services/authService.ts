@@ -49,7 +49,15 @@ export interface User {
 export interface LoginResponse {
     access: string;  // Authentication token
     role: string | null;    // User's role (PI, Reviewer, SRC_Chair)
+    redirect_to?: string;   // Backend-provided role-based redirect route
     user: User;      // Complete user profile
+}
+
+export interface TokenValidationResponse {
+    valid: boolean;
+    role: string | null;
+    redirect_to: string;
+    user: User;
 }
 
 /**
@@ -112,7 +120,12 @@ export const login = async (email: string, password: string): Promise<LoginRespo
         } else if (error.response?.status === 400) {
             // Extract validation error messages
             const errors = error.response.data;
-            const errorMessage = errors.email?.[0] || errors.password?.[0] || 'Invalid login credentials';
+            const errorMessage =
+                errors.non_field_errors?.[0] ||
+                errors.email?.[0] ||
+                errors.password?.[0] ||
+                errors.detail ||
+                'Invalid login credentials';
             throw new Error(errorMessage);
         } else {
             throw new Error('Login failed. Please try again.');
@@ -173,6 +186,16 @@ export const logout = async (token?: string): Promise<void> => {
  */
 export const getCurrentUser = async (token: string): Promise<User> => {
     const response = await authApi.get<User>('/user/', {
+        headers: { Authorization: `Token ${token}` }
+    });
+    return response.data;
+};
+
+/**
+ * Validate stored auth token and fetch role-aware redirect metadata.
+ */
+export const validateToken = async (token: string): Promise<TokenValidationResponse> => {
+    const response = await authApi.get<TokenValidationResponse>('/validate-token/', {
         headers: { Authorization: `Token ${token}` }
     });
     return response.data;

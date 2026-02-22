@@ -38,6 +38,100 @@ class GrantCycleSerializer(serializers.ModelSerializer):
     def get_proposal_count(self, obj):
         return obj.proposals.count()
 
+    def to_internal_value(self, data):
+        """
+        Normalize optional date fields so empty strings are treated as null.
+        Frontend date inputs submit '' when left blank.
+        """
+        mutable = data.copy()
+        optional_date_fields = [
+            'stage1_review_start_date',
+            'stage1_review_end_date',
+            'stage2_review_start_date',
+            'stage2_review_end_date',
+        ]
+        for field_name in optional_date_fields:
+            if mutable.get(field_name) == '':
+                mutable[field_name] = None
+        return super().to_internal_value(mutable)
+
+    def validate(self, attrs):
+        """Validate chronological date windows and cycle configuration limits."""
+        instance = getattr(self, 'instance', None)
+
+        def _value(field_name):
+            if field_name in attrs:
+                return attrs[field_name]
+            if instance is not None:
+                return getattr(instance, field_name)
+            return None
+
+        start_date = _value('start_date')
+        end_date = _value('end_date')
+        stage1_start = _value('stage1_review_start_date')
+        stage1_end = _value('stage1_review_end_date')
+        stage2_start = _value('stage2_review_start_date')
+        stage2_end = _value('stage2_review_end_date')
+        revision_window_days = _value('revision_window_days')
+        acceptance_threshold = _value('acceptance_threshold')
+        max_reviewers_per_proposal = _value('max_reviewers_per_proposal')
+
+        if start_date and end_date and start_date > end_date:
+            raise serializers.ValidationError({
+                'end_date': 'Cycle end date must be on or after start date.'
+            })
+
+        if stage1_start and stage1_end and stage1_start > stage1_end:
+            raise serializers.ValidationError({
+                'stage1_review_end_date': 'Stage 1 end date must be on or after Stage 1 start date.'
+            })
+
+        if stage2_start and stage2_end and stage2_start > stage2_end:
+            raise serializers.ValidationError({
+                'stage2_review_end_date': 'Stage 2 end date must be on or after Stage 2 start date.'
+            })
+
+        if stage1_end and stage2_start and stage2_start < stage1_end:
+            raise serializers.ValidationError({
+                'stage2_review_start_date': 'Stage 2 cannot start before Stage 1 ends.'
+            })
+
+        if start_date and stage1_start and stage1_start < start_date:
+            raise serializers.ValidationError({
+                'stage1_review_start_date': 'Stage 1 start date cannot be before cycle start date.'
+            })
+        if end_date and stage1_end and stage1_end > end_date:
+            raise serializers.ValidationError({
+                'stage1_review_end_date': 'Stage 1 end date cannot be after cycle end date.'
+            })
+        if start_date and stage2_start and stage2_start < start_date:
+            raise serializers.ValidationError({
+                'stage2_review_start_date': 'Stage 2 start date cannot be before cycle start date.'
+            })
+        if end_date and stage2_end and stage2_end > end_date:
+            raise serializers.ValidationError({
+                'stage2_review_end_date': 'Stage 2 end date cannot be after cycle end date.'
+            })
+
+        if revision_window_days is not None and revision_window_days < 1:
+            raise serializers.ValidationError({
+                'revision_window_days': 'Revision window must be at least 1 day.'
+            })
+
+        if acceptance_threshold is not None and (acceptance_threshold < 0 or acceptance_threshold > 100):
+            raise serializers.ValidationError({
+                'acceptance_threshold': 'Acceptance threshold must be between 0 and 100.'
+            })
+
+        if max_reviewers_per_proposal is not None and (
+            max_reviewers_per_proposal < 1 or max_reviewers_per_proposal > 4
+        ):
+            raise serializers.ValidationError({
+                'max_reviewers_per_proposal': 'Max reviewers per proposal must be between 1 and 4.'
+            })
+
+        return attrs
+
 
 class GrantCycleStatsSerializer(serializers.Serializer):
     """Serializer for cycle statistics.

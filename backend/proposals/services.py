@@ -295,6 +295,18 @@ class ReviewerService:
         Returns (is_valid, error_message)
         """
         from reviews.models import ReviewAssignment, ReviewerProfile
+
+        if stage == ReviewAssignment.Stage.STAGE_1 and proposal.status not in {
+            Proposal.Status.SUBMITTED,
+            Proposal.Status.UNDER_STAGE_1_REVIEW,
+        }:
+            return False, "Stage 1 assignments are only allowed for submitted proposals awaiting Stage 1 review"
+
+        if stage == ReviewAssignment.Stage.STAGE_2 and proposal.status not in {
+            Proposal.Status.REVISED_PROPOSAL_SUBMITTED,
+            Proposal.Status.UNDER_STAGE_2_REVIEW,
+        }:
+            return False, "Stage 2 assignments are only allowed after revision submission"
         
         # Check for duplicate assignment
         existing = ReviewAssignment.objects.filter(
@@ -352,6 +364,9 @@ class ReviewerService:
         if proposal.status == Proposal.Status.SUBMITTED and stage == 1:
             proposal.status = Proposal.Status.UNDER_STAGE_1_REVIEW
             proposal.save()
+        elif proposal.status == Proposal.Status.REVISED_PROPOSAL_SUBMITTED and stage == 2:
+            proposal.status = Proposal.Status.UNDER_STAGE_2_REVIEW
+            proposal.save()
         
         # Audit log
         AuditLog.objects.create(
@@ -367,6 +382,119 @@ class ReviewerService:
         )
         
         return assignment
+
+    @staticmethod
+    def _expertise_match_score(profile, keywords):
+        """Compute lightweight expertise match score against reviewer profile text."""
+        if not keywords:
+            return 0
+
+        expertise_text = (profile.area_of_expertise or '').lower()
+        department_text = (profile.department or '').lower()
+        score = 0
+
+        for keyword in keywords:
+            kw = keyword.strip().lower()
+            if not kw:
+                continue
+            if kw in expertise_text:
+                score += 2
+            elif kw in department_text:
+                score += 1
+
+        return score
+
+    @staticmethod
+    def auto_assign_reviewers(
+        proposal,
+        stage,
+        deadline,
+        reviewer_count=None,
+        expertise_keywords=None,
+        exclude_reviewer_ids=None,
+        user=None,
+    ):
+        """
+        Automatically assign reviewers balancing expertise and current workload.
+        """
+        from reviews.models import ReviewerProfile
+
+        max_allowed = proposal.cycle.max_reviewers_per_proposal
+        requested = reviewer_count or max_allowed
+        target_count = max(1, min(requested, max_allowed))
+        excluded_ids = set(exclude_reviewer_ids or [])
+        keywords = expertise_keywords or []
+
+        candidate_profiles = ReviewerProfile.objects.select_related('user').filter(
+            is_active_reviewer=True,
+            user__is_active=True,
+            user__groups__name='Reviewer',
+        ).exclude(user_id__in=excluded_ids).distinct()
+
+        ranked_candidates = []
+        skipped = []
+
+        for profile in candidate_profiles:
+            reviewer = profile.user
+            is_valid, error = ReviewerService.validate_assignment(proposal, reviewer, stage=stage)
+            if not is_valid:
+                skipped.append({
+                    'reviewer_id': reviewer.id,
+                    'reviewer_email': reviewer.email,
+                    'reason': error,
+                })
+                continue
+
+            expertise_score = ReviewerService._expertise_match_score(profile, keywords)
+            workload = profile.current_review_count()
+            capacity = max(profile.max_review_load, 1)
+            workload_ratio = workload / capacity
+
+            ranked_candidates.append({
+                'profile': profile,
+                'expertise_score': expertise_score,
+                'workload': workload,
+                'workload_ratio': workload_ratio,
+            })
+
+        ranked_candidates.sort(
+            key=lambda item: (
+                -item['expertise_score'],
+                item['workload_ratio'],
+                item['workload'],
+                item['profile'].user_id,
+            )
+        )
+
+        assignments = []
+        assignment_errors = []
+
+        for candidate in ranked_candidates[:target_count]:
+            reviewer = candidate['profile'].user
+            try:
+                assignment = ReviewerService.assign_reviewer(
+                    proposal=proposal,
+                    reviewer=reviewer,
+                    stage=stage,
+                    deadline=deadline,
+                    user=user,
+                )
+                assignments.append(assignment)
+            except ValueError as exc:
+                assignment_errors.append({
+                    'reviewer_id': reviewer.id,
+                    'reviewer_email': reviewer.email,
+                    'reason': str(exc),
+                })
+
+        return {
+            'requested_count': target_count,
+            'assigned_count': len(assignments),
+            'assignments': assignments,
+            'skipped_candidates': skipped,
+            'assignment_errors': assignment_errors,
+            'candidates_considered': len(ranked_candidates),
+        }
     
     @staticmethod
     def get_reviewer_workload(reviewer):

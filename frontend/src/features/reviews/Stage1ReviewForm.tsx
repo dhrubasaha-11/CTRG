@@ -20,11 +20,17 @@ import { assignmentApi, type ReviewAssignment, type Stage1Score } from '../../se
 
 /** Configuration for a single scoring criterion — drives the form UI. */
 interface CriteriaConfig {
-    key: keyof Omit<Stage1Score, 'id' | 'narrative_comments' | 'total_score' | 'percentage_score'>;
+    key: keyof Omit<
+        Stage1Score,
+        'id' | 'narrative_comments' | 'recommendation' | 'detailed_recommendation' |
+        'total_score' | 'percentage_score' | 'weighted_percentage_score'
+    >;
     label: string;
     description: string;
     maxScore: number;
 }
+
+type Stage1Recommendation = 'ACCEPT' | 'TENTATIVELY_ACCEPT' | 'REJECT' | '';
 
 /**
  * Scoring criteria definitions — single source of truth for the review form.
@@ -61,6 +67,8 @@ const Stage1ReviewForm: React.FC = () => {
         timeline_practicality_score: 0,
     });
     const [comments, setComments] = useState('');
+    const [recommendation, setRecommendation] = useState<Stage1Recommendation>('');
+    const [detailedRecommendation, setDetailedRecommendation] = useState('');
 
     const loadAssignment = useCallback(async () => {
         try {
@@ -82,6 +90,8 @@ const Stage1ReviewForm: React.FC = () => {
                     timeline_practicality_score: existing.timeline_practicality_score,
                 });
                 setComments(existing.narrative_comments || '');
+                setRecommendation((existing.recommendation as Stage1Recommendation) || '');
+                setDetailedRecommendation(existing.detailed_recommendation || '');
             }
         } catch (err) {
             console.error("Failed to load assignment", err);
@@ -113,6 +123,8 @@ const Stage1ReviewForm: React.FC = () => {
             await assignmentApi.submitScore(Number(id), {
                 ...scores,
                 narrative_comments: comments,
+                recommendation,
+                detailed_recommendation: detailedRecommendation,
                 is_draft: true,
             });
             alert('Draft saved successfully!');
@@ -134,6 +146,14 @@ const Stage1ReviewForm: React.FC = () => {
             setError('Please provide narrative comments');
             return;
         }
+        if (!recommendation) {
+            setError('Please select a recommendation');
+            return;
+        }
+        if (!detailedRecommendation.trim()) {
+            setError('Please provide detailed recommendation notes');
+            return;
+        }
 
         if (!window.confirm('Are you sure you want to submit this review? This action cannot be undone.')) {
             return;
@@ -145,6 +165,8 @@ const Stage1ReviewForm: React.FC = () => {
             await assignmentApi.submitScore(Number(id), {
                 ...scores,
                 narrative_comments: comments,
+                recommendation,
+                detailed_recommendation: detailedRecommendation,
                 is_draft: false,
             });
             alert('Review submitted successfully!');
@@ -298,6 +320,40 @@ const Stage1ReviewForm: React.FC = () => {
                     placeholder="Enter your detailed comments here..."
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
+            </div>
+
+            {/* Recommendation */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+                <div>
+                    <label className="block font-medium text-gray-900 mb-2">
+                        Recommendation <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                        value={recommendation}
+                        onChange={(e) => setRecommendation(e.target.value as Stage1Recommendation)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        <option value="">Select recommendation</option>
+                        <option value="ACCEPT">Accept</option>
+                        <option value="TENTATIVELY_ACCEPT">Tentatively Accept</option>
+                        <option value="REJECT">Reject</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block font-medium text-gray-900 mb-2">
+                        Detailed Recommendation Notes <span className="text-red-500">*</span>
+                    </label>
+                    <p className="text-sm text-gray-500 mb-3">
+                        Write detailed recommendation text to be included in Stage 1 reporting.
+                    </p>
+                    <textarea
+                        value={detailedRecommendation}
+                        onChange={(e) => setDetailedRecommendation(e.target.value)}
+                        rows={5}
+                        placeholder="Enter detailed recommendation and rationale..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                </div>
             </div>
 
             {/* Actions */}

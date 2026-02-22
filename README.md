@@ -306,6 +306,7 @@ The system provides a RESTful API with the following main endpoints:
 - `POST /api/auth/login/` - User login
 - `POST /api/auth/logout/` - User logout
 - `GET /api/auth/user/` - Get current user
+- `GET /api/auth/validate-token/` - Validate token + role redirect metadata
 - `POST /api/auth/register/` - Create user (admin only)
 - `POST /api/auth/change-password/` - Change password
 
@@ -321,6 +322,7 @@ The system provides a RESTful API with the following main endpoints:
 ### Reviews
 - `GET /api/assignments/` - List review assignments
 - `POST /api/assignments/assign_reviewers/` - Assign reviewers
+- `POST /api/assignments/auto_assign_reviewers/` - Auto-assign reviewers by workload/expertise
 - `POST /api/assignments/{id}/submit_score/` - Submit Stage 1 review
 - `POST /api/assignments/{id}/submit_stage2_review/` - Submit Stage 2 review
 

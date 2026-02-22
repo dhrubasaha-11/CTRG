@@ -23,6 +23,7 @@ from .views import (
     LoginView,
     LogoutView,
     CurrentUserView,
+    TokenValidationView,
     UserRegistrationView,
     ChangePasswordView,
     UserListView,
@@ -47,6 +48,9 @@ urlpatterns = [
 
     path('user/', CurrentUserView.as_view(), name='current-user'),
     # Get current authenticated user's profile
+
+    path('validate-token/', TokenValidationView.as_view(), name='validate-token'),
+    # Validate auth token and return role-based redirect metadata
 
     # User management endpoints (admin only)
     path('register/', UserRegistrationView.as_view(), name='register'),

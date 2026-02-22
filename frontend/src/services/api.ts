@@ -238,6 +238,23 @@ export interface ReviewAssignment {
     stage1_summary?: Stage1Score;
 }
 
+export interface AutoAssignResult {
+    requested_count: number;
+    assigned_count: number;
+    candidates_considered: number;
+    assigned: ReviewAssignment[];
+    skipped_candidates: Array<{
+        reviewer_id: number;
+        reviewer_email: string;
+        reason: string;
+    }>;
+    errors: Array<{
+        reviewer_id: number;
+        reviewer_email: string;
+        reason: string;
+    }>;
+}
+
 export interface Stage1Score {
     id: number;
     originality_score: number;
@@ -249,8 +266,11 @@ export interface Stage1Score {
     budget_appropriateness_score: number;
     timeline_practicality_score: number;
     narrative_comments: string;
+    recommendation: string;
+    detailed_recommendation: string;
     total_score: number;
     percentage_score: number;
+    weighted_percentage_score: number;
 }
 
 export interface Stage2Review {
@@ -327,6 +347,22 @@ export const assignmentApi = {
     getById: (id: number) => api.get<ReviewAssignment>(`/assignments/${id}/`),
     assignReviewers: (proposal_id: number, reviewer_ids: number[], stage: number, deadline: string) =>
         api.post('/assignments/assign_reviewers/', { proposal_id, reviewer_ids, stage, deadline }),
+    autoAssignReviewers: (
+        proposal_id: number,
+        stage: number,
+        deadline: string,
+        reviewer_count?: number,
+        expertise_keywords?: string[],
+        exclude_reviewer_ids?: number[]
+    ) =>
+        api.post<AutoAssignResult>('/assignments/auto_assign_reviewers/', {
+            proposal_id,
+            stage,
+            deadline,
+            reviewer_count,
+            expertise_keywords,
+            exclude_reviewer_ids,
+        }),
     sendNotification: (id: number) => api.post(`/assignments/${id}/send_notification/`),
     bulkNotify: (assignment_ids: number[]) => api.post('/assignments/bulk_notify/', { assignment_ids }),
     submitScore: (id: number, data: Record<string, unknown>) =>

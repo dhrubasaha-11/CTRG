@@ -38,6 +38,11 @@ const Login: React.FC = () => {
         try {
             const response = await login(email, password);
 
+            if (response.redirect_to) {
+                navigate(response.redirect_to);
+                return;
+            }
+
             // Redirect based on actual user role from backend response
             const userRole = response.role?.toLowerCase();
 
@@ -56,7 +61,8 @@ const Login: React.FC = () => {
                 }
             }
         } catch (error: any) {
-            const message = error.response?.data?.non_field_errors?.[0] ||
+            const message = error?.message ||
+                                error.response?.data?.non_field_errors?.[0] ||
                                 error.response?.data?.password?.[0] ||
                                 error.response?.data?.email?.[0] ||
                                 error.response?.data?.detail ||

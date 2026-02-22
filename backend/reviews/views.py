@@ -9,7 +9,8 @@ from django.utils import timezone
 from .models import ReviewerProfile, ReviewAssignment, Stage1Score, Stage2Review
 from .serializers import (
     ReviewerProfileSerializer, ReviewAssignmentSerializer,
-    ReviewAssignmentCreateSerializer, Stage1ScoreSerializer, Stage2ReviewSerializer,
+    ReviewAssignmentCreateSerializer, AutoAssignReviewersSerializer,
+    Stage1ScoreSerializer, Stage2ReviewSerializer,
     ReviewerWorkloadSerializer
 )
 from proposals.services import ReviewerService, EmailService, ProposalService
@@ -120,6 +121,39 @@ class ReviewAssignmentViewSet(viewsets.ModelViewSet):
             'assigned': ReviewAssignmentSerializer(assignments, many=True).data,
             'errors': errors
         })
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def auto_assign_reviewers(self, request):
+        """Automatically assign reviewers based on workload and optional expertise keywords."""
+        serializer = AutoAssignReviewersSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        from proposals.models import Proposal
+
+        try:
+            proposal = Proposal.objects.get(id=serializer.validated_data['proposal_id'])
+        except Proposal.DoesNotExist:
+            return Response({'error': 'Proposal not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        assignment_result = ReviewerService.auto_assign_reviewers(
+            proposal=proposal,
+            stage=serializer.validated_data['stage'],
+            deadline=serializer.validated_data['deadline'],
+            reviewer_count=serializer.validated_data.get('reviewer_count'),
+            expertise_keywords=serializer.validated_data.get('expertise_keywords', []),
+            exclude_reviewer_ids=serializer.validated_data.get('exclude_reviewer_ids', []),
+            user=request.user,
+        )
+
+        return Response({
+            'requested_count': assignment_result['requested_count'],
+            'assigned_count': assignment_result['assigned_count'],
+            'candidates_considered': assignment_result['candidates_considered'],
+            'assigned': ReviewAssignmentSerializer(assignment_result['assignments'], many=True).data,
+            'skipped_candidates': assignment_result['skipped_candidates'],
+            'errors': assignment_result['assignment_errors'],
+        }, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def send_notification(self, request, pk=None):

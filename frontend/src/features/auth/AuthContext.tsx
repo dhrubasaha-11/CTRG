@@ -37,15 +37,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // This runs once — if the stored token has expired, API calls will fail
     // and the axios interceptor will redirect to login.
     useEffect(() => {
-        const storedToken = authService.getToken();
-        const storedRole = authService.getRole();
-        const storedUser = authService.getUser();
+        let isMounted = true;
 
-        if (storedToken) {
-            setToken(storedToken);
-            setRole(storedRole);
-            setUser(storedUser);
-        }
+        const hydrateAuthState = async () => {
+            const storedToken = authService.getToken();
+            if (!storedToken) return;
+
+            try {
+                const validation = await authService.validateToken(storedToken);
+                if (!isMounted) return;
+
+                setToken(storedToken);
+                setRole(validation.role || null);
+                setUser(validation.user);
+
+                if (validation.role) {
+                    localStorage.setItem('role', validation.role);
+                } else {
+                    localStorage.removeItem('role');
+                }
+                localStorage.setItem('user', JSON.stringify(validation.user));
+            } catch {
+                if (!isMounted) return;
+                authService.clearAuthData();
+                setToken(null);
+                setRole(null);
+                setUser(null);
+            }
+        };
+
+        hydrateAuthState();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     /**

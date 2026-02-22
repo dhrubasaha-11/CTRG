@@ -122,6 +122,7 @@ def generate_combined_review_pdf(proposal):
                 ['Timeline Practicality', str(score.timeline_practicality_score), '5'],
                 ['Total', str(score.total_score), '100'],
                 ['Percentage', f"{score.percentage_score}%", '-'],
+                ['Weighted Score', f"{score.weighted_percentage_score}%", '-'],
             ]
 
             table = Table(score_data, colWidths=[2.5*inch, 1*inch, 0.75*inch])
@@ -141,6 +142,14 @@ def generate_combined_review_pdf(proposal):
             if score.narrative_comments:
                 story.append(Paragraph(f"<b>Comments:</b>", styles['Normal']))
                 story.append(Paragraph(_safe_text(score.narrative_comments), styles['Normal']))
+            if score.recommendation:
+                story.append(Paragraph(
+                    f"<b>Recommendation:</b> {_safe_text(score.get_recommendation_display())}",
+                    styles['Normal']
+                ))
+            if score.detailed_recommendation:
+                story.append(Paragraph("<b>Detailed Recommendation:</b>", styles['Normal']))
+                story.append(Paragraph(_safe_text(score.detailed_recommendation), styles['Normal']))
             
         except ObjectDoesNotExist:
             story.append(Paragraph("Score data not available", styles['Normal']))

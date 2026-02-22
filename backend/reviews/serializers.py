@@ -64,6 +64,7 @@ class Stage1ScoreSerializer(serializers.ModelSerializer):
     """
     total_score = serializers.IntegerField(read_only=True)
     percentage_score = serializers.IntegerField(read_only=True)
+    weighted_percentage_score = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Stage1Score
@@ -72,7 +73,8 @@ class Stage1ScoreSerializer(serializers.ModelSerializer):
             'originality_score', 'clarity_score', 'literature_review_score',
             'methodology_score', 'impact_score', 'publication_potential_score',
             'budget_appropriateness_score', 'timeline_practicality_score',
-            'narrative_comments', 'total_score', 'percentage_score',
+            'narrative_comments', 'recommendation', 'detailed_recommendation',
+            'total_score', 'percentage_score', 'weighted_percentage_score',
             'submitted_at', 'is_draft'
         ]
         # assignment is set by the view, submitted_at is auto-set on final submit
@@ -102,6 +104,21 @@ class Stage1ScoreSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError({
                         field: f"Score must be between 0 and {max_val}"
                     })
+
+        is_draft = data.get('is_draft', None)
+        if is_draft is False:
+            recommendation = data.get('recommendation')
+            detailed_recommendation = data.get('detailed_recommendation')
+            narrative_comments = data.get('narrative_comments')
+            missing_fields = {}
+            if not narrative_comments:
+                missing_fields['narrative_comments'] = "Narrative comments are required when submitting a final review."
+            if not recommendation:
+                missing_fields['recommendation'] = "Recommendation is required when submitting a final review."
+            if not detailed_recommendation:
+                missing_fields['detailed_recommendation'] = "Detailed recommendation is required when submitting a final review."
+            if missing_fields:
+                raise serializers.ValidationError(missing_fields)
 
         return data
 
@@ -183,6 +200,29 @@ class ReviewAssignmentCreateSerializer(serializers.Serializer):
     reviewer_ids = serializers.ListField(child=serializers.IntegerField())
     stage = serializers.IntegerField()
     deadline = serializers.DateTimeField()
+
+
+class AutoAssignReviewersSerializer(serializers.Serializer):
+    """Serializer for automated reviewer assignment requests."""
+    proposal_id = serializers.IntegerField()
+    stage = serializers.IntegerField()
+    deadline = serializers.DateTimeField()
+    reviewer_count = serializers.IntegerField(required=False, min_value=1, max_value=4)
+    expertise_keywords = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        allow_empty=True,
+    )
+    exclude_reviewer_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True,
+    )
+
+    def validate_stage(self, value):
+        if value not in [ReviewAssignment.Stage.STAGE_1, ReviewAssignment.Stage.STAGE_2]:
+            raise serializers.ValidationError("Stage must be 1 or 2.")
+        return value
 
 
 class ReviewerWorkloadSerializer(serializers.Serializer):

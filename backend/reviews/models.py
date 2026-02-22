@@ -69,6 +69,11 @@ class Stage1Score(models.Model):
     Stage 1 review scores based on 8 criteria with specific max scores.
     Total: 100 points
     """
+    class Recommendation(models.TextChoices):
+        ACCEPT = 'ACCEPT', 'Accept'
+        TENTATIVELY_ACCEPT = 'TENTATIVELY_ACCEPT', 'Tentatively Accept'
+        REJECT = 'REJECT', 'Reject'
+
     assignment = models.OneToOneField(ReviewAssignment, on_delete=models.CASCADE, related_name='stage1_score')
     
     # 8 Criteria Scores (exact requirements)
@@ -107,6 +112,18 @@ class Stage1Score(models.Model):
     
     # Narrative feedback
     narrative_comments = models.TextField(help_text="Detailed narrative comments from reviewer")
+    recommendation = models.CharField(
+        max_length=30,
+        choices=Recommendation.choices,
+        blank=True,
+        default='',
+        help_text="Reviewer's recommendation based on Stage 1 evaluation"
+    )
+    detailed_recommendation = models.TextField(
+        blank=True,
+        default='',
+        help_text="Detailed recommendation notes for inclusion in reports"
+    )
     
     # Metadata
     submitted_at = models.DateTimeField(auto_now_add=True)
@@ -137,6 +154,32 @@ class Stage1Score(models.Model):
     def percentage_score(self):
         """Return score as percentage (already 0-100)"""
         return self.total_score
+
+    @property
+    def weighted_percentage_score(self):
+        """
+        Weighted percentage score using criteria max points as rubric weights.
+        Output range is 0-100.
+        """
+        weights = {
+            'originality_score': 15,
+            'clarity_score': 15,
+            'literature_review_score': 15,
+            'methodology_score': 15,
+            'impact_score': 15,
+            'publication_potential_score': 10,
+            'budget_appropriateness_score': 10,
+            'timeline_practicality_score': 5,
+        }
+        total_weight = sum(weights.values())
+        weighted_total = 0.0
+
+        for field_name, weight in weights.items():
+            score_value = getattr(self, field_name, 0)
+            max_value = weight
+            weighted_total += (score_value / max_value) * weight
+
+        return round((weighted_total / total_weight) * 100, 2)
 
 
 class Stage2Review(models.Model):

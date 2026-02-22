@@ -313,7 +313,7 @@ const ReviewerManagement: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-900">{reviewer.department || '—'}</div>
+                                        <div className="text-sm text-gray-900">{reviewer.department || '-'}</div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="text-sm text-gray-900 max-w-xs truncate" title={reviewer.area_of_expertise}>
@@ -376,8 +376,8 @@ const ReviewerManagement: React.FC = () => {
 
             {/* Edit Reviewer Modal */}
             {editingReviewer && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md m-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                    <div className="w-[min(640px,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
                         <div className="p-6 border-b border-gray-200">
                             <h2 className="text-xl font-semibold text-gray-900">Edit Reviewer</h2>
                             <p className="text-sm text-gray-500">{editingReviewer.user_name}</p>
@@ -434,8 +434,8 @@ const ReviewerManagement: React.FC = () => {
 
             {/* Add Reviewer Modal */}
             {showAddModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md m-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                    <div className="w-[min(960px,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
                         <div className="p-6 border-b border-gray-200">
                             <h2 className="text-xl font-semibold text-gray-900">Add New Reviewer</h2>
                             <p className="text-sm text-gray-500">Create one reviewer manually or import many from Excel</p>
@@ -465,7 +465,7 @@ const ReviewerManagement: React.FC = () => {
                         </div>
                         <form onSubmit={handleAddSubmit} className="p-6 space-y-4">
                             <div className="text-sm font-medium text-gray-700">Manual Add</div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                                     <input
@@ -541,8 +541,8 @@ const ReviewerManagement: React.FC = () => {
                 </div>
             )}
             {selectedReviewer && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg m-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                    <div className="w-[min(760px,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
                         <div className="p-6 border-b border-gray-200">
                             <div className="flex justify-between items-start">
                                 <div className="flex items-center">
@@ -558,20 +558,20 @@ const ReviewerManagement: React.FC = () => {
                                     onClick={() => setSelectedReviewer(null)}
                                     className="text-gray-400 hover:text-gray-600"
                                 >
-                                    ✕
+                                    x
                                 </button>
                             </div>
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
                                 <h3 className="text-sm font-medium text-gray-500">Department</h3>
-                                <p className="mt-1 text-gray-900">{selectedReviewer.department || '—'}</p>
+                                <p className="mt-1 text-gray-900">{selectedReviewer.department || '-'}</p>
                             </div>
                             <div>
                                 <h3 className="text-sm font-medium text-gray-500">Area of Expertise</h3>
                                 <p className="mt-1 text-gray-900">{selectedReviewer.area_of_expertise}</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
                                     <h3 className="text-sm font-medium text-gray-500">Status</h3>
                                     <span className={`inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedReviewer.is_active_reviewer ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
@@ -615,3 +615,5 @@ const ReviewerManagement: React.FC = () => {
 };
 
 export default ReviewerManagement;
+
+

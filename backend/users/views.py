@@ -41,6 +41,26 @@ def _normalize_header(value):
     return str(value).strip().lower().replace(' ', '_') if value is not None else ''
 
 
+def _get_primary_role(user):
+    """Return user's primary role from group membership."""
+    if user.groups.exists():
+        return user.groups.first().name
+    return None
+
+
+def _get_role_redirect_path(user, role=None):
+    """Return default frontend redirect path for the user's role."""
+    resolved_role = role if role is not None else _get_primary_role(user)
+    normalized = (resolved_role or '').strip().lower()
+    if user.is_staff or normalized in {'src_chair', 'src chair', 'admin'}:
+        return '/admin/dashboard'
+    if normalized == 'reviewer':
+        return '/reviewer/dashboard'
+    if normalized == 'pi':
+        return '/pi/dashboard'
+    return '/unauthorized'
+
+
 def _generate_unique_username(email):
     base = email.split('@')[0].strip().lower().replace(' ', '.') or 'reviewer'
     candidate = base
@@ -121,9 +141,7 @@ class LoginView(ObtainAuthToken):
         token, created = Token.objects.get_or_create(user=user)
 
         # Determine user's role from group membership
-        role = None
-        if user.groups.exists():
-            role = user.groups.first().name
+        role = _get_primary_role(user)
 
         # Serialize user data for response
         user_serializer = UserSerializer(user)
@@ -132,6 +150,7 @@ class LoginView(ObtainAuthToken):
         return Response({
             'access': token.key,  # Named 'access' for frontend compatibility
             'role': role,
+            'redirect_to': _get_role_redirect_path(user, role=role),
             'user': user_serializer.data
         }, status=status.HTTP_200_OK)
 
@@ -226,6 +245,26 @@ class CurrentUserView(APIView):
         # Serialize authenticated user's data
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TokenValidationView(APIView):
+    """
+    Validate token and return user role metadata for role-based redirection.
+
+    GET /api/auth/validate-token/
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user_serializer = UserSerializer(request.user)
+        role = _get_primary_role(request.user)
+        return Response({
+            'valid': True,
+            'role': role,
+            'redirect_to': _get_role_redirect_path(request.user, role=role),
+            'user': user_serializer.data
+        }, status=status.HTTP_200_OK)
 
 
 class UserRegistrationView(generics.CreateAPIView):

@@ -6,7 +6,7 @@ from django.utils import timezone
 from rest_framework.test import APIRequestFactory
 
 from proposals.models import AuditLog, GrantCycle, Proposal
-from proposals.serializers import ProposalSerializer
+from proposals.serializers import GrantCycleSerializer, ProposalSerializer
 from proposals.services import ProposalService
 
 
@@ -109,3 +109,42 @@ class ProposalSerializerTests(TestCase):
         self.assertEqual(proposal.pi_email, 'pi.user@nsu.edu')
         self.assertEqual(proposal.pi_name, 'PI User')
         self.assertEqual(proposal.pi_department, 'Not Specified')
+
+
+class GrantCycleSerializerValidationTests(TestCase):
+    def test_stage2_cannot_start_before_stage1_ends(self):
+        serializer = GrantCycleSerializer(data={
+            'name': 'CTRG Validation Cycle',
+            'year': '2026-2027',
+            'start_date': '2026-01-01',
+            'end_date': '2026-12-31',
+            'stage1_review_start_date': '2026-02-01',
+            'stage1_review_end_date': '2026-03-10',
+            'stage2_review_start_date': '2026-03-01',
+            'stage2_review_end_date': '2026-04-01',
+            'revision_window_days': 7,
+            'acceptance_threshold': '70.00',
+            'max_reviewers_per_proposal': 2,
+            'is_active': True,
+        })
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('stage2_review_start_date', serializer.errors)
+
+    def test_optional_stage_dates_accept_empty_strings(self):
+        serializer = GrantCycleSerializer(data={
+            'name': 'CTRG Optional Dates Cycle',
+            'year': '2026-2027',
+            'start_date': '2026-01-01',
+            'end_date': '2026-12-31',
+            'stage1_review_start_date': '',
+            'stage1_review_end_date': '',
+            'stage2_review_start_date': '',
+            'stage2_review_end_date': '',
+            'revision_window_days': 7,
+            'acceptance_threshold': '70.00',
+            'max_reviewers_per_proposal': 2,
+            'is_active': True,
+        })
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)

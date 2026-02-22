@@ -1,8 +1,10 @@
 from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.utils import timezone
+from rest_framework.test import APIClient
 
 from proposals.models import GrantCycle, Proposal
 from reviews.models import ReviewAssignment, ReviewerProfile, Stage1Score
@@ -14,6 +16,8 @@ User = get_user_model()
 
 class ReviewsDomainTests(TestCase):
     def setUp(self):
+        reviewer_group, _ = Group.objects.get_or_create(name='Reviewer')
+
         self.reviewer = User.objects.create_user(
             username='reviewer.user',
             email='reviewer.user@nsu.edu',
@@ -21,6 +25,7 @@ class ReviewsDomainTests(TestCase):
             first_name='Reviewer',
             last_name='User',
         )
+        self.reviewer.groups.add(reviewer_group)
         self.profile = ReviewerProfile.objects.create(
             user=self.reviewer,
             area_of_expertise='Machine Learning',
@@ -49,6 +54,14 @@ class ReviewsDomainTests(TestCase):
             cycle=self.cycle,
             status=Proposal.Status.SUBMITTED,
         )
+
+        self.admin_user = User.objects.create_user(
+            username='admin.user',
+            email='admin.user@nsu.edu',
+            password='StrongPass123!',
+            is_staff=True,
+        )
+        self.client = APIClient()
 
     def test_stage1_score_serializer_rejects_out_of_range_values(self):
         serializer = Stage1ScoreSerializer(data={
@@ -107,3 +120,57 @@ class ReviewsDomainTests(TestCase):
         )
 
         self.assertEqual(score.total_score, 86)
+        self.assertEqual(score.weighted_percentage_score, 86.0)
+
+    def test_stage1_final_submission_requires_recommendation_fields(self):
+        serializer = Stage1ScoreSerializer(data={
+            'originality_score': 10,
+            'clarity_score': 10,
+            'literature_review_score': 10,
+            'methodology_score': 10,
+            'impact_score': 10,
+            'publication_potential_score': 8,
+            'budget_appropriateness_score': 8,
+            'timeline_practicality_score': 4,
+            'narrative_comments': 'Final comments',
+            'is_draft': False,
+        })
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('recommendation', serializer.errors)
+        self.assertIn('detailed_recommendation', serializer.errors)
+
+    def test_auto_assign_reviewers_endpoint_assigns_reviewers(self):
+        second_reviewer = User.objects.create_user(
+            username='reviewer.two',
+            email='reviewer.two@nsu.edu',
+            password='StrongPass123!',
+            first_name='Reviewer',
+            last_name='Two',
+        )
+        second_reviewer.groups.add(Group.objects.get(name='Reviewer'))
+        ReviewerProfile.objects.create(
+            user=second_reviewer,
+            area_of_expertise='Data Science',
+            max_review_load=2,
+            is_active_reviewer=True,
+        )
+
+        self.client.force_authenticate(user=self.admin_user)
+        response = self.client.post('/api/assignments/auto_assign_reviewers/', {
+            'proposal_id': self.proposal.id,
+            'stage': 1,
+            'deadline': (timezone.now() + timedelta(days=5)).isoformat(),
+            'reviewer_count': 2,
+            'expertise_keywords': ['machine', 'data'],
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['assigned_count'], 2)
+        self.assertEqual(
+            ReviewAssignment.objects.filter(
+                proposal=self.proposal,
+                stage=ReviewAssignment.Stage.STAGE_1
+            ).count(),
+            2
+        )
