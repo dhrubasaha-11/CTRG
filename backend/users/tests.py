@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
+from tempfile import TemporaryDirectory
 from rest_framework.test import APIClient
 
 from reviews.models import ReviewerProfile
@@ -11,6 +13,15 @@ User = get_user_model()
 
 
 class ReviewerRegistrationSerializerTests(TestCase):
+    def setUp(self):
+        self.media_dir = TemporaryDirectory()
+        self.override = override_settings(MEDIA_ROOT=self.media_dir.name)
+        self.override.enable()
+
+    def tearDown(self):
+        self.override.disable()
+        self.media_dir.cleanup()
+
     def test_create_reviewer_is_inactive_and_has_profile(self):
         serializer = ReviewerRegistrationSerializer(data={
             'username': 'new.reviewer',
@@ -30,6 +41,41 @@ class ReviewerRegistrationSerializerTests(TestCase):
         profile = ReviewerProfile.objects.get(user=user)
         self.assertEqual(profile.area_of_expertise, '')
         self.assertFalse(profile.is_active_reviewer)
+
+    def test_create_reviewer_persists_uploaded_cv(self):
+        serializer = ReviewerRegistrationSerializer(data={
+            'username': 'cv.reviewer',
+            'email': 'cv.reviewer@nsu.edu',
+            'password': 'StrongPass123!',
+            'first_name': 'CV',
+            'last_name': 'Reviewer',
+            'cv': SimpleUploadedFile('reviewer_cv.pdf', b'%PDF-1.4 sample cv', content_type='application/pdf'),
+        })
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        user = serializer.save()
+
+        profile = ReviewerProfile.objects.get(user=user)
+        self.assertTrue(profile.cv.name.endswith('reviewer_cv.pdf'))
+
+    def test_deleting_reviewer_profile_removes_cv_file(self):
+        serializer = ReviewerRegistrationSerializer(data={
+            'username': 'delete.cv.reviewer',
+            'email': 'delete.cv.reviewer@nsu.edu',
+            'password': 'StrongPass123!',
+            'first_name': 'Delete',
+            'last_name': 'CV',
+            'cv': SimpleUploadedFile('delete_me.pdf', b'%PDF-1.4 delete me', content_type='application/pdf'),
+        })
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        user = serializer.save()
+        profile = ReviewerProfile.objects.get(user=user)
+        cv_path = profile.cv.path
+
+        self.assertTrue(profile.cv.storage.exists(profile.cv.name))
+        user.delete()
+        self.assertFalse(profile.cv.storage.exists('reviewer_cvs/delete_me.pdf'))
 
 
 class LoginSerializerTests(TestCase):
@@ -105,3 +151,44 @@ class TokenValidationEndpointTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['role'], 'Reviewer')
         self.assertEqual(response.data['redirect_to'], '/reviewer/dashboard')
+
+
+class ReviewerCVDownloadEndpointTests(TestCase):
+    def setUp(self):
+        self.media_dir = TemporaryDirectory()
+        self.override = override_settings(MEDIA_ROOT=self.media_dir.name)
+        self.override.enable()
+        self.client = APIClient()
+
+    def tearDown(self):
+        self.override.disable()
+        self.media_dir.cleanup()
+
+    def test_admin_can_download_reviewer_cv(self):
+        reviewer_group, _ = Group.objects.get_or_create(name='Reviewer')
+        admin = User.objects.create_user(
+            username='src.chair.download',
+            email='src.chair.download@nsu.edu',
+            password='StrongPass123!',
+            is_staff=True,
+        )
+        reviewer = User.objects.create_user(
+            username='download.cv.reviewer',
+            email='download.cv.reviewer@nsu.edu',
+            password='StrongPass123!',
+            is_active=False,
+        )
+        reviewer.groups.add(reviewer_group)
+        ReviewerProfile.objects.create(
+            user=reviewer,
+            area_of_expertise='',
+            is_active_reviewer=False,
+            cv=SimpleUploadedFile('download_cv.pdf', b'%PDF-1.4 download', content_type='application/pdf'),
+        )
+
+        self.client.force_authenticate(user=admin)
+        response = self.client.get(f'/api/auth/reviewer-cv/{reviewer.pk}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('download_cv.pdf', response.headers.get('Content-Disposition', ''))
+        response.close()

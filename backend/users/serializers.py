@@ -17,6 +17,7 @@ from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.urls import reverse
 
 # Get the custom User model
 User = get_user_model()
@@ -371,10 +372,12 @@ class UserListSerializer(serializers.ModelSerializer):
 
     role = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
+    cv_url = serializers.SerializerMethodField()
+    cv_name = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'full_name', 'role', 'is_active', 'date_joined']
+        fields = ['id', 'username', 'email', 'full_name', 'role', 'is_active', 'date_joined', 'cv_url', 'cv_name']
 
     def get_role(self, obj):
         """
@@ -402,6 +405,23 @@ class UserListSerializer(serializers.ModelSerializer):
         if obj.first_name and obj.last_name:
             return f"{obj.first_name} {obj.last_name}"
         return obj.email
+
+    def get_cv_url(self, obj):
+        profile = getattr(obj, 'reviewer_profile', None)
+        cv = getattr(profile, 'cv', None)
+        if not cv:
+            return None
+
+        request = self.context.get('request')
+        url = reverse('users:reviewer-cv', kwargs={'pk': obj.pk})
+        return request.build_absolute_uri(url) if request else url
+
+    def get_cv_name(self, obj):
+        profile = getattr(obj, 'reviewer_profile', None)
+        cv = getattr(profile, 'cv', None)
+        if not cv:
+            return None
+        return cv.name.rsplit('/', 1)[-1]
 
 
 class ReviewerRegistrationSerializer(serializers.ModelSerializer):
@@ -461,10 +481,11 @@ class ReviewerRegistrationSerializer(serializers.ModelSerializer):
         validators=[validate_password],
         style={'input_type': 'password'}
     )
+    cv = serializers.FileField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'first_name', 'last_name']
+        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'cv']
         extra_kwargs = {
             'first_name': {'required': True},
             'last_name': {'required': True},
@@ -504,6 +525,21 @@ class ReviewerRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A user with this username already exists.")
         return value
 
+    def validate_cv(self, value):
+        if not value:
+            return value
+
+        allowed_extensions = ('.pdf', '.doc', '.docx')
+        filename = value.name.lower()
+        if not filename.endswith(allowed_extensions):
+            raise serializers.ValidationError("CV must be a PDF, DOC, or DOCX file.")
+
+        max_size = 5 * 1024 * 1024
+        if value.size > max_size:
+            raise serializers.ValidationError("CV must be 5 MB or smaller.")
+
+        return value
+
     def create(self, validated_data):
         """
         Create new reviewer user with hashed password and Reviewer role.
@@ -534,6 +570,7 @@ class ReviewerRegistrationSerializer(serializers.ModelSerializer):
         # STEP 1: Create user account
         # ====================================================================
         # create_user() handles password hashing automatically
+        cv = validated_data.pop('cv', None)
         user = User.objects.create_user(**validated_data)
 
         # ====================================================================
@@ -568,6 +605,7 @@ class ReviewerRegistrationSerializer(serializers.ModelSerializer):
         ReviewerProfile.objects.create(
             user=user,
             area_of_expertise='',
+            cv=cv,
             is_active_reviewer=False  # Also starts inactive
         )
 

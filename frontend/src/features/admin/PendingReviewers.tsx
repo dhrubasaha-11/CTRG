@@ -39,7 +39,8 @@ import {
     User,           // Username display icon
     CheckCircle,    // Success/active status icon
     XCircle,        // Inactive status icon
-    AlertCircle     // Alert/warning icon
+    AlertCircle,    // Alert/warning icon
+    FileText        // CV link icon
 } from 'lucide-react';
 import api from '../../services/api';
 
@@ -59,6 +60,8 @@ interface PendingReviewer {
     role: string;         // Should always be "Reviewer" for this list
     is_active: boolean;   // Should always be False for pending reviewers
     date_joined: string;  // ISO timestamp of registration
+    cv_url: string | null;
+    cv_name: string | null;
 }
 
 const PendingReviewers: React.FC = () => {
@@ -301,6 +304,21 @@ const PendingReviewers: React.FC = () => {
                                                 <div className="text-sm text-gray-400 flex items-center mt-1">
                                                     <User size={12} className="mr-1" />
                                                     {reviewer.username}
+                                                </div>
+                                                <div className="text-sm text-gray-400 flex items-center mt-1">
+                                                    <FileText size={12} className="mr-1" />
+                                                    {reviewer.cv_url ? (
+                                                        <a
+                                                            href={reviewer.cv_url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-blue-600 hover:text-blue-700 hover:underline"
+                                                        >
+                                                            {reviewer.cv_name || 'View CV'}
+                                                        </a>
+                                                    ) : (
+                                                        <span>No CV uploaded</span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

@@ -20,6 +20,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ClipboardCheck,  // Icon for approval notice
+    FileText,        // Icon for CV upload
     Mail,            // Icon for email field
     Lock,            // Icon for password fields
     Eye,             // Show password icon
@@ -44,7 +45,8 @@ const ReviewerRegistration: React.FC = () => {
         password: '',
         confirmPassword: '',  // Client-side validation only, not sent to backend
         firstName: '',
-        lastName: ''
+        lastName: '',
+        cv: null as File | null
     });
 
     /**
@@ -77,9 +79,10 @@ const ReviewerRegistration: React.FC = () => {
      * Updates form data and clears any existing errors
      */
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value, files } = e.target;
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: name === 'cv' ? (files?.[0] ?? null) : value
         });
         // Clear error when user starts typing
         setError('');
@@ -123,6 +126,11 @@ const ReviewerRegistration: React.FC = () => {
             return;
         }
 
+        if (formData.cv && formData.cv.size > 5 * 1024 * 1024) {
+            setError('CV must be 5 MB or smaller');
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -130,12 +138,20 @@ const ReviewerRegistration: React.FC = () => {
             // API CALL: POST /auth/register-reviewer/
             // ================================================================
             // Note: confirmPassword is NOT sent to backend (only used for client validation)
-            const response = await api.post('/auth/register-reviewer/', {
-                username: formData.username,
-                email: formData.email,
-                password: formData.password,
-                first_name: formData.firstName,
-                last_name: formData.lastName
+            const payload = new FormData();
+            payload.append('username', formData.username);
+            payload.append('email', formData.email);
+            payload.append('password', formData.password);
+            payload.append('first_name', formData.firstName);
+            payload.append('last_name', formData.lastName);
+            if (formData.cv) {
+                payload.append('cv', formData.cv);
+            }
+
+            const response = await api.post('/auth/register-reviewer/', payload, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
 
             // ================================================================
@@ -169,6 +185,7 @@ const ReviewerRegistration: React.FC = () => {
                 if (errorData.password) errorMessages.push(`Password: ${Array.isArray(errorData.password) ? errorData.password[0] : errorData.password}`);
                 if (errorData.first_name) errorMessages.push(`First Name: ${Array.isArray(errorData.first_name) ? errorData.first_name[0] : errorData.first_name}`);
                 if (errorData.last_name) errorMessages.push(`Last Name: ${Array.isArray(errorData.last_name) ? errorData.last_name[0] : errorData.last_name}`);
+                if (errorData.cv) errorMessages.push(`CV: ${Array.isArray(errorData.cv) ? errorData.cv[0] : errorData.cv}`);
 
                 if (errorMessages.length > 0) {
                     // Display specific field errors
@@ -366,6 +383,26 @@ const ReviewerRegistration: React.FC = () => {
                                     required
                                 />
                             </div>
+                        </div>
+
+                        {/* CV Upload */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                CV for SRC Chair Review
+                            </label>
+                            <div className="relative">
+                                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                                <input
+                                    type="file"
+                                    name="cv"
+                                    accept=".pdf,.doc,.docx"
+                                    className="input has-icon-left file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium"
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <p className="mt-2 text-xs text-gray-500">
+                                Optional. Upload PDF, DOC, or DOCX up to 5 MB.
+                            </p>
                         </div>
 
                         {/* Password Input */}

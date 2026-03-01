@@ -31,6 +31,7 @@ from .views import (
     ImportReviewersFromExcelView,
     ReviewerPublicRegistrationView,
     PendingReviewersView,
+    ReviewerCVDownloadView,
     ApproveReviewerView,
     RejectReviewerView
 )
@@ -73,6 +74,9 @@ urlpatterns = [
 
     path('pending-reviewers/', PendingReviewersView.as_view(), name='pending-reviewers'),
     # List all pending (inactive) reviewer registrations (admin only)
+
+    path('reviewer-cv/<int:pk>/', ReviewerCVDownloadView.as_view(), name='reviewer-cv'),
+    # Download a reviewer's submitted CV (admin only)
 
     path('approve-reviewer/<int:pk>/', ApproveReviewerView.as_view(), name='approve-reviewer'),
     # Approve a pending reviewer registration (admin only)

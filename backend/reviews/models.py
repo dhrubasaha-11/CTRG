@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import FileExtensionValidator
 from proposals.models import Proposal
 
 
@@ -10,6 +11,13 @@ class ReviewerProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reviewer_profile')
     department = models.CharField(max_length=255, blank=True, default='', help_text="Reviewer's department")
     area_of_expertise = models.TextField(help_text="Reviewer's area of expertise")
+    cv = models.FileField(
+        upload_to='reviewer_cvs/',
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'doc', 'docx'])],
+        help_text="Optional reviewer CV for SRC Chair review"
+    )
     max_review_load = models.IntegerField(default=5, help_text="Maximum number of concurrent reviews")
     is_active_reviewer = models.BooleanField(default=True, help_text="Whether this reviewer is currently active")
     

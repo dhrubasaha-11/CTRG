@@ -22,6 +22,8 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from django.contrib.auth import get_user_model
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404
 from django.utils.crypto import get_random_string
 
 from .serializers import (
@@ -685,6 +687,25 @@ class PendingReviewersView(generics.ListAPIView):
             groups__name='Reviewer',
             is_active=False
         ).order_by('-date_joined')
+
+
+class ReviewerCVDownloadView(APIView):
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+
+    def get(self, request, pk):
+        user = get_object_or_404(User, pk=pk, groups__name='Reviewer')
+        profile = getattr(user, 'reviewer_profile', None)
+        if not profile or not profile.cv:
+            return Response(
+                {'error': 'CV not found for this reviewer.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return FileResponse(
+            profile.cv.open('rb'),
+            as_attachment=False,
+            filename=profile.cv.name.rsplit('/', 1)[-1]
+        )
 
 
 class ApproveReviewerView(APIView):
