@@ -20,7 +20,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ClipboardCheck,  // Icon for approval notice
-    FileText,        // Icon for CV upload
     Mail,            // Icon for email field
     Lock,            // Icon for password fields
     Eye,             // Show password icon
@@ -205,279 +204,92 @@ const ReviewerRegistration: React.FC = () => {
     };
 
     return (
-        <div className="app-background flex min-h-screen flex-col lg:flex-row">
-            {/* Left Branding Panel - Desktop Only */}
-            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-                {/* Navy Gradient Background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[hsl(222,47%,12%)] to-[hsl(222,47%,22%)]" />
-
-                {/* Dot Pattern Overlay */}
-                <div
-                    className="absolute inset-0 opacity-5"
-                    style={{
-                        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)',
-                        backgroundSize: '24px 24px'
-                    }}
-                />
-
-                {/* Content */}
-                <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
-                    {/* Top Section */}
-                    <div className="flex-1 flex flex-col justify-center items-center text-center">
-                        {/* Icon */}
-                        <div className="w-24 h-24 rounded-full border-2 border-gold flex items-center justify-center mb-8">
-                            <ClipboardCheck size={48} className="text-gold" />
-                        </div>
-
-                        {/* Title */}
-                        <h1 className="font-serif text-5xl font-bold mb-4">Join as Reviewer</h1>
-
-                        {/* Subtitle */}
-                        <p className="text-lg opacity-80 max-w-md mb-8">
-                            Register to become a reviewer for research grant proposals
-                        </p>
-
-                        {/* University Info */}
-                        <div className="space-y-2">
-                            <p className="text-sm font-medium">North South University</p>
-                            <div className="w-12 h-px bg-gold mx-auto" />
-                            <p className="text-xs opacity-70">School of Engineering and Physical Sciences | SRC</p>
-                        </div>
-                    </div>
-
-                    {/* Bottom Info */}
-                    <div className="space-y-4">
-                        <p className="text-sm opacity-75">
-                            As a reviewer, you'll help evaluate research grant proposals and contribute
-                            to advancing research at NSU.
-                        </p>
-                    </div>
-                </div>
+        <div className="app-background relative min-h-screen overflow-hidden bg-[#ecf1f7]">
+            <div className="pointer-events-none absolute inset-0">
+                <div className="absolute left-[-180px] top-[-120px] h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,_rgba(212,160,23,0.28)_0%,_rgba(212,160,23,0)_70%)]" />
+                <div className="absolute right-[-140px] top-[90px] h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,_rgba(30,42,74,0.2)_0%,_rgba(30,42,74,0)_72%)]" />
             </div>
 
-            {/* Mobile Banner - Visible Only on Mobile */}
-            <div className="lg:hidden bg-gradient-to-br from-navy to-navy-dark py-12 px-6 text-white text-center">
-                <div className="w-16 h-16 rounded-full border-2 border-gold flex items-center justify-center mx-auto mb-4">
-                    <ClipboardCheck size={32} className="text-gold" />
-                </div>
-                <h1 className="font-serif text-3xl font-bold mb-2">Reviewer Registration</h1>
-                <p className="text-sm opacity-80">North South University</p>
-            </div>
-
-            {/* Right Form Panel */}
-            <div className="flex w-full items-center justify-center bg-transparent p-8 lg:w-1/2">
-                <div className="w-full max-w-md animate-fade-in">
-                    {/* Back Button */}
-                    <button
-                        onClick={() => navigate('/login')}
-                        className="flex items-center gap-2 text-navy hover:text-gold transition-colors mb-6"
-                    >
-                        <ArrowLeft size={20} />
-                        <span>Back to Login</span>
-                    </button>
-
-                    {/* Header */}
-                    <div className="mb-8 text-center lg:text-left">
-                        <h2 className="font-serif text-3xl font-bold text-navy mb-2">
-                            Create Reviewer Account
-                        </h2>
-                        <p className="text-gray-600 text-sm">
-                            Fill in your details to register as a reviewer
-                        </p>
-                    </div>
-
-                    {/* Approval Notice */}
-                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 mt-0.5">
-                                <ClipboardCheck size={20} className="text-blue-600" />
+            <div className="relative mx-auto flex min-h-screen max-w-[1240px] items-center px-4 py-8 sm:px-6 lg:px-8">
+                <div className="grid w-full gap-6 lg:grid-cols-[0.92fr_1.08fr]">
+                    <section className="relative overflow-hidden rounded-[32px] border border-[#1e2a4a]/10 bg-[linear-gradient(155deg,#111b34_0%,#1e2a4a_50%,#30446f_100%)] p-6 text-white shadow-[0_26px_60px_rgba(15,23,42,0.26)] sm:p-8 lg:p-10">
+                        <div className="absolute inset-0 opacity-[0.14]" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.18) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.18) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+                        <div className="absolute -right-24 top-[-70px] h-[240px] w-[240px] rounded-full bg-[radial-gradient(circle,_rgba(212,160,23,0.38)_0%,_rgba(212,160,23,0)_72%)]" />
+                        <div className="relative z-10 flex h-full flex-col">
+                            <button onClick={() => navigate('/login')} className="inline-flex items-center gap-2 self-start rounded-full border border-white/20 bg-white/8 px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/14">
+                                <ArrowLeft size={16} />
+                                Back to Login
+                            </button>
+                            <div className="mt-8">
+                                <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-[#d4a017]/80 bg-[#d4a017]/10">
+                                    <ClipboardCheck size={30} className="text-[#f4ca5b]" />
+                                </div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#f3d27d]">Reviewer Onboarding</p>
+                                <h1 className="mt-3 font-serif text-4xl leading-tight text-white sm:text-5xl">Join the CTRG reviewer pool.</h1>
+                                <p className="mt-4 max-w-[26rem] text-sm leading-7 text-[#d5dff5] sm:text-base">Register once, upload your CV, and let the SRC Chair approve your reviewer account for upcoming research grant cycles.</p>
                             </div>
-                            <div>
-                                <h3 className="text-sm font-medium text-blue-900 mb-1">Account Approval Required</h3>
-                                <p className="text-xs text-blue-700">
-                                    Your registration will be reviewed by the SRC Chair. You'll be able to login once your account is approved.
-                                </p>
+                            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+                                <div className="rounded-2xl border border-white/16 bg-white/8 p-4 backdrop-blur-sm"><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#f1d27e]">Step 1</p><p className="mt-2 text-sm font-semibold text-white">Create profile</p><p className="mt-2 text-xs leading-6 text-[#d7e1f6]">Add your institutional details and reviewer identity.</p></div>
+                                <div className="rounded-2xl border border-white/16 bg-white/8 p-4 backdrop-blur-sm"><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#f1d27e]">Step 2</p><p className="mt-2 text-sm font-semibold text-white">Upload CV</p><p className="mt-2 text-xs leading-6 text-[#d7e1f6]">Share your academic background for chair review.</p></div>
+                                <div className="rounded-2xl border border-white/16 bg-white/8 p-4 backdrop-blur-sm"><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#f1d27e]">Step 3</p><p className="mt-2 text-sm font-semibold text-white">Await approval</p><p className="mt-2 text-xs leading-6 text-[#d7e1f6]">You can sign in after SRC Chair activation.</p></div>
+                            </div>
+                            <div className="mt-8 rounded-[24px] border border-[#d4a017]/35 bg-[linear-gradient(145deg,rgba(212,160,23,0.12)_0%,rgba(212,160,23,0.04)_100%)] p-5">
+                                <p className="text-sm font-semibold text-white">Approval required before login</p>
+                                <p className="mt-2 text-sm leading-6 text-[#d9e3f8]">Your registration stays pending until the SRC Chair reviews your details and activates your reviewer profile.</p>
                             </div>
                         </div>
-                    </div>
+                    </section>
 
-                    {/* Error Message */}
-                    {error && (
-                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <p className="text-sm text-red-600 whitespace-pre-line">{error}</p>
-                        </div>
-                    )}
+                    <section className="flex items-center justify-center">
+                        <div className="w-full max-w-[760px] animate-fade-in">
+                            <div className="surface-glass overflow-hidden rounded-[32px] border border-white/70 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
+                                <div className="border-b border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.88)_0%,rgba(248,250,252,0.92)_100%)] px-6 py-6 sm:px-8">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7b89a5]">Application Form</p>
+                                    <h2 className="mt-2 font-serif text-3xl leading-tight text-[#1b2747] sm:text-4xl">Create Reviewer Account</h2>
+                                    <p className="mt-3 max-w-[34rem] text-sm leading-6 text-[#5f6e8b]">Complete your reviewer profile with institutional credentials and a supporting CV.</p>
+                                </div>
 
-                    <form
-                        onSubmit={handleSubmit}
-                        className="surface-glass space-y-5 rounded-2xl border border-slate-200/80 p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)] sm:p-6"
-                    >
-                        {/* Name Fields */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    First Name
-                                </label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                                    <input
-                                        type="text"
-                                        name="firstName"
-                                        placeholder="John"
-                                        className="input has-icon-left"
-                                        value={formData.firstName}
-                                        onChange={handleChange}
-                                        required
-                                    />
+                                <div className="px-6 py-6 sm:px-8 sm:py-8">
+                                    {error && <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3"><p className="text-sm text-rose-700 whitespace-pre-line">{error}</p></div>}
+
+                                    <form onSubmit={handleSubmit} className="space-y-6">
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">First Name</label><div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type="text" name="firstName" placeholder="John" className="input has-icon-left rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.firstName} onChange={handleChange} required /></div></div>
+                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">Last Name</label><div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type="text" name="lastName" placeholder="Doe" className="input has-icon-left rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.lastName} onChange={handleChange} required /></div></div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[0.85fr_1.15fr]">
+                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">Username</label><div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type="text" name="username" placeholder="john.doe" className="input has-icon-left rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.username} onChange={handleChange} required /></div></div>
+                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">Institutional Email</label><div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type="email" name="email" placeholder="your.email@nsu.edu" className="input has-icon-left rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.email} onChange={handleChange} required /></div></div>
+                                        </div>
+
+                                        <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#fbfdff_0%,#f6f9fd_100%)] p-5">
+                                            <label className="block text-sm font-semibold text-[#384867]">CV for SRC Chair Review</label>
+                                            <p className="mt-1 text-xs leading-6 text-[#66758f]">Optional. Upload PDF, DOC, or DOCX up to 5 MB to support reviewer approval.</p>
+                                            <div className="relative mt-4"><input type="file" name="cv" accept=".pdf,.doc,.docx" className="input rounded-xl border-[#cbd5e5] bg-white file:mr-3 file:rounded-lg file:border-0 file:bg-[#1e2a4a]/8 file:px-3 file:py-2 file:text-sm file:font-medium file:text-[#1e2a4a]" onChange={handleChange} /></div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">Password</label><div className="relative"><Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type={showPassword ? 'text' : 'password'} name="password" placeholder="Create a secure password" className="input has-icon-left has-icon-right rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.password} onChange={handleChange} required /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7b89a6] transition-colors hover:text-[#1e2a4a]">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></div>
+                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">Confirm Password</label><div className="relative"><Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" placeholder="Repeat your password" className="input has-icon-left has-icon-right rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.confirmPassword} onChange={handleChange} required /><button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7b89a6] transition-colors hover:text-[#1e2a4a]">{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></div>
+                                        </div>
+
+                                        <div className="rounded-2xl border border-[#d4a017]/28 bg-[linear-gradient(140deg,rgba(212,160,23,0.1)_0%,rgba(212,160,23,0.04)_100%)] px-4 py-3">
+                                            <p className="text-sm font-medium text-[#5b4000]">Reviewer accounts remain inactive until SRC Chair approval.</p>
+                                        </div>
+
+                                        <button type="submit" disabled={isSubmitting} className="btn w-full rounded-xl border border-[#b8850c] bg-[linear-gradient(140deg,#d4a017_0%,#f1c350_100%)] py-3 text-base font-bold text-[#1b2747] shadow-[0_14px_26px_rgba(184,133,12,0.28)] transition-all duration-200 hover:translate-y-[-1px] hover:shadow-[0_18px_30px_rgba(184,133,12,0.34)] disabled:cursor-not-allowed disabled:opacity-70">
+                                            {isSubmitting ? 'Registering...' : 'Register as Reviewer'}
+                                        </button>
+
+                                        <div className="border-t border-[#e7edf5] pt-5 text-center text-sm text-[#5f6e8b]">
+                                            Already have an account? <button type="button" onClick={() => navigate('/login')} className="font-semibold text-[#1e2a4a] underline decoration-[#d4a017] decoration-2 underline-offset-4 transition-colors hover:text-[#b8850c]">Sign In</button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Last Name
-                                </label>
-                                <input
-                                    type="text"
-                                    name="lastName"
-                                    placeholder="Doe"
-                                    className="input"
-                                    value={formData.lastName}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
                         </div>
-
-                        {/* Username Input */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Username
-                            </label>
-                            <div className="relative">
-                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                                <input
-                                    type="text"
-                                    name="username"
-                                    placeholder="john.doe"
-                                    className="input has-icon-left"
-                                    value={formData.username}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        {/* Email Input */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Email
-                            </label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                                <input
-                                    type="email"
-                                    name="email"
-                                    placeholder="your.email@nsu.edu"
-                                    className="input has-icon-left"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        {/* CV Upload */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                CV for SRC Chair Review
-                            </label>
-                            <div className="relative">
-                                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                                <input
-                                    type="file"
-                                    name="cv"
-                                    accept=".pdf,.doc,.docx"
-                                    className="input has-icon-left file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium"
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <p className="mt-2 text-xs text-gray-500">
-                                Optional. Upload PDF, DOC, or DOCX up to 5 MB.
-                            </p>
-                        </div>
-
-                        {/* Password Input */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Password
-                            </label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    name="password"
-                                    placeholder="********"
-                                    className="input has-icon-left has-icon-right"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                >
-                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Confirm Password Input */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Confirm Password
-                            </label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                                <input
-                                    type={showConfirmPassword ? 'text' : 'password'}
-                                    name="confirmPassword"
-                                    placeholder="********"
-                                    className="input has-icon-left has-icon-right"
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                >
-                                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Register Button */}
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="btn btn-primary w-full btn-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSubmitting ? 'Registering...' : 'Register as Reviewer'}
-                        </button>
-
-                        {/* Footer */}
-                        <div className="text-center text-sm text-gray-600">
-                            Already have an account?{' '}
-                            <button
-                                type="button"
-                                onClick={() => navigate('/login')}
-                                className="text-navy hover:text-gold transition-colors font-medium"
-                            >
-                                Sign In
-                            </button>
-                        </div>
-                    </form>
+                    </section>
                 </div>
             </div>
         </div>

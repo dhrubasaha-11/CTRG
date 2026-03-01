@@ -292,8 +292,17 @@ REST_FRAMEWORK = {
 # Allowed origins (frontend URLs)
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     'http://localhost:5173',
+    'http://127.0.0.1:5173',
     'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://192.168.0.101:5173',
 ])
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost:\d+$",
+    r"^http://127\.0\.0\.1:\d+$",
+    r"^http://192\.168\.\d{1,3}\.\d{1,3}:\d+$",
+]
 
 # Allow credentials (cookies, authorization headers)
 CORS_ALLOW_CREDENTIALS = env('CORS_ALLOW_CREDENTIALS')

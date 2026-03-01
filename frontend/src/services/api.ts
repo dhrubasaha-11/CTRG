@@ -5,8 +5,44 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { getToken, clearAuthData } from './authService';
 
-// Use environment variable for API URL (fallback to localhost for development)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const getDefaultApiBaseUrl = () => {
+    if (typeof window === 'undefined') {
+        return 'http://localhost:8000/api';
+    }
+
+    const { protocol, hostname } = window.location;
+    const isLocalAlias = hostname === 'localhost' || hostname === '127.0.0.1';
+    if (isLocalAlias) {
+        return `${protocol}//localhost:8000/api`;
+    }
+
+    return `${protocol}//${hostname}:8000/api`;
+};
+
+const resolveApiBaseUrl = () => {
+    const configured = import.meta.env.VITE_API_URL;
+    if (!configured) {
+        return getDefaultApiBaseUrl();
+    }
+
+    try {
+        const parsed = new URL(configured, window.location.origin);
+        const currentHost = typeof window !== 'undefined' ? window.location.hostname : parsed.hostname;
+        const configuredIsLocal = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+        const currentIsLocal = currentHost === 'localhost' || currentHost === '127.0.0.1';
+
+        if (configuredIsLocal && !currentIsLocal) {
+            parsed.hostname = currentHost;
+        }
+
+        return `${parsed.origin}${parsed.pathname.replace(/\/$/, '')}`;
+    } catch {
+        return getDefaultApiBaseUrl();
+    }
+};
+
+// Use environment variable for API URL (fallback to detected host for development)
+const API_BASE_URL = resolveApiBaseUrl();
 
 // Create axios instance with defaults
 const api = axios.create({
@@ -235,7 +271,12 @@ export interface ReviewAssignment {
     deadline: string;
     stage1_score?: Stage1Score;
     stage2_review?: Stage2Review;
-    stage1_summary?: Stage1Score;
+    stage1_reviews?: ReviewAssignment[];
+    proposal_file?: string;
+    revised_proposal_file?: string;
+    response_to_reviewers_file?: string;
+    title?: string;
+    abstract?: string;
 }
 
 export interface AutoAssignResult {

@@ -40,7 +40,7 @@ const ReviewerDashboard: React.FC = () => {
         setStats((prev) => ({
             ...prev,
             overdue: assignments.filter(a =>
-                (a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS') &&
+                a.status === 'PENDING' &&
                 new Date(a.deadline).getTime() < currentTime
             ).length
         }));
@@ -53,10 +53,10 @@ const ReviewerDashboard: React.FC = () => {
             setAssignments(response.data);
 
             // Calculate stats
-            const pending = response.data.filter(a => a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS').length;
+            const pending = response.data.filter(a => a.status === 'PENDING').length;
             const completed = response.data.filter(a => a.status === 'COMPLETED').length;
             const overdue = response.data.filter(a =>
-                (a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS') &&
+                a.status === 'PENDING' &&
                 new Date(a.deadline) < new Date()
             ).length;
 
@@ -76,22 +76,21 @@ const ReviewerDashboard: React.FC = () => {
     };
 
     const filteredAssignments = assignments.filter(a => {
-        if (filter === 'pending') return a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS';
+        if (filter === 'pending') return a.status === 'PENDING';
         if (filter === 'completed') return a.status === 'COMPLETED';
         return true;
     });
 
     const getStatusBadge = (status: string) => {
         const styles: Record<string, string> = {
-            ASSIGNED: 'bg-yellow-100 text-yellow-800',
-            IN_PROGRESS: 'bg-blue-100 text-blue-800',
+            PENDING: 'bg-yellow-100 text-yellow-800',
             COMPLETED: 'bg-green-100 text-green-800',
         };
         return styles[status] || 'bg-gray-100 text-gray-800';
     };
 
     const isOverdue = (deadline: string, status: string) => {
-        return (status === 'ASSIGNED' || status === 'IN_PROGRESS') && new Date(deadline).getTime() < currentTime;
+        return status === 'PENDING' && new Date(deadline).getTime() < currentTime;
     };
 
     const getDaysRemaining = (deadline: string) => {
@@ -233,11 +232,13 @@ const ReviewerDashboard: React.FC = () => {
                                             </Link>
                                         ) : (
                                             <Link
-                                                to={`/reviewer/reviews/${assignment.id}`}
+                                                to={assignment.stage === 2 ? `/reviewer/reviews/${assignment.id}/stage2` : `/reviewer/reviews/${assignment.id}`}
                                                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                             >
                                                 <Edit3 size={16} className="mr-2" />
-                                                {assignment.status === 'IN_PROGRESS' ? 'Continue' : 'Start Review'}
+                                                {(assignment.stage === 1 && assignment.stage1_score) || (assignment.stage === 2 && assignment.stage2_review)
+                                                    ? 'Continue'
+                                                    : 'Start Review'}
                                             </Link>
                                         )}
                                         <ChevronRight size={20} className="text-gray-400" />

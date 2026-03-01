@@ -81,30 +81,30 @@ const Login: React.FC = () => {
                 <div className="absolute bottom-[-180px] left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,_rgba(42,58,95,0.2)_0%,_rgba(42,58,95,0.01)_70%)]" />
             </div>
 
-            <div className="relative mx-auto min-h-screen max-w-[1360px] lg:grid lg:grid-cols-[1.06fr_0.94fr]">
-                <section className="relative hidden lg:block">
+            <div className="relative mx-auto min-h-screen max-w-[1360px] xl:grid xl:grid-cols-[minmax(0,1.06fr)_minmax(0,0.94fr)]">
+                <section className="relative hidden min-w-0 xl:block">
                     <div className="absolute inset-6 overflow-hidden rounded-[32px] border border-white/10 shadow-[0_28px_70px_rgba(15,23,42,0.34)]">
                         <div className="absolute inset-0 bg-[linear-gradient(145deg,#0f172d_0%,#1e2a4a_46%,#27365b_100%)]" />
                         <div className="absolute inset-0 opacity-[0.14]" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.24) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.24) 1px, transparent 1px)', backgroundSize: '34px 34px' }} />
                         <div className="absolute -right-20 top-[-110px] h-[300px] w-[300px] rounded-full bg-[radial-gradient(circle,_rgba(212,160,23,0.52)_0%,_rgba(212,160,23,0)_72%)]" />
                         <div className="absolute left-0 top-16 h-[220px] w-[220px] rounded-full bg-[radial-gradient(circle,_rgba(132,156,206,0.2)_0%,_rgba(132,156,206,0)_72%)]" />
 
-                        <div className="relative z-10 flex h-full flex-col justify-between p-12 text-[#ecf2ff]">
-                            <div>
+                        <div className="relative z-10 flex h-full w-full flex-col justify-between p-12 text-[#ecf2ff]">
+                            <div className="max-w-[32rem]">
                                 <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-2xl border border-[#d4a017]/80 bg-[#d4a017]/12">
                                     <GraduationCap size={36} className="text-[#f4ca5b]" />
                                 </div>
                                 <h1 className="font-serif text-5xl leading-tight text-white">CTRG Portal</h1>
-                                <p className="mt-4 max-w-xl text-base leading-relaxed text-[#c9d5ef]">
+                                <p className="mt-4 max-w-[28rem] text-base leading-relaxed text-[#c9d5ef]">
                                     Two-stage research grant evaluation platform for NSU.
                                     Track submissions, reviews, revisions, and final approvals in one secured workflow.
                                 </p>
-                                <div className="mt-8 inline-flex items-center rounded-full border border-[#d4a017]/60 bg-[#d4a017]/14 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#f7d98a]">
+                                <div className="mt-8 inline-flex max-w-full items-center rounded-full border border-[#d4a017]/60 bg-[#d4a017]/14 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#f7d98a]">
                                     School of Engineering and Physical Sciences
                                 </div>
                             </div>
 
-                            <div className="grid gap-4">
+                            <div className="grid max-w-[32rem] gap-4">
                                 <div className="rounded-2xl border border-white/20 bg-white/6 p-4 backdrop-blur-sm">
                                     <div className="flex items-center gap-3">
                                         <Shield size={18} className="text-[#f4ca5b]" />
@@ -131,9 +131,9 @@ const Login: React.FC = () => {
                     </div>
                 </section>
 
-                <section className="relative flex items-center justify-center px-5 py-8 sm:px-10 sm:py-10 lg:px-12">
+                <section className="relative flex min-w-0 items-center justify-center px-5 py-8 sm:px-8 sm:py-10 lg:px-10 xl:px-12">
                     <div className="w-full max-w-[520px] animate-fade-in">
-                        <div className="mb-6 rounded-2xl border border-[#1e2a4a]/20 bg-[linear-gradient(110deg,_#1e2a4a_0%,_#27365b_100%)] px-5 py-4 text-white shadow-[0_20px_48px_rgba(30,42,74,0.28)] lg:hidden">
+                        <div className="mb-6 rounded-2xl border border-[#1e2a4a]/20 bg-[linear-gradient(110deg,_#1e2a4a_0%,_#27365b_100%)] px-5 py-4 text-white shadow-[0_20px_48px_rgba(30,42,74,0.28)] xl:hidden">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d4a017]/16">
                                     <GraduationCap size={20} className="text-[#f6d47a]" />
@@ -143,6 +143,9 @@ const Login: React.FC = () => {
                                     <p className="mt-1 text-xs text-[#c8d4ee]">North South University</p>
                                 </div>
                             </div>
+                            <p className="mt-3 max-w-[24rem] text-sm leading-6 text-[#d8e2f5]">
+                                Two-stage research grant review, revisions, and final approval in one controlled workflow.
+                            </p>
                         </div>
 
                         <div className="rounded-[28px] border border-[#1e2a4a]/12 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl sm:p-8">

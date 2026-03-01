@@ -279,19 +279,26 @@ class ReviewAssignmentViewSet(viewsets.ModelViewSet):
     def proposal_details(self, request, pk=None):
         """Get full proposal details for review."""
         from proposals.serializers import ProposalSerializer
-        
+
         assignment = self.get_object()
-        
+
         # Verify access
         if assignment.reviewer != request.user and not request.user.is_staff:
             return Response(
                 {'error': 'Not authorized'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
+
         proposal = assignment.proposal
+        assignment_data = ReviewAssignmentSerializer(assignment).data
         proposal_data = ProposalSerializer(proposal).data
-        
+
+        assignment_data['proposal_file'] = proposal_data.get('proposal_file')
+        assignment_data['revised_proposal_file'] = proposal_data.get('revised_proposal_file')
+        assignment_data['response_to_reviewers_file'] = proposal_data.get('response_to_reviewers_file')
+        assignment_data['title'] = proposal_data.get('title')
+        assignment_data['abstract'] = proposal_data.get('abstract')
+
         # For Stage 2, include Stage 1 reviews
         if assignment.stage == ReviewAssignment.Stage.STAGE_2:
             stage1_assignments = ReviewAssignment.objects.filter(
@@ -299,8 +306,8 @@ class ReviewAssignmentViewSet(viewsets.ModelViewSet):
                 stage=ReviewAssignment.Stage.STAGE_1,
                 status=ReviewAssignment.Status.COMPLETED
             )
-            proposal_data['stage1_reviews'] = ReviewAssignmentSerializer(
+            assignment_data['stage1_reviews'] = ReviewAssignmentSerializer(
                 stage1_assignments, many=True
             ).data
-        
-        return Response(proposal_data)
+
+        return Response(assignment_data)

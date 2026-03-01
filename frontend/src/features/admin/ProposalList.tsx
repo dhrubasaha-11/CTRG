@@ -115,7 +115,7 @@ const ProposalList: React.FC = () => {
         }
 
         // Stage 2 assignment for revised proposals
-        if (['REVISED_PROPOSAL_SUBMITTED', 'ACCEPTED_NO_CORRECTIONS'].includes(proposal.status)) {
+        if (['REVISED_PROPOSAL_SUBMITTED'].includes(proposal.status)) {
             actions.push({ key: 'assign_s2', label: 'Assign Stage 2', icon: UserPlus, color: 'text-cyan-600' });
         }
 

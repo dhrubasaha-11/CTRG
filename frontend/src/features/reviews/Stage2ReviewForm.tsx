@@ -8,24 +8,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, CheckCircle, XCircle, AlertCircle, Send, Save, Download } from 'lucide-react';
 import { assignmentApi, type ReviewAssignment } from '../../services/api';
 
-interface Stage1Summary {
-    originality_score: number;
-    clarity_score: number;
-    literature_review_score: number;
-    methodology_score: number;
-    impact_score: number;
-    publication_potential_score: number;
-    budget_appropriateness_score: number;
-    timeline_practicality_score: number;
-    total_score: number;
-    narrative_comments: string;
-}
-
 const Stage2ReviewForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [assignment, setAssignment] = useState<ReviewAssignment | null>(null);
-    const [stage1Summary, setStage1Summary] = useState<Stage1Summary | null>(null);
+    const [stage1Reviews, setStage1Reviews] = useState<ReviewAssignment[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -42,10 +29,7 @@ const Stage2ReviewForm: React.FC = () => {
             const response = await assignmentApi.getProposalDetails(Number(id));
             setAssignment(response.data);
 
-            // Load Stage 1 summary if available
-            if (response.data.stage1_summary) {
-                setStage1Summary(response.data.stage1_summary);
-            }
+            setStage1Reviews(response.data.stage1_reviews || []);
 
             // Load existing Stage 2 review if any
             if (response.data.stage2_review) {
@@ -62,6 +46,20 @@ const Stage2ReviewForm: React.FC = () => {
             setLoading(false);
         }
     }, [id]);
+
+    const handleOpenDocument = (url?: string) => {
+        if (!url) {
+            setError('Requested document is not available.');
+            return;
+        }
+        window.open(url, '_blank', 'noopener,noreferrer');
+    };
+
+    const averageStage1Score = stage1Reviews.length > 0
+        ? Math.round(
+            stage1Reviews.reduce((sum, review) => sum + (review.stage1_score?.total_score || 0), 0) / stage1Reviews.length
+        )
+        : 0;
 
     useEffect(() => {
         loadData();
@@ -162,30 +160,50 @@ const Stage2ReviewForm: React.FC = () => {
             )}
 
             {/* Stage 1 Summary */}
-            {stage1Summary && (
+            {stage1Reviews.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Stage 1 Review Summary</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                         <div className="text-center p-3 bg-gray-50 rounded-lg">
-                            <div className="text-2xl font-bold text-blue-600">{stage1Summary.total_score}</div>
-                            <div className="text-sm text-gray-500">Total Score</div>
+                            <div className="text-2xl font-bold text-blue-600">{stage1Reviews.length}</div>
+                            <div className="text-sm text-gray-500">Reviews</div>
                         </div>
                         <div className="text-center p-3 bg-gray-50 rounded-lg">
-                            <div className="text-2xl font-bold text-purple-600">{stage1Summary.total_score}%</div>
-                            <div className="text-sm text-gray-500">Percentage</div>
+                            <div className="text-2xl font-bold text-purple-600">{averageStage1Score}%</div>
+                            <div className="text-sm text-gray-500">Average Score</div>
                         </div>
                         <div className="text-center p-3 bg-gray-50 rounded-lg">
-                            <div className="text-2xl font-bold text-green-600">{stage1Summary.originality_score + stage1Summary.clarity_score + stage1Summary.literature_review_score}</div>
-                            <div className="text-sm text-gray-500">Research (45)</div>
+                            <div className="text-2xl font-bold text-green-600">
+                                {stage1Reviews.filter((review) => review.stage1_score?.recommendation === 'ACCEPT').length}
+                            </div>
+                            <div className="text-sm text-gray-500">Accept Votes</div>
                         </div>
                         <div className="text-center p-3 bg-gray-50 rounded-lg">
-                            <div className="text-2xl font-bold text-orange-600">{stage1Summary.budget_appropriateness_score + stage1Summary.timeline_practicality_score}</div>
-                            <div className="text-sm text-gray-500">Feasibility (15)</div>
+                            <div className="text-2xl font-bold text-orange-600">
+                                {stage1Reviews.filter((review) => review.stage1_score?.recommendation === 'TENTATIVELY_ACCEPT').length}
+                            </div>
+                            <div className="text-sm text-gray-500">Revision Votes</div>
                         </div>
                     </div>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <h3 className="font-medium text-yellow-800 mb-2">Previous Comments & Concerns</h3>
-                        <p className="text-yellow-700 text-sm">{stage1Summary.narrative_comments}</p>
+                    <div className="space-y-3">
+                        {stage1Reviews.map((review, index) => (
+                            <div key={review.id} className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <div className="flex items-center justify-between gap-3">
+                                    <h3 className="font-medium text-yellow-800">Reviewer {index + 1}</h3>
+                                    <span className="text-sm text-yellow-700">
+                                        {review.stage1_score?.total_score ?? 0}/100
+                                    </span>
+                                </div>
+                                {review.stage1_score?.recommendation && (
+                                    <p className="mt-2 text-sm text-yellow-700">
+                                        Recommendation: {review.stage1_score.recommendation.replace(/_/g, ' ')}
+                                    </p>
+                                )}
+                                <p className="mt-2 text-sm text-yellow-700">
+                                    {review.stage1_score?.narrative_comments || 'No narrative comments provided.'}
+                                </p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}
@@ -197,11 +215,19 @@ const Stage2ReviewForm: React.FC = () => {
                     <h2 className="text-lg font-semibold">Revised Documents</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button className="flex items-center px-4 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                    <button
+                        type="button"
+                        onClick={() => handleOpenDocument(assignment?.revised_proposal_file || assignment?.proposal_file)}
+                        className="flex items-center px-4 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                    >
                         <Download size={20} className="mr-2" />
                         Revised Proposal
                     </button>
-                    <button className="flex items-center px-4 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                    <button
+                        type="button"
+                        onClick={() => handleOpenDocument(assignment?.response_to_reviewers_file)}
+                        className="flex items-center px-4 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                    >
                         <Download size={20} className="mr-2" />
                         Response to Reviewers
                     </button>

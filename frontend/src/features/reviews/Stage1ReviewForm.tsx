@@ -70,6 +70,14 @@ const Stage1ReviewForm: React.FC = () => {
     const [recommendation, setRecommendation] = useState<Stage1Recommendation>('');
     const [detailedRecommendation, setDetailedRecommendation] = useState('');
 
+    const handleOpenDocument = (url?: string) => {
+        if (!url) {
+            setError('Proposal document is not available.');
+            return;
+        }
+        window.open(url, '_blank', 'noopener,noreferrer');
+    };
+
     const loadAssignment = useCallback(async () => {
         try {
             setLoading(true);
@@ -237,7 +245,11 @@ const Stage1ReviewForm: React.FC = () => {
                 <p className="text-blue-100 mb-4">
                     Please review the proposal document thoroughly before providing your scores.
                 </p>
-                <button className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                <button
+                    type="button"
+                    onClick={() => handleOpenDocument(assignment?.proposal_file)}
+                    className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                >
                     Download Proposal PDF
                 </button>
             </div>

@@ -20,7 +20,7 @@ import {
     Calendar, Download, ChevronRight, RefreshCw,
     BarChart3
 } from 'lucide-react';
-import { dashboardApi, proposalApi, type Proposal } from '../../services/api';
+import { cycleApi, dashboardApi, proposalApi, type GrantCycle, type Proposal } from '../../services/api';
 import { ActivityTimeline } from '../../components/dashboard/ActivityTimeline';
 import { CycleProgress } from '../../components/dashboard/CycleProgress';
 import { StatusChart } from '../../components/dashboard/StatusChart';
@@ -40,6 +40,7 @@ const SRCChairDashboard: React.FC = () => {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     // Only the 5 most recent proposals are shown on the dashboard
     const [recentProposals, setRecentProposals] = useState<Proposal[]>([]);
+    const [activeCycle, setActiveCycle] = useState<GrantCycle | null>(null);
     const [loading, setLoading] = useState(true);
     // Separate from loading — tracks manual refresh so the spinner doesn't block the whole page
     const [refreshing, setRefreshing] = useState(false);
@@ -79,12 +80,14 @@ const SRCChairDashboard: React.FC = () => {
         try {
             setLoading(true);
             // Parallel fetch — stats and proposals are independent
-            const [statsRes, proposalsRes] = await Promise.all([
+            const [statsRes, proposalsRes, activeCyclesRes] = await Promise.all([
                 dashboardApi.getSrcChairStats(),
                 proposalApi.getAll(),
+                cycleApi.getActive(),
             ]);
             setStats(statsRes.data);
             setRecentProposals(proposalsRes.data.slice(0, 5));
+            setActiveCycle(activeCyclesRes.data[0] || null);
         } catch {
             // Graceful degradation — show zeroed dashboard rather than error screen
             setStats({
@@ -95,6 +98,7 @@ const SRCChairDashboard: React.FC = () => {
                 status_breakdown: {}
             });
             setRecentProposals([]);
+            setActiveCycle(null);
         } finally {
             setLoading(false);
         }
@@ -141,6 +145,50 @@ const SRCChairDashboard: React.FC = () => {
         return colors[status] || 'bg-gray-100 text-gray-800';
     };
 
+    const formatDateRange = (start?: string, end?: string, fallback = 'Not scheduled') => {
+        if (!start && !end) {
+            return fallback;
+        }
+
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            month: 'short',
+            day: 'numeric',
+        });
+
+        const startText = start ? formatter.format(new Date(start)) : 'TBD';
+        const endText = end ? formatter.format(new Date(end)) : 'TBD';
+        return `${startText} - ${endText}`;
+    };
+
+    const stage1Total = (stats?.status_breakdown?.UNDER_STAGE_1_REVIEW || 0)
+        + (stats?.status_breakdown?.STAGE_1_REJECTED || 0)
+        + (stats?.status_breakdown?.ACCEPTED_NO_CORRECTIONS || 0)
+        + (stats?.status_breakdown?.REVISION_REQUESTED || 0)
+        + (stats?.status_breakdown?.REVISED_PROPOSAL_SUBMITTED || 0)
+        + (stats?.status_breakdown?.UNDER_STAGE_2_REVIEW || 0)
+        + (stats?.status_breakdown?.FINAL_ACCEPTED || 0)
+        + (stats?.status_breakdown?.FINAL_REJECTED || 0);
+    const stage1Completed = (stats?.status_breakdown?.STAGE_1_REJECTED || 0)
+        + (stats?.status_breakdown?.ACCEPTED_NO_CORRECTIONS || 0)
+        + (stats?.status_breakdown?.REVISION_REQUESTED || 0)
+        + (stats?.status_breakdown?.REVISED_PROPOSAL_SUBMITTED || 0)
+        + (stats?.status_breakdown?.UNDER_STAGE_2_REVIEW || 0)
+        + (stats?.status_breakdown?.FINAL_ACCEPTED || 0)
+        + (stats?.status_breakdown?.FINAL_REJECTED || 0);
+    const stage2Total = (stats?.status_breakdown?.UNDER_STAGE_2_REVIEW || 0)
+        + (stats?.status_breakdown?.FINAL_ACCEPTED || 0)
+        + (stats?.status_breakdown?.FINAL_REJECTED || 0);
+    const stage2Completed = (stats?.status_breakdown?.FINAL_ACCEPTED || 0)
+        + (stats?.status_breakdown?.FINAL_REJECTED || 0);
+    const currentStage: 'stage1' | 'revision' | 'stage2' | 'completed' = activeCycle?.stage2_review_end_date &&
+        new Date(activeCycle.stage2_review_end_date).getTime() < Date.now()
+        ? 'completed'
+        : stage2Total > 0
+            ? 'stage2'
+            : ((stats?.status_breakdown?.REVISION_REQUESTED || 0) + (stats?.status_breakdown?.TENTATIVELY_ACCEPTED || 0)) > 0
+                ? 'revision'
+                : 'stage1';
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -167,7 +215,9 @@ const SRCChairDashboard: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-                                <span className="text-sm font-medium">Active Cycle: CTRG 2026-2027</span>
+                                <span className="text-sm font-medium">
+                                    Active Cycle: {activeCycle?.name || 'No active cycle'}
+                                </span>
                             </div>
                             <button
                                 onClick={handleRefresh}
@@ -291,16 +341,16 @@ const SRCChairDashboard: React.FC = () => {
 
             {/* Cycle Progress Footer */}
             <CycleProgress
-                currentStage="stage1"
-                stage1Complete={65}
-                stage2Complete={0}
-                stage1Date="Jan 15 - Mar 15"
-                revisionDate="Mar 16 - Apr 15"
-                stage2Date="Apr 16 - May 30"
+                currentStage={currentStage}
+                stage1Complete={stage1Total > 0 ? Math.round((stage1Completed / stage1Total) * 100) : 0}
+                stage2Complete={stage2Total > 0 ? Math.round((stage2Completed / stage2Total) * 100) : 0}
+                stage1Date={formatDateRange(activeCycle?.stage1_review_start_date, activeCycle?.stage1_review_end_date)}
+                revisionDate={`${activeCycle?.revision_window_days || 7} day window`}
+                stage2Date={formatDateRange(activeCycle?.stage2_review_start_date, activeCycle?.stage2_review_end_date)}
                 stats={{
-                    stage1Proposals: stats?.pending_reviews || 8,
-                    revisionProposals: stats?.awaiting_revision || 3,
-                    stage2Proposals: 0,
+                    stage1Proposals: stats?.status_breakdown?.UNDER_STAGE_1_REVIEW || 0,
+                    revisionProposals: (stats?.status_breakdown?.REVISION_REQUESTED || 0) + (stats?.status_breakdown?.TENTATIVELY_ACCEPTED || 0),
+                    stage2Proposals: stats?.status_breakdown?.UNDER_STAGE_2_REVIEW || 0,
                 }}
             />
         </div>

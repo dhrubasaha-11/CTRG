@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, FileText, AlertCircle, X, Send, Clock, CheckCircle } from 'lucide-react';
-import { proposalApi, type Proposal } from '../../services/api';
+import { proposalApi, type Proposal, type ReviewAssignment } from '../../services/api';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -18,6 +18,7 @@ const RevisionForm: React.FC = () => {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [proposal, setProposal] = useState<Proposal | null>(null);
+    const [stage1Reviews, setStage1Reviews] = useState<ReviewAssignment[]>([]);
     const [currentTime, setCurrentTime] = useState(() => Date.now());
 
     const [revisedProposal, setRevisedProposal] = useState<File | null>(null);
@@ -27,11 +28,21 @@ const RevisionForm: React.FC = () => {
     const loadProposal = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await proposalApi.getById(Number(id));
-            setProposal(response.data);
+            const [proposalResponse, reviewsResponse] = await Promise.all([
+                proposalApi.getById(Number(id)),
+                proposalApi.getReviews(Number(id)),
+            ]);
+
+            setProposal(proposalResponse.data);
+            setStage1Reviews(
+                reviewsResponse.data.filter(
+                    (review) => review.stage === 1 && review.status === 'COMPLETED' && review.stage1_score
+                )
+            );
         } catch {
             setError('Failed to load proposal. Please try again.');
             setProposal(null);
+            setStage1Reviews([]);
         } finally {
             setLoading(false);
         }
@@ -90,9 +101,8 @@ const RevisionForm: React.FC = () => {
             setError(null);
 
             const data = new FormData();
-            data.append('revised_proposal', revisedProposal);
-            data.append('response_to_reviewers', responseToReviewers);
-            data.append('revision_notes', revisionNotes);
+            data.append('revised_proposal_file', revisedProposal);
+            data.append('response_to_reviewers_file', responseToReviewers);
 
             await proposalApi.submitRevision(Number(id), data);
 
@@ -172,6 +182,39 @@ const RevisionForm: React.FC = () => {
                         Include any budget revisions if applicable
                     </li>
                 </ul>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 className="font-semibold text-gray-900 mb-3">Combined Reviewer Comments</h2>
+                {stage1Reviews.length === 0 ? (
+                    <p className="text-sm text-gray-500">No Stage 1 reviewer comments are available yet.</p>
+                ) : (
+                    <div className="space-y-4">
+                        {stage1Reviews.map((review, index) => (
+                            <div key={review.id} className="rounded-lg border border-gray-200 p-4">
+                                <div className="flex items-center justify-between gap-3">
+                                    <p className="font-medium text-gray-900">Reviewer {index + 1}</p>
+                                    <span className="text-sm text-gray-500">
+                                        Score: {review.stage1_score?.total_score ?? 0}/100
+                                    </span>
+                                </div>
+                                {review.stage1_score?.recommendation && (
+                                    <p className="mt-2 text-sm text-gray-600">
+                                        Recommendation: {review.stage1_score.recommendation.replace(/_/g, ' ')}
+                                    </p>
+                                )}
+                                <p className="mt-3 text-sm leading-6 text-gray-700">
+                                    {review.stage1_score?.narrative_comments || 'No narrative comments provided.'}
+                                </p>
+                                {review.stage1_score?.detailed_recommendation && (
+                                    <div className="mt-3 rounded-md bg-gray-50 p-3 text-sm text-gray-700">
+                                        {review.stage1_score.detailed_recommendation}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* File Uploads */}

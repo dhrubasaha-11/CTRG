@@ -31,7 +31,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
         setDeadline(defaultDeadline.toISOString().split('T')[0] + 'T17:00');
 
         // Determine stage based on proposal status
-        if (['REVISED_PROPOSAL_SUBMITTED', 'ACCEPTED_NO_CORRECTIONS'].includes(proposal.status)) {
+        if (proposal.status === 'REVISED_PROPOSAL_SUBMITTED') {
             setStage(2);
         }
     }, [proposal]);
@@ -92,6 +92,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
     };
 
     const availableReviewers = reviewers.filter(r => r.is_active_reviewer && r.can_accept_more);
+    const canAssignStage2 = ['REVISED_PROPOSAL_SUBMITTED', 'UNDER_STAGE_2_REVIEW'].includes(proposal.status);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -138,12 +139,18 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                                     name="stage"
                                     value="2"
                                     checked={stage === 2}
+                                    disabled={!canAssignStage2}
                                     onChange={() => setStage(2)}
                                     className="mr-2"
                                 />
                                 Stage 2 Review
                             </label>
                         </div>
+                        {!canAssignStage2 && (
+                            <p className="mt-2 text-sm text-amber-700">
+                                Stage 2 assignments are only available after a revised proposal is submitted.
+                            </p>
+                        )}
                     </div>
 
                     {/* Deadline */}
