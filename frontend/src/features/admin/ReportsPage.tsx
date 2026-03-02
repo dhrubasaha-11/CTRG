@@ -1,6 +1,6 @@
 /**
  * Reports Page for SRC Chair.
- * Generates proposal-wise PDF reports and cycle summary reports.
+ * Generates proposal-wise PDF/DOCX reports and cycle summary reports.
  */
 import React, { useState, useEffect } from 'react';
 import { Download, FileText, BarChart3, RefreshCw } from 'lucide-react';
@@ -11,6 +11,18 @@ const ReportsPage: React.FC = () => {
     const [cycles, setCycles] = useState<GrantCycle[]>([]);
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState<number | null>(null);
+
+    const downloadBlob = (data: BlobPart, mimeType: string, filename: string) => {
+        const blob = new Blob([data], { type: mimeType });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    };
 
     useEffect(() => {
         loadData();
@@ -37,17 +49,25 @@ const ReportsPage: React.FC = () => {
         try {
             setDownloading(proposal.id);
             const response = await proposalApi.downloadReport(proposal.id);
-            const blob = new Blob([response.data], { type: 'application/pdf' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `review_report_${proposal.proposal_code}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
+            downloadBlob(response.data, 'application/pdf', `review_report_${proposal.proposal_code}.pdf`);
         } catch {
             alert('Failed to download report. Please try again.');
+        } finally {
+            setDownloading(null);
+        }
+    };
+
+    const handleDownloadProposalReportDocx = async (proposal: Proposal) => {
+        try {
+            setDownloading(100000 + proposal.id);
+            const response = await proposalApi.downloadReportDocx(proposal.id);
+            downloadBlob(
+                response.data,
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                `review_report_${proposal.proposal_code}.docx`
+            );
+        } catch {
+            alert('Failed to download DOCX report. Please try again.');
         } finally {
             setDownloading(null);
         }
@@ -57,17 +77,25 @@ const ReportsPage: React.FC = () => {
         try {
             setDownloading(-cycle.id);
             const response = await cycleApi.getSummaryReport(cycle.id);
-            const blob = new Blob([response.data], { type: 'application/pdf' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `cycle_summary_${cycle.year}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
+            downloadBlob(response.data, 'application/pdf', `cycle_summary_${cycle.year}.pdf`);
         } catch {
             alert('Failed to download cycle summary. Please try again.');
+        } finally {
+            setDownloading(null);
+        }
+    };
+
+    const handleDownloadCycleSummaryDocx = async (cycle: GrantCycle) => {
+        try {
+            setDownloading(-100000 - cycle.id);
+            const response = await cycleApi.getSummaryReportDocx(cycle.id);
+            downloadBlob(
+                response.data,
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                `cycle_summary_${cycle.year}.docx`
+            );
+        } catch {
+            alert('Failed to download DOCX cycle summary. Please try again.');
         } finally {
             setDownloading(null);
         }
@@ -120,14 +148,24 @@ const ReportsPage: React.FC = () => {
                             {cycle.proposal_count !== undefined && (
                                 <p className="text-sm text-gray-600 mb-3">{cycle.proposal_count} proposals</p>
                             )}
-                            <button
-                                onClick={() => handleDownloadCycleSummary(cycle)}
-                                disabled={downloading === -cycle.id}
-                                className="w-full flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm"
-                            >
-                                <Download size={16} className="mr-2" />
-                                {downloading === -cycle.id ? 'Downloading...' : 'Download Summary PDF'}
-                            </button>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={() => handleDownloadCycleSummary(cycle)}
+                                    disabled={downloading === -cycle.id}
+                                    className="flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm"
+                                >
+                                    <Download size={16} className="mr-2" />
+                                    {downloading === -cycle.id ? '...' : 'PDF'}
+                                </button>
+                                <button
+                                    onClick={() => handleDownloadCycleSummaryDocx(cycle)}
+                                    disabled={downloading === -100000 - cycle.id}
+                                    className="flex items-center justify-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black disabled:opacity-50 text-sm"
+                                >
+                                    <Download size={16} className="mr-2" />
+                                    {downloading === -100000 - cycle.id ? '...' : 'DOCX'}
+                                </button>
+                            </div>
                         </div>
                     ))}
                     {cycles.length === 0 && !loading && (
@@ -171,14 +209,24 @@ const ReportsPage: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button
-                                                onClick={() => handleDownloadProposalReport(proposal)}
-                                                disabled={downloading === proposal.id}
-                                                className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
-                                            >
-                                                <Download size={14} className="mr-1" />
-                                                {downloading === proposal.id ? '...' : 'PDF'}
-                                            </button>
+                                            <div className="inline-flex gap-2">
+                                                <button
+                                                    onClick={() => handleDownloadProposalReport(proposal)}
+                                                    disabled={downloading === proposal.id}
+                                                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+                                                >
+                                                    <Download size={14} className="mr-1" />
+                                                    {downloading === proposal.id ? '...' : 'PDF'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDownloadProposalReportDocx(proposal)}
+                                                    disabled={downloading === 100000 + proposal.id}
+                                                    className="inline-flex items-center px-3 py-1.5 bg-gray-900 text-white rounded-lg hover:bg-black disabled:opacity-50 text-sm"
+                                                >
+                                                    <Download size={14} className="mr-1" />
+                                                    {downloading === 100000 + proposal.id ? '...' : 'DOCX'}
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

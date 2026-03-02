@@ -95,10 +95,11 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
     const canAssignStage2 = ['REVISED_PROPOSAL_SUBMITTED', 'UNDER_STAGE_2_REVIEW'].includes(proposal.status);
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden m-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 px-3 py-4 sm:px-6 sm:py-8">
+            <div className="flex min-h-full items-start justify-center">
+                <div className="my-auto w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-600">
+                <div className="border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-600 p-4 sm:p-6">
                     <div className="flex justify-between items-start">
                         <div className="text-white">
                             <h2 className="text-xl font-semibold">Assign Reviewers</h2>
@@ -110,7 +111,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                <form onSubmit={handleSubmit} className="max-h-[calc(100vh-13rem)] overflow-y-auto p-4 sm:p-6">
                     {error && (
                         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
                             <AlertCircle size={18} className="mr-2" />
@@ -121,7 +122,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                     {/* Stage Selection */}
                     <div className="mb-6">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Review Stage</label>
-                        <div className="flex space-x-4">
+                        <div className="grid gap-3 sm:grid-cols-2">
                             <label className={`flex items-center px-4 py-2 border rounded-lg cursor-pointer transition-colors ${stage === 1 ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:bg-gray-50'}`}>
                                 <input
                                     type="radio"
@@ -229,10 +230,10 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                 </form>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3">
+                <div className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 p-4 sm:p-6">
                     {assignedIds.length > 0 ? (
                         <>
-                            <span className="text-green-600 text-sm flex items-center mr-auto">
+                            <span className="mr-auto flex text-sm text-green-600">
                                 <Check size={16} className="mr-1" />
                                 {assignedIds.length} reviewer(s) assigned successfully
                             </span>
@@ -290,6 +291,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                         </>
                     )}
                 </div>
+            </div>
             </div>
         </div>
     );

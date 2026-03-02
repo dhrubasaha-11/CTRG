@@ -75,10 +75,11 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
     const rejectCount = recommendations.filter(r => r === 'REJECT').length;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden m-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 px-3 py-4 sm:px-6 sm:py-8">
+            <div className="flex min-h-full items-start justify-center">
+                <div className="my-auto w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-600 to-teal-600">
+                <div className="border-b border-gray-200 bg-gradient-to-r from-emerald-600 to-teal-600 p-4 sm:p-6">
                     <div className="flex justify-between items-start">
                         <div className="text-white">
                             <h2 className="text-xl font-semibold">Final Funding Decision</h2>
@@ -90,7 +91,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                     </div>
                 </div>
 
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                <div className="max-h-[calc(100vh-13rem)] overflow-y-auto p-4 sm:p-6">
                     {error && (
                         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
                             <AlertCircle size={18} className="mr-2" />
@@ -100,7 +101,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
 
                     {/* Proposal Info */}
                     <div className="mb-6 p-4 bg-gray-50 rounded-xl">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <span className="text-sm text-gray-500">Principal Investigator</span>
                                 <div className="font-medium text-gray-900">{proposal.pi_name}</div>
@@ -193,7 +194,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                         {/* Decision Selection */}
                         <div className="mb-6">
                             <label className="block text-sm font-medium text-gray-700 mb-3">Final Decision</label>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-4 lg:grid-cols-2">
                                 <button
                                     type="button"
                                     onClick={() => setDecision('ACCEPTED')}
@@ -266,7 +267,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3">
+                <div className="flex flex-wrap justify-end gap-3 border-t border-gray-200 bg-gray-50 p-4 sm:p-6">
                     <button
                         type="button"
                         onClick={onClose}
@@ -295,6 +296,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                         )}
                     </button>
                 </div>
+            </div>
             </div>
         </div>
     );

@@ -188,7 +188,6 @@ const SRCChairDashboard: React.FC = () => {
             : ((stats?.status_breakdown?.REVISION_REQUESTED || 0) + (stats?.status_breakdown?.TENTATIVELY_ACCEPTED || 0)) > 0
                 ? 'revision'
                 : 'stage1';
-
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -230,7 +229,7 @@ const SRCChairDashboard: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="mt-4 flex items-center gap-2 bg-yellow-500/20 backdrop-blur-sm px-4 py-2 rounded-lg inline-flex">
+                    <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-red-300/30 bg-red-500/20 px-4 py-2 backdrop-blur-sm">
                         <AlertTriangle size={18} />
                         <span className="text-sm font-medium">{stats?.awaiting_decision || 0} proposals need your attention</span>
                     </div>

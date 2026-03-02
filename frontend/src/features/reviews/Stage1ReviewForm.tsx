@@ -16,7 +16,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Send, ArrowLeft, FileText, AlertCircle } from 'lucide-react';
-import { assignmentApi, type ReviewAssignment, type Stage1Score } from '../../services/api';
+import { assignmentApi, resolveBackendFileUrl, type ReviewAssignment, type Stage1Score } from '../../services/api';
 
 /** Configuration for a single scoring criterion — drives the form UI. */
 interface CriteriaConfig {
@@ -75,7 +75,7 @@ const Stage1ReviewForm: React.FC = () => {
             setError('Proposal document is not available.');
             return;
         }
-        window.open(url, '_blank', 'noopener,noreferrer');
+        window.open(resolveBackendFileUrl(url), '_blank', 'noopener,noreferrer');
     };
 
     const loadAssignment = useCallback(async () => {

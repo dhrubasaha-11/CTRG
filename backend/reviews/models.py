@@ -52,10 +52,29 @@ class ReviewAssignment(models.Model):
         PENDING = 'PENDING', 'Pending'
         COMPLETED = 'COMPLETED', 'Completed'
 
+    class ReviewValidity(models.TextChoices):
+        INCLUDED = 'INCLUDED', 'Included in Decision'
+        REJECTED = 'REJECTED', 'Rejected by SRC Chair'
+
     proposal = models.ForeignKey(Proposal, on_delete=models.CASCADE, related_name='review_assignments')
     reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='review_assignments')
     stage = models.IntegerField(choices=Stage.choices)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    review_validity = models.CharField(
+        max_length=20,
+        choices=ReviewValidity.choices,
+        default=ReviewValidity.INCLUDED,
+        help_text="Whether the submitted review is included in chair decisions",
+    )
+    chair_rejection_reason = models.TextField(blank=True, default='')
+    chair_rejected_at = models.DateTimeField(null=True, blank=True)
+    chair_rejected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='rejected_review_assignments',
+    )
     deadline = models.DateTimeField()
     assigned_date = models.DateTimeField(auto_now_add=True)
     notification_sent = models.BooleanField(default=False, help_text="Whether notification email has been sent")
@@ -70,6 +89,10 @@ class ReviewAssignment(models.Model):
 
     def __str__(self):
         return f"{self.proposal.proposal_code} - {self.reviewer.get_full_name() or self.reviewer.username} (Stage {self.stage})"
+
+    @property
+    def is_excluded_from_decision(self):
+        return self.review_validity == self.ReviewValidity.REJECTED
 
 
 class Stage1Score(models.Model):

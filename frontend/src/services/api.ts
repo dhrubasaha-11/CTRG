@@ -43,6 +43,7 @@ const resolveApiBaseUrl = () => {
 
 // Use environment variable for API URL (fallback to detected host for development)
 const API_BASE_URL = resolveApiBaseUrl();
+const API_ORIGIN = new URL(API_BASE_URL).origin;
 
 // Create axios instance with defaults
 const api = axios.create({
@@ -254,6 +255,11 @@ export interface Reviewer {
     is_active_reviewer: boolean;
     current_workload: number;
     can_accept_more: boolean;
+    total?: number;
+    pending?: number;
+    completed?: number;
+    stage1_pending?: number;
+    stage2_pending?: number;
 }
 
 export interface ReviewAssignment {
@@ -261,6 +267,8 @@ export interface ReviewAssignment {
     proposal: number;
     proposal_title: string;
     proposal_code: string;
+    proposal_status?: string;
+    proposal_status_display?: string;
     reviewer: number;
     reviewer_name: string;
     reviewer_email: string;
@@ -268,6 +276,10 @@ export interface ReviewAssignment {
     stage_display: string;
     status: string;
     status_display: string;
+    review_validity?: string;
+    review_validity_display?: string;
+    chair_rejection_reason?: string;
+    chair_rejected_at?: string | null;
     deadline: string;
     stage1_score?: Stage1Score;
     stage2_review?: Stage2Review;
@@ -341,6 +353,7 @@ export const cycleApi = {
     delete: (id: number) => api.delete(`/cycles/${id}/`),
     getStatistics: (id: number) => api.get(`/cycles/${id}/statistics/`),
     getSummaryReport: (id: number) => api.get(`/cycles/${id}/summary_report/`, { responseType: 'blob' }),
+    getSummaryReportDocx: (id: number) => api.get(`/cycles/${id}/summary_report_docx/`, { responseType: 'blob' }),
 };
 
 // ===== Proposal APIs =====
@@ -365,6 +378,7 @@ export const proposalApi = {
         api.post(`/proposals/${id}/final_decision/`, { decision, approved_grant_amount, final_remarks }),
     getReviews: (id: number) => api.get<ReviewAssignment[]>(`/proposals/${id}/reviews/`),
     downloadReport: (id: number) => api.get(`/proposals/${id}/download_report/`, { responseType: 'blob' }),
+    downloadReportDocx: (id: number) => api.get(`/proposals/${id}/download_report_docx/`, { responseType: 'blob' }),
 };
 
 // ===== Dashboard APIs =====
@@ -408,6 +422,11 @@ export const assignmentApi = {
         }),
     sendNotification: (id: number) => api.post(`/assignments/${id}/send_notification/`),
     bulkNotify: (assignment_ids: number[]) => api.post('/assignments/bulk_notify/', { assignment_ids }),
+    setReviewValidity: (id: number, review_validity: 'INCLUDED' | 'REJECTED', chair_rejection_reason?: string) =>
+        api.post<ReviewAssignment>(`/assignments/${id}/set_review_validity/`, {
+            review_validity,
+            chair_rejection_reason,
+        }),
     submitScore: (id: number, data: Record<string, unknown>) =>
         api.post(`/assignments/${id}/submit_score/`, data),
     submitStage2Review: (id: number, data: Record<string, unknown>) =>
@@ -419,6 +438,18 @@ export const assignmentApi = {
 export const auditApi = {
     getAll: (params?: { proposal?: number; action_type?: string }) =>
         api.get('/audit-logs/', { params }),
+};
+
+export const resolveBackendFileUrl = (url?: string | null) => {
+    if (!url) {
+        return '';
+    }
+
+    try {
+        return new URL(url, API_ORIGIN).toString();
+    } catch {
+        return url;
+    }
 };
 
 export default api;

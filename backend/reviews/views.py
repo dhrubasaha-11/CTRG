@@ -11,9 +11,11 @@ from .serializers import (
     ReviewerProfileSerializer, ReviewAssignmentSerializer,
     ReviewAssignmentCreateSerializer, AutoAssignReviewersSerializer,
     Stage1ScoreSerializer, Stage2ReviewSerializer,
-    ReviewerWorkloadSerializer, EmailReviewersSerializer
+    ReviewerWorkloadSerializer, EmailReviewersSerializer,
+    ReviewValidityUpdateSerializer,
 )
 from proposals.services import ReviewerService, EmailService, ProposalService
+from proposals.models import AuditLog
 
 
 class ReviewerProfileViewSet(viewsets.ModelViewSet):
@@ -208,6 +210,54 @@ class ReviewAssignmentViewSet(viewsets.ModelViewSet):
             'sent': sent_count,
             'total': len(assignment_ids)
         })
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def set_review_validity(self, request, pk=None):
+        """Allow SRC Chair to reject or reinstate a particular submitted reviewer review."""
+        assignment = self.get_object()
+        serializer = ReviewValidityUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if assignment.status != ReviewAssignment.Status.COMPLETED:
+            return Response(
+                {'error': 'Only completed reviews can be rejected or reinstated.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        review_validity = serializer.validated_data['review_validity']
+        reason = serializer.validated_data.get('chair_rejection_reason', '').strip()
+
+        assignment.review_validity = review_validity
+        if review_validity == ReviewAssignment.ReviewValidity.REJECTED:
+            assignment.chair_rejection_reason = reason
+            assignment.chair_rejected_at = timezone.now()
+            assignment.chair_rejected_by = request.user
+        else:
+            assignment.chair_rejection_reason = ''
+            assignment.chair_rejected_at = None
+            assignment.chair_rejected_by = None
+
+        assignment.save(update_fields=[
+            'review_validity',
+            'chair_rejection_reason',
+            'chair_rejected_at',
+            'chair_rejected_by',
+            'updated_at',
+        ])
+
+        AuditLog.objects.create(
+            user=request.user,
+            action_type='REVIEW_VALIDITY_UPDATED',
+            proposal=assignment.proposal,
+            details={
+                'assignment_id': assignment.id,
+                'reviewer_id': assignment.reviewer_id,
+                'review_validity': review_validity,
+                'reason': assignment.chair_rejection_reason,
+            }
+        )
+
+        return Response(ReviewAssignmentSerializer(assignment).data)
     
     @action(detail=True, methods=['post'])
     def submit_score(self, request, pk=None):

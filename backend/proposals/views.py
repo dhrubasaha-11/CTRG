@@ -83,6 +83,22 @@ class GrantCycleViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = f'attachment; filename="cycle_summary_{cycle.year}.pdf"'
         return response
 
+    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAdminUser])
+    def summary_report_docx(self, request, pk=None):
+        """Download cycle summary report as DOCX."""
+        from .reporting import generate_summary_report_docx
+        from django.http import HttpResponse
+
+        cycle = self.get_object()
+        docx_buffer = generate_summary_report_docx(cycle)
+
+        response = HttpResponse(
+            docx_buffer,
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+        response['Content-Disposition'] = f'attachment; filename="cycle_summary_{cycle.year}.docx"'
+        return response
+
 
 class ProposalViewSet(viewsets.ModelViewSet):
     """
@@ -255,6 +271,22 @@ class ProposalViewSet(viewsets.ModelViewSet):
         
         response = HttpResponse(pdf_buffer, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="review_report_{proposal.proposal_code}.pdf"'
+        return response
+
+    @action(detail=True, methods=['get'])
+    def download_report_docx(self, request, pk=None):
+        """Download combined review report as DOCX."""
+        from .reporting import generate_combined_review_docx
+        from django.http import HttpResponse
+
+        proposal = self.get_object()
+        docx_buffer = generate_combined_review_docx(proposal)
+
+        response = HttpResponse(
+            docx_buffer,
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+        response['Content-Disposition'] = f'attachment; filename="review_report_{proposal.proposal_code}.docx"'
         return response
 
 

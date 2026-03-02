@@ -7,7 +7,15 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
-    const { token, role } = useAuth();
+    const { token, role, isAuthReady } = useAuth();
+
+    if (!isAuthReady) {
+        return (
+            <div className="flex min-h-[40vh] items-center justify-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-blue-600" />
+            </div>
+        );
+    }
 
     if (!token) {
         return <Navigate to="/login" replace />;

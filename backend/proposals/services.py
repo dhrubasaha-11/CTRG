@@ -59,11 +59,17 @@ class ProposalService:
         )
         if not assignments.exists():
             return None
-            
-        if all(a.status == ReviewAssignment.Status.COMPLETED for a in assignments):
+
+        included_assignments = assignments.exclude(
+            review_validity=ReviewAssignment.ReviewValidity.REJECTED
+        )
+        if not included_assignments.exists():
+            return None
+
+        if all(a.status == ReviewAssignment.Status.COMPLETED for a in included_assignments):
             # Calculate average score
             scores = []
-            for assignment in assignments:
+            for assignment in included_assignments:
                 try:
                     score = assignment.stage1_score
                     scores.append(score.total_score)

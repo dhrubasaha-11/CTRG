@@ -1,5 +1,5 @@
 /**
- * Enhanced Reviewer Dashboard Component.
+ * Reviewer assignments page.
  * Shows assigned proposals, pending reviews, and completed reviews.
  */
 import React, { useState, useEffect } from 'react';
@@ -89,6 +89,25 @@ const ReviewerDashboard: React.FC = () => {
         return styles[status] || 'bg-gray-100 text-gray-800';
     };
 
+    const getProposalOutcomeBadge = (status?: string) => {
+        const styles: Record<string, string> = {
+            STAGE_1_REJECTED: 'bg-red-100 text-red-800',
+            ACCEPTED_NO_CORRECTIONS: 'bg-green-100 text-green-800',
+            TENTATIVELY_ACCEPTED: 'bg-amber-100 text-amber-800',
+            REVISION_REQUESTED: 'bg-orange-100 text-orange-800',
+            FINAL_ACCEPTED: 'bg-emerald-100 text-emerald-800',
+            FINAL_REJECTED: 'bg-rose-100 text-rose-800',
+        };
+        return status ? styles[status] || 'bg-slate-100 text-slate-700' : '';
+    };
+
+    const getReviewValidityBadge = (validity?: string) => {
+        if (validity === 'REJECTED') {
+            return 'bg-red-100 text-red-800';
+        }
+        return 'bg-emerald-100 text-emerald-700';
+    };
+
     const isOverdue = (deadline: string, status: string) => {
         return status === 'PENDING' && new Date(deadline).getTime() < currentTime;
     };
@@ -110,8 +129,8 @@ const ReviewerDashboard: React.FC = () => {
         <div className="space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">Reviewer Dashboard</h1>
-                <p className="text-gray-500 mt-1">Manage your review assignments</p>
+                <h1 className="text-2xl font-bold text-gray-900">My Reviews</h1>
+                <p className="text-gray-500 mt-1">Manage and complete your assigned proposal reviews</p>
             </div>
 
             {/* Stats Cards */}
@@ -199,12 +218,22 @@ const ReviewerDashboard: React.FC = () => {
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(assignment.status)}`}>
                                                 {assignment.status_display}
                                             </span>
+                                            {assignment.review_validity_display && (
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getReviewValidityBadge(assignment.review_validity)}`}>
+                                                    {assignment.review_validity_display}
+                                                </span>
+                                            )}
                                             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                                 {assignment.stage_display}
                                             </span>
                                             {isOverdue(assignment.deadline, assignment.status) && (
                                                 <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                                     Overdue
+                                                </span>
+                                            )}
+                                            {assignment.proposal_status_display && (
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getProposalOutcomeBadge(assignment.proposal_status)}`}>
+                                                    {assignment.proposal_status_display}
                                                 </span>
                                             )}
                                         </div>
@@ -220,6 +249,11 @@ const ReviewerDashboard: React.FC = () => {
                                                 )}
                                             </span>
                                         </div>
+                                        {assignment.review_validity === 'REJECTED' && assignment.chair_rejection_reason && (
+                                            <div className="mt-2 text-sm text-red-700">
+                                                Chair reason: {assignment.chair_rejection_reason}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex items-center space-x-2">
                                         {assignment.status === 'COMPLETED' ? (

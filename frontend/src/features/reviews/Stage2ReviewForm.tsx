@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, CheckCircle, XCircle, AlertCircle, Send, Save, Download } from 'lucide-react';
-import { assignmentApi, type ReviewAssignment } from '../../services/api';
+import { assignmentApi, resolveBackendFileUrl, type ReviewAssignment } from '../../services/api';
 
 const Stage2ReviewForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -20,6 +20,7 @@ const Stage2ReviewForm: React.FC = () => {
     // Form state
     const [concernsAddressed, setConcernsAddressed] = useState<'YES' | 'PARTIALLY' | 'NO' | ''>('');
     const [revisedRecommendation, setRevisedRecommendation] = useState<'ACCEPT' | 'REJECT' | ''>('');
+    const [revisedScore, setRevisedScore] = useState('');
     const [technicalComments, setTechnicalComments] = useState('');
     const [budgetComments, setBudgetComments] = useState('');
 
@@ -35,6 +36,11 @@ const Stage2ReviewForm: React.FC = () => {
             if (response.data.stage2_review) {
                 setConcernsAddressed(response.data.stage2_review.concerns_addressed as 'YES' | 'PARTIALLY' | 'NO' | '');
                 setRevisedRecommendation(response.data.stage2_review.revised_recommendation as 'ACCEPT' | 'REJECT' | '');
+                setRevisedScore(
+                    response.data.stage2_review.revised_score != null
+                        ? String(response.data.stage2_review.revised_score)
+                        : ''
+                );
                 setTechnicalComments(response.data.stage2_review.technical_comments || '');
                 setBudgetComments(response.data.stage2_review.budget_comments || '');
             }
@@ -52,7 +58,7 @@ const Stage2ReviewForm: React.FC = () => {
             setError('Requested document is not available.');
             return;
         }
-        window.open(url, '_blank', 'noopener,noreferrer');
+        window.open(resolveBackendFileUrl(url), '_blank', 'noopener,noreferrer');
     };
 
     const averageStage1Score = stage1Reviews.length > 0
@@ -72,6 +78,7 @@ const Stage2ReviewForm: React.FC = () => {
             await assignmentApi.submitStage2Review(Number(id), {
                 concerns_addressed: concernsAddressed,
                 revised_recommendation: revisedRecommendation,
+                revised_score: revisedScore ? Number(revisedScore) : null,
                 technical_comments: technicalComments,
                 budget_comments: budgetComments,
                 is_draft: true,
@@ -97,6 +104,13 @@ const Stage2ReviewForm: React.FC = () => {
             setError('Please provide technical comments');
             return;
         }
+        if (revisedScore) {
+            const parsed = Number(revisedScore);
+            if (Number.isNaN(parsed) || parsed < 0 || parsed > 100) {
+                setError('Revised score must be between 0 and 100');
+                return;
+            }
+        }
 
         if (!window.confirm('Are you sure you want to submit this Stage 2 review? This action cannot be undone.')) {
             return;
@@ -108,6 +122,7 @@ const Stage2ReviewForm: React.FC = () => {
             await assignmentApi.submitStage2Review(Number(id), {
                 concerns_addressed: concernsAddressed,
                 revised_recommendation: revisedRecommendation,
+                revised_score: revisedScore ? Number(revisedScore) : null,
                 technical_comments: technicalComments,
                 budget_comments: budgetComments,
                 is_draft: false,
@@ -306,6 +321,21 @@ const Stage2ReviewForm: React.FC = () => {
 
             {/* Comments */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+                <div>
+                    <label className="block font-medium text-gray-900 mb-2">
+                        Revised Score
+                        <span className="ml-1 text-sm font-normal text-gray-400">(optional, 0-100)</span>
+                    </label>
+                    <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={revisedScore}
+                        onChange={(e) => setRevisedScore(e.target.value)}
+                        placeholder="Enter an optional revised score"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                </div>
                 <div>
                     <label className="block font-medium text-gray-900 mb-2">
                         Technical Comments <span className="text-red-500">*</span>

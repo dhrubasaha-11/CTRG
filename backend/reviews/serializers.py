@@ -152,6 +152,13 @@ class Stage2ReviewSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['assignment', 'submitted_at']
 
+    def validate_revised_score(self, value):
+        if value is None:
+            return value
+        if value < 0 or value > 100:
+            raise serializers.ValidationError("Revised score must be between 0 and 100.")
+        return value
+
 
 # =============================================================================
 # Review Assignment (ties a reviewer to a proposal for a given stage)
@@ -169,17 +176,23 @@ class ReviewAssignmentSerializer(serializers.ModelSerializer):
     # Flattened proposal/reviewer fields avoid requiring extra API calls
     proposal_title = serializers.CharField(source='proposal.title', read_only=True)
     proposal_code = serializers.CharField(source='proposal.proposal_code', read_only=True)
+    proposal_status = serializers.CharField(source='proposal.status', read_only=True)
+    proposal_status_display = serializers.CharField(source='proposal.get_status_display', read_only=True)
     reviewer_name = serializers.SerializerMethodField()
     reviewer_email = serializers.EmailField(source='reviewer.email', read_only=True)
     stage_display = serializers.CharField(source='get_stage_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    review_validity_display = serializers.CharField(source='get_review_validity_display', read_only=True)
 
     class Meta:
         model = ReviewAssignment
         fields = [
             'id', 'proposal', 'proposal_title', 'proposal_code',
+            'proposal_status', 'proposal_status_display',
             'reviewer', 'reviewer_name', 'reviewer_email',
             'stage', 'stage_display', 'status', 'status_display',
+            'review_validity', 'review_validity_display',
+            'chair_rejection_reason', 'chair_rejected_at',
             'deadline', 'assigned_date', 'notification_sent',
             'stage1_score', 'stage2_review',
             'created_at', 'updated_at'
@@ -255,3 +268,15 @@ class EmailReviewersSerializer(serializers.Serializer):
     reviewer_ids = serializers.ListField(child=serializers.IntegerField(), min_length=1)
     subject = serializers.CharField(required=False, default='', max_length=255)
     message = serializers.CharField(required=False, default='')
+
+
+class ReviewValidityUpdateSerializer(serializers.Serializer):
+    review_validity = serializers.ChoiceField(choices=ReviewAssignment.ReviewValidity.choices)
+    chair_rejection_reason = serializers.CharField(required=False, allow_blank=True, default='')
+
+    def validate(self, attrs):
+        if attrs['review_validity'] == ReviewAssignment.ReviewValidity.REJECTED and not attrs.get('chair_rejection_reason', '').strip():
+            raise serializers.ValidationError({
+                'chair_rejection_reason': 'Reason is required when rejecting a reviewer review.'
+            })
+        return attrs

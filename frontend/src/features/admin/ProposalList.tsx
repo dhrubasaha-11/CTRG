@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Download, Eye, Plus, UserPlus, CheckSquare, FileText, Mail, Clock } from 'lucide-react';
+import { Search, Filter, Download, Eye, Plus, UserPlus, CheckSquare, FileText, Mail, Clock, Send } from 'lucide-react';
 import { proposalApi, assignmentApi, type Proposal, cycleApi, type GrantCycle } from '../../services/api';
 import ReviewerAssignmentModal from './ReviewerAssignmentModal';
 import Stage1DecisionModal from './Stage1DecisionModal';
@@ -96,11 +96,30 @@ const ProposalList: React.FC = () => {
         }
     };
 
+    const handleDownloadReportDocx = async (proposal: Proposal) => {
+        try {
+            const response = await proposalApi.downloadReportDocx(proposal.id);
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `review_report_${proposal.proposal_code}.docx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch {
+            alert('Failed to download DOCX report. Please try again.');
+        }
+    };
+
     const getAvailableActions = (proposal: Proposal) => {
         const actions = [];
 
-        // Assign reviewers for submitted proposals
-        if (['SUBMITTED'].includes(proposal.status)) {
+        if (proposal.status === 'DRAFT') {
+            actions.push({ key: 'submit', label: 'Submit Proposal', icon: Send, color: 'text-emerald-600' });
+        }
+
+        // Allow adding Stage 1 reviewers while the proposal is still in the Stage 1 workflow.
+        if (['SUBMITTED', 'UNDER_STAGE_1_REVIEW'].includes(proposal.status)) {
             actions.push({ key: 'assign', label: 'Assign Reviewers', icon: UserPlus, color: 'text-blue-600' });
         }
 
@@ -126,7 +145,8 @@ const ProposalList: React.FC = () => {
 
         // Always show view and report
         actions.push({ key: 'view', label: 'View Details', icon: Eye, color: 'text-gray-600' });
-        actions.push({ key: 'report', label: 'Download Report', icon: Download, color: 'text-gray-600' });
+        actions.push({ key: 'report', label: 'Download PDF', icon: Download, color: 'text-gray-600' });
+        actions.push({ key: 'report_docx', label: 'Download DOCX', icon: Download, color: 'text-gray-800' });
 
         return actions;
     };
@@ -181,9 +201,26 @@ const ProposalList: React.FC = () => {
             case 'report':
                 handleDownloadReport(proposal);
                 break;
-            case 'view':
-                // Navigate to detail view
+            case 'report_docx':
+                handleDownloadReportDocx(proposal);
                 break;
+            case 'submit':
+                handleSubmitDraft(proposal);
+                break;
+        }
+    };
+
+    const handleSubmitDraft = async (proposal: Proposal) => {
+        if (!window.confirm(`Submit ${proposal.proposal_code}? You will not be able to edit it after submission.`)) {
+            return;
+        }
+
+        try {
+            await proposalApi.submit(proposal.id);
+            await loadData();
+            alert('Proposal submitted successfully.');
+        } catch (err: any) {
+            alert(err.response?.data?.error || 'Failed to submit proposal.');
         }
     };
 
@@ -307,15 +344,26 @@ const ProposalList: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right">
                                         <div className="flex justify-end space-x-1">
-                                            {getAvailableActions(proposal).slice(0, 3).map((action) => (
-                                                <button
-                                                    key={action.key}
-                                                    onClick={() => handleAction(action.key, proposal)}
-                                                    className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${action.color}`}
-                                                    title={action.label}
-                                                >
-                                                    <action.icon size={16} />
-                                                </button>
+                                            {getAvailableActions(proposal).map((action) => (
+                                                action.key === 'view' ? (
+                                                    <Link
+                                                        key={action.key}
+                                                        to={`/admin/proposals/${proposal.id}`}
+                                                        className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${action.color}`}
+                                                        title={action.label}
+                                                    >
+                                                        <action.icon size={16} />
+                                                    </Link>
+                                                ) : (
+                                                    <button
+                                                        key={action.key}
+                                                        onClick={() => handleAction(action.key, proposal)}
+                                                        className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${action.color}`}
+                                                        title={action.label}
+                                                    >
+                                                        <action.icon size={16} />
+                                                    </button>
+                                                )
                                             ))}
                                         </div>
                                     </td>

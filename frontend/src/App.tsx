@@ -15,6 +15,7 @@ const ProposalForm = lazy(() => import('./features/proposals/ProposalForm'));
 const RevisionForm = lazy(() => import('./features/proposals/RevisionForm'));
 
 // Reviewer Features
+const ReviewerHome = lazy(() => import('./features/reviews/ReviewerHome'));
 const ReviewerDashboard = lazy(() => import('./features/reviews/ReviewerDashboard'));
 const Stage1ReviewForm = lazy(() => import('./features/reviews/Stage1ReviewForm'));
 const Stage2ReviewForm = lazy(() => import('./features/reviews/Stage2ReviewForm'));
@@ -93,7 +94,7 @@ function App() {
 
             {/* Reviewer Routes - Lazy loaded */}
             <Route element={<ProtectedRoute allowedRoles={['Reviewer']} />}>
-              <Route path="/reviewer/dashboard" element={<Suspense fallback={<LoadingFallback />}><ReviewerDashboard /></Suspense>} />
+              <Route path="/reviewer/dashboard" element={<Suspense fallback={<LoadingFallback />}><ReviewerHome /></Suspense>} />
               <Route path="/reviewer/reviews" element={<Suspense fallback={<LoadingFallback />}><ReviewerDashboard /></Suspense>} />
               <Route path="/reviewer/reviews/:id" element={<Suspense fallback={<LoadingFallback />}><Stage1ReviewForm /></Suspense>} />
               <Route path="/reviewer/reviews/:id/stage2" element={<Suspense fallback={<LoadingFallback />}><Stage2ReviewForm /></Suspense>} />
@@ -105,7 +106,7 @@ function App() {
               <Route path="/admin/dashboard" element={<Suspense fallback={<LoadingFallback />}><SRCChairDashboard /></Suspense>} />
               <Route path="/admin/proposals" element={<Suspense fallback={<LoadingFallback />}><ProposalList /></Suspense>} />
               <Route path="/admin/proposals/new" element={<Suspense fallback={<LoadingFallback />}><ProposalForm /></Suspense>} />
-              <Route path="/admin/proposals/:id" element={<Suspense fallback={<LoadingFallback />}><ProposalList /></Suspense>} />
+              <Route path="/admin/proposals/:id" element={<Suspense fallback={<LoadingFallback />}><ProposalForm /></Suspense>} />
               <Route path="/admin/cycles" element={<Suspense fallback={<LoadingFallback />}><GrantCycleManagement /></Suspense>} />
               <Route path="/admin/reviewers" element={<Suspense fallback={<LoadingFallback />}><ReviewerManagement /></Suspense>} />
               <Route path="/admin/pending-reviewers" element={<Suspense fallback={<LoadingFallback />}><PendingReviewers /></Suspense>} />

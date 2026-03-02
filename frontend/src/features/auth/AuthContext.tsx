@@ -24,14 +24,16 @@ interface AuthContextType {
     logout: () => void;
     /** Derived from token presence — true when a valid token exists in state */
     isAuthenticated: boolean;
+    isAuthReady: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<any>(null);
-    const [role, setRole] = useState<string | null>(null);
-    const [token, setToken] = useState<string | null>(null);
+    const [user, setUser] = useState<any>(() => authService.getUser());
+    const [role, setRole] = useState<string | null>(() => authService.getRole());
+    const [token, setToken] = useState<string | null>(() => authService.getToken());
+    const [isAuthReady, setIsAuthReady] = useState(false);
 
     // Rehydrate auth state from localStorage on initial mount.
     // This runs once — if the stored token has expired, API calls will fail
@@ -41,7 +43,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const hydrateAuthState = async () => {
             const storedToken = authService.getToken();
-            if (!storedToken) return;
+            if (!storedToken) {
+                if (isMounted) {
+                    setIsAuthReady(true);
+                }
+                return;
+            }
 
             try {
                 const validation = await authService.validateToken(storedToken);
@@ -57,12 +64,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     localStorage.removeItem('role');
                 }
                 localStorage.setItem('user', JSON.stringify(validation.user));
-            } catch {
+            } catch (error: any) {
                 if (!isMounted) return;
-                authService.clearAuthData();
-                setToken(null);
-                setRole(null);
-                setUser(null);
+                const status = error?.response?.status;
+
+                // Only clear auth on definite auth failure. Preserve local
+                // session on transient network/backend startup errors.
+                if (status === 401 || status === 403) {
+                    authService.clearAuthData();
+                    setToken(null);
+                    setRole(null);
+                    setUser(null);
+                }
+            } finally {
+                if (isMounted) {
+                    setIsAuthReady(true);
+                }
             }
         };
 
@@ -101,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, role, token, login, logout, isAuthenticated: !!token }}>
+        <AuthContext.Provider value={{ user, role, token, login, logout, isAuthenticated: !!token, isAuthReady }}>
             {children}
         </AuthContext.Provider>
     );

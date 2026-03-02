@@ -241,9 +241,9 @@ const ReviewerManagement: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-500">Available</p>
+                            <p className="text-sm font-medium text-gray-500">Pending Reviews</p>
                             <p className="text-2xl font-bold text-blue-600 mt-1">
-                                {reviewers.filter(r => r.can_accept_more).length}
+                                {reviewers.reduce((sum, reviewer) => sum + (reviewer.pending || 0), 0)}
                             </p>
                         </div>
                         <div className="p-3 bg-blue-100 rounded-lg">
@@ -254,9 +254,9 @@ const ReviewerManagement: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-500">At Capacity</p>
+                            <p className="text-sm font-medium text-gray-500">Completed Reviews</p>
                             <p className="text-2xl font-bold text-yellow-600 mt-1">
-                                {reviewers.filter(r => r.is_active_reviewer && !r.can_accept_more).length}
+                                {reviewers.reduce((sum, reviewer) => sum + (reviewer.completed || 0), 0)}
                             </p>
                         </div>
                         <div className="p-3 bg-yellow-100 rounded-lg">
@@ -323,6 +323,9 @@ const ReviewerManagement: React.FC = () => {
                                     Status
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Counts
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Workload
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -382,6 +385,11 @@ const ReviewerManagement: React.FC = () => {
                                                 <><XCircle size={12} className="mr-1" /> Inactive</>
                                             )}
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        <div>Total: <span className="font-medium text-gray-900">{reviewer.total || 0}</span></div>
+                                        <div>Pending: <span className="font-medium text-blue-700">{reviewer.pending || 0}</span></div>
+                                        <div>Completed: <span className="font-medium text-green-700">{reviewer.completed || 0}</span></div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="w-32">
@@ -671,6 +679,20 @@ const ReviewerManagement: React.FC = () => {
                                     <span className="text-sm font-medium text-gray-700">
                                         {selectedReviewer.current_workload} / {selectedReviewer.max_review_load}
                                     </span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500">Total Assignments</h3>
+                                    <p className="mt-1 text-gray-900 font-semibold">{selectedReviewer.total || 0}</p>
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500">Pending Reviews</h3>
+                                    <p className="mt-1 text-blue-700 font-semibold">{selectedReviewer.pending || 0}</p>
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500">Completed Reviews</h3>
+                                    <p className="mt-1 text-green-700 font-semibold">{selectedReviewer.completed || 0}</p>
                                 </div>
                             </div>
                         </div>
