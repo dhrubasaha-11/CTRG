@@ -12,6 +12,7 @@ import DashboardLayout from './components/DashboardLayout';
 // PI Features
 const PIDashboard = lazy(() => import('./features/proposals/PIDashboard'));
 const ProposalForm = lazy(() => import('./features/proposals/ProposalForm'));
+const ProposalDetailView = lazy(() => import('./features/proposals/ProposalDetailView'));
 const RevisionForm = lazy(() => import('./features/proposals/RevisionForm'));
 
 // Reviewer Features
@@ -27,6 +28,11 @@ const ReviewerManagement = lazy(() => import('./features/admin/ReviewerManagemen
 const PendingReviewers = lazy(() => import('./features/admin/PendingReviewers'));
 const ProposalList = lazy(() => import('./features/admin/ProposalList'));
 const ReportsPage = lazy(() => import('./features/admin/ReportsPage'));
+const AuditLogViewer = lazy(() => import('./features/admin/AuditLogViewer'));
+
+// Shared Features
+const ChangePassword = lazy(() => import('./features/auth/ChangePassword'));
+const ProfilePage = lazy(() => import('./features/auth/ProfilePage'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -89,7 +95,10 @@ function App() {
               <Route path="/pi/dashboard" element={<Suspense fallback={<LoadingFallback />}><PIDashboard /></Suspense>} />
               <Route path="/pi/submit" element={<Suspense fallback={<LoadingFallback />}><ProposalForm /></Suspense>} />
               <Route path="/pi/proposals/:id" element={<Suspense fallback={<LoadingFallback />}><ProposalForm /></Suspense>} />
+              <Route path="/pi/proposals/:id/view" element={<Suspense fallback={<LoadingFallback />}><ProposalDetailView /></Suspense>} />
               <Route path="/pi/proposals/:id/revise" element={<Suspense fallback={<LoadingFallback />}><RevisionForm /></Suspense>} />
+              <Route path="/pi/profile" element={<Suspense fallback={<LoadingFallback />}><ProfilePage /></Suspense>} />
+              <Route path="/pi/change-password" element={<Suspense fallback={<LoadingFallback />}><ChangePassword /></Suspense>} />
             </Route>
 
             {/* Reviewer Routes - Lazy loaded */}
@@ -99,6 +108,8 @@ function App() {
               <Route path="/reviewer/reviews/:id" element={<Suspense fallback={<LoadingFallback />}><Stage1ReviewForm /></Suspense>} />
               <Route path="/reviewer/reviews/:id/stage2" element={<Suspense fallback={<LoadingFallback />}><Stage2ReviewForm /></Suspense>} />
               <Route path="/reviewer/reviews/:id/view" element={<Suspense fallback={<LoadingFallback />}><Stage1ReviewForm /></Suspense>} />
+              <Route path="/reviewer/profile" element={<Suspense fallback={<LoadingFallback />}><ProfilePage /></Suspense>} />
+              <Route path="/reviewer/change-password" element={<Suspense fallback={<LoadingFallback />}><ChangePassword /></Suspense>} />
             </Route>
 
             {/* SRC Chair (Admin) Routes - Lazy loaded */}
@@ -111,6 +122,9 @@ function App() {
               <Route path="/admin/reviewers" element={<Suspense fallback={<LoadingFallback />}><ReviewerManagement /></Suspense>} />
               <Route path="/admin/pending-reviewers" element={<Suspense fallback={<LoadingFallback />}><PendingReviewers /></Suspense>} />
               <Route path="/admin/reports" element={<Suspense fallback={<LoadingFallback />}><ReportsPage /></Suspense>} />
+              <Route path="/admin/audit-logs" element={<Suspense fallback={<LoadingFallback />}><AuditLogViewer /></Suspense>} />
+              <Route path="/admin/profile" element={<Suspense fallback={<LoadingFallback />}><ProfilePage /></Suspense>} />
+              <Route path="/admin/change-password" element={<Suspense fallback={<LoadingFallback />}><ChangePassword /></Suspense>} />
             </Route>
           </Route>
 

@@ -6,7 +6,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, CheckCircle, XCircle, AlertCircle, Send, Save, Download } from 'lucide-react';
-import { assignmentApi, resolveBackendFileUrl, type ReviewAssignment } from '../../services/api';
+import { assignmentApi, proposalApi, type ReviewAssignment } from '../../services/api';
+
+interface Stage1Summary {
+    originality_score: number;
+    clarity_score: number;
+    literature_review_score: number;
+    methodology_score: number;
+    impact_score: number;
+    publication_potential_score: number;
+    budget_appropriateness_score: number;
+    timeline_practicality_score: number;
+    total_score: number;
+    narrative_comments: string;
+}
 
 const Stage2ReviewForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -70,6 +83,23 @@ const Stage2ReviewForm: React.FC = () => {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    const handleDownloadFile = async (fileType: string) => {
+        if (!assignment) return;
+        try {
+            const response = await proposalApi.downloadFile(assignment.proposal, fileType);
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${fileType}_${assignment.proposal_code}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            alert('File not available for download.');
+        }
+    };
 
     const handleSaveDraft = async () => {
         try {
@@ -223,30 +253,46 @@ const Stage2ReviewForm: React.FC = () => {
                 </div>
             )}
 
-            {/* Documents */}
-            <div className="bg-gradient-to-r from-teal-600 to-emerald-600 rounded-xl p-6 text-white">
+            {/* Side-by-Side Document Comparison */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center mb-4">
-                    <FileText size={24} className="mr-3" />
-                    <h2 className="text-lg font-semibold">Revised Documents</h2>
+                    <FileText size={24} className="mr-3 text-teal-600" />
+                    <h2 className="text-lg font-semibold text-gray-900">Documents for Comparison</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button
-                        type="button"
-                        onClick={() => handleOpenDocument(assignment?.revised_proposal_file || assignment?.proposal_file)}
-                        className="flex items-center px-4 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                    >
-                        <Download size={20} className="mr-2" />
-                        Revised Proposal
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handleOpenDocument(assignment?.response_to_reviewers_file)}
-                        className="flex items-center px-4 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                    >
-                        <Download size={20} className="mr-2" />
-                        Response to Reviewers
-                    </button>
+                    <div className="border border-blue-200 bg-blue-50 rounded-lg p-4">
+                        <h3 className="text-sm font-semibold text-blue-800 mb-3">Original Submission</h3>
+                        <button
+                            onClick={() => handleDownloadFile('proposal')}
+                            className="w-full flex items-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        >
+                            <Download size={18} className="mr-2" />
+                            Download Original Proposal
+                        </button>
+                    </div>
+                    <div className="border border-purple-200 bg-purple-50 rounded-lg p-4">
+                        <h3 className="text-sm font-semibold text-purple-800 mb-3">Revised Submission</h3>
+                        <div className="space-y-2">
+                            <button
+                                onClick={() => handleDownloadFile('revised_proposal')}
+                                className="w-full flex items-center px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                            >
+                                <Download size={18} className="mr-2" />
+                                Download Revised Proposal
+                            </button>
+                            <button
+                                onClick={() => handleDownloadFile('response_to_reviewers')}
+                                className="w-full flex items-center px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+                            >
+                                <Download size={18} className="mr-2" />
+                                Response to Reviewers
+                            </button>
+                        </div>
+                    </div>
                 </div>
+                <p className="text-xs text-gray-500 mt-3">
+                    Download both versions to compare the original and revised proposals side by side.
+                </p>
             </div>
 
             {/* Concerns Addressed */}

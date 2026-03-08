@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import {
     GraduationCap,
     Shield,
-    ClipboardCheck,
     BarChart3,
     Users,
     Mail,
@@ -13,23 +12,14 @@ import {
     EyeOff
 } from 'lucide-react';
 
-type Role = 'src_chair' | 'reviewer' | 'pi';
-
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [selectedRole, setSelectedRole] = useState<Role>('src_chair');
-    const [rememberMe, setRememberMe] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
-
-    const roleOptions = [
-        { value: 'src_chair' as Role, label: 'SRC Chair', icon: Shield },
-        { value: 'reviewer' as Role, label: 'Reviewer', icon: ClipboardCheck },
-    ];
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -61,11 +51,11 @@ const Login: React.FC = () => {
                 }
             }
         } catch (error: any) {
-            const message = error?.message ||
-                                error.response?.data?.non_field_errors?.[0] ||
-                                error.response?.data?.password?.[0] ||
-                                error.response?.data?.email?.[0] ||
-                                error.response?.data?.detail ||
+            const message = error?.response?.data?.non_field_errors?.[0] ||
+                                error?.response?.data?.password?.[0] ||
+                                error?.response?.data?.email?.[0] ||
+                                error?.response?.data?.detail ||
+                                error?.message ||
                                 'Login failed. Please check your credentials.';
             setErrorMessage(message);
         } finally {
@@ -161,35 +151,6 @@ const Login: React.FC = () => {
                                         {errorMessage}
                                     </div>
                                 )}
-                                <div>
-                                    <label className="mb-3 block text-sm font-semibold text-[#384867]">Select your role</label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {roleOptions.map((role) => {
-                                            const Icon = role.icon;
-                                            const isSelected = selectedRole === role.value;
-
-                                            return (
-                                                <button
-                                                    key={role.value}
-                                                    type="button"
-                                                    onClick={() => setSelectedRole(role.value)}
-                                                    className={`group rounded-xl border px-3 py-3 text-left transition-all duration-200 ${
-                                                        isSelected
-                                                            ? 'border-[#d4a017] bg-[linear-gradient(145deg,rgba(212,160,23,0.16)_0%,rgba(212,160,23,0.06)_100%)] shadow-[0_12px_24px_rgba(212,160,23,0.24)]'
-                                                            : 'border-[#d6ddea] bg-white hover:border-[#a9b6cf] hover:bg-[#f7f9fd]'
-                                                    }`}
-                                                >
-                                                    <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-[#1e2a4a]/10 text-[#1e2a4a] group-hover:bg-[#1e2a4a]/12">
-                                                        <Icon size={16} className={isSelected ? 'text-[#9d7103]' : 'text-[#3d4d70]'} />
-                                                    </div>
-                                                    <p className={`text-sm font-semibold ${isSelected ? 'text-[#5b4000]' : 'text-[#2e3e62]'}`}>
-                                                        {role.label}
-                                                    </p>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
 
                                 <div>
                                     <label className="mb-2 block text-sm font-semibold text-[#384867]">Email</label>
@@ -228,16 +189,7 @@ const Login: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between text-sm">
-                                    <label className="flex cursor-pointer items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={rememberMe}
-                                            onChange={(e) => setRememberMe(e.target.checked)}
-                                            className="h-4 w-4 rounded border-[#c4cfdf] text-[#d4a017] focus:ring-[#d4a017]"
-                                        />
-                                        <span className="text-[#425274]">Remember me</span>
-                                    </label>
+                                <div className="flex items-center justify-end text-sm">
                                     <span className="text-sm text-[#425274]">
                                         Forgot password? Contact your administrator.
                                     </span>

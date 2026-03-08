@@ -12,6 +12,16 @@ from .models import Proposal, Stage1Decision, FinalDecision, AuditLog
 logger = logging.getLogger(__name__)
 
 
+def get_client_ip(request):
+    """Extract client IP address from a Django request object."""
+    if request is None:
+        return None
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
+
 class ProposalService:
     """Manages proposal lifecycle and status transitions."""
     
@@ -276,16 +286,30 @@ class ProposalService:
     
     @staticmethod
     def check_revision_deadline(proposal):
-        """Check and update status if revision deadline passed."""
+        """Check and auto-reject proposal if revision deadline passed."""
         if proposal.status == Proposal.Status.REVISION_REQUESTED:
             if proposal.revision_deadline and timezone.now() > proposal.revision_deadline:
                 proposal.status = Proposal.Status.REVISION_DEADLINE_MISSED
+                proposal.is_locked = True
                 proposal.save()
-                
+
+                # Auto-reject: create a final decision record
+                FinalDecision.objects.get_or_create(
+                    proposal=proposal,
+                    defaults={
+                        'decision': FinalDecision.Decision.REJECTED,
+                        'approved_grant_amount': 0,
+                        'final_remarks': 'Auto-rejected: revision deadline missed.',
+                    }
+                )
+
                 AuditLog.objects.create(
                     action_type='REVISION_DEADLINE_MISSED',
                     proposal=proposal,
-                    details={'deadline': str(proposal.revision_deadline)}
+                    details={
+                        'deadline': str(proposal.revision_deadline),
+                        'auto_rejected': True,
+                    }
                 )
                 return True
         return False
@@ -386,7 +410,13 @@ class ReviewerService:
                 'deadline': str(deadline)
             }
         )
-        
+
+        # Auto-notify reviewer via email
+        try:
+            EmailService.send_reviewer_assignment_email(assignment)
+        except Exception:
+            logger.warning("Failed to auto-notify reviewer %s for assignment %s", reviewer.email, assignment.id)
+
         return assignment
 
     @staticmethod

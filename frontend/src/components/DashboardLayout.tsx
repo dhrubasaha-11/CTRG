@@ -19,6 +19,9 @@ import {
     UserCheck,
     Sparkles,
     X,
+    Shield,
+    Key,
+    User,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -31,20 +34,26 @@ interface NavItem {
 const piNavItems: NavItem[] = [
     { to: '/pi/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/pi/submit', icon: Plus, label: 'New Proposal' },
+    { to: '/pi/profile', icon: User, label: 'Profile' },
+    { to: '/pi/change-password', icon: Key, label: 'Change Password' },
 ];
 
 const reviewerNavItems: NavItem[] = [
     { to: '/reviewer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/reviewer/reviews', icon: CheckSquare, label: 'My Reviews' },
+    { to: '/reviewer/profile', icon: User, label: 'Profile' },
+    { to: '/reviewer/change-password', icon: Key, label: 'Change Password' },
 ];
 
 const adminNavItems: NavItem[] = [
     { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Overview' },
-    { to: '/admin/proposals', icon: FileText, label: 'Proposals' },
     { to: '/admin/cycles', icon: Calendar, label: 'Grant Cycles' },
+    { to: '/admin/proposals', icon: FileText, label: 'Proposals' },
     { to: '/admin/reviewers', icon: Users, label: 'Reviewers' },
     { to: '/admin/pending-reviewers', icon: UserCheck, label: 'Pending Reviewers' },
     { to: '/admin/reports', icon: BarChart3, label: 'Reports' },
+    { to: '/admin/audit-logs', icon: Shield, label: 'Audit Logs' },
+    { to: '/admin/change-password', icon: Key, label: 'Change Password' },
 ];
 
 const getPageTitle = (role: string | null, pathname: string): string => {
@@ -54,6 +63,9 @@ const getPageTitle = (role: string | null, pathname: string): string => {
         if (pathname.startsWith('/admin/reviewers')) return 'Reviewers';
         if (pathname.startsWith('/admin/pending-reviewers')) return 'Pending Reviewers';
         if (pathname.startsWith('/admin/reports')) return 'Reports';
+        if (pathname.startsWith('/admin/audit-logs')) return 'Audit Logs';
+        if (pathname.startsWith('/admin/change-password')) return 'Change Password';
+        if (pathname.startsWith('/admin/profile')) return 'Profile';
         return 'Overview';
     }
 
@@ -66,7 +78,10 @@ const getPageTitle = (role: string | null, pathname: string): string => {
 
     if (role === 'PI') {
         if (pathname.startsWith('/pi/proposals/') && pathname.endsWith('/revise')) return 'Revision Submission';
+        if (pathname.startsWith('/pi/proposals/') && pathname.endsWith('/view')) return 'Proposal Details';
         if (pathname.startsWith('/pi/proposals/') || pathname.startsWith('/pi/submit')) return 'Proposal Form';
+        if (pathname.startsWith('/pi/change-password')) return 'Change Password';
+        if (pathname.startsWith('/pi/profile')) return 'Profile';
         return 'My Proposals';
     }
 

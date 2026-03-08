@@ -20,11 +20,10 @@ import {
     Calendar, Download, ChevronRight, RefreshCw,
     BarChart3
 } from 'lucide-react';
-import { cycleApi, dashboardApi, proposalApi, type GrantCycle, type Proposal } from '../../services/api';
+import { dashboardApi, proposalApi, cycleApi, type Proposal, type GrantCycle } from '../../services/api';
 import { ActivityTimeline } from '../../components/dashboard/ActivityTimeline';
 import { CycleProgress } from '../../components/dashboard/CycleProgress';
 import { StatusChart } from '../../components/dashboard/StatusChart';
-import { mockActivities } from '../../data/mockData';
 
 /** Matches the backend DashboardStatsSerializer shape. */
 interface DashboardStats {
@@ -36,60 +35,41 @@ interface DashboardStats {
     status_breakdown: Record<string, number>;
 }
 
+interface Activity {
+    id: number;
+    type: 'submission' | 'review' | 'decision' | 'revision';
+    description: string;
+    timestamp: string;
+    user?: string;
+}
+
 const SRCChairDashboard: React.FC = () => {
     const [stats, setStats] = useState<DashboardStats | null>(null);
-    // Only the 5 most recent proposals are shown on the dashboard
     const [recentProposals, setRecentProposals] = useState<Proposal[]>([]);
+    const [activities, setActivities] = useState<Activity[]>([]);
     const [activeCycle, setActiveCycle] = useState<GrantCycle | null>(null);
     const [loading, setLoading] = useState(true);
-    // Separate from loading — tracks manual refresh so the spinner doesn't block the whole page
     const [refreshing, setRefreshing] = useState(false);
-    // Formatted date string for the welcome banner
-    const [currentDate, setCurrentDate] = useState(() =>
-        new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric'
-        })
-    );
 
     useEffect(() => {
         loadDashboard();
     }, []);
 
-    useEffect(() => {
-        // Refresh date periodically so it rolls over automatically at midnight.
-        const intervalId = window.setInterval(() => {
-            setCurrentDate(
-                new Date().toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
-                })
-            );
-        }, 60 * 1000);
-
-        return () => window.clearInterval(intervalId);
-    }, []);
-
-    /** Fetch dashboard stats and recent proposals in parallel.
-     *  On failure, falls back to empty/zero values so the UI still renders. */
     const loadDashboard = async () => {
         try {
             setLoading(true);
-            // Parallel fetch — stats and proposals are independent
-            const [statsRes, proposalsRes, activeCyclesRes] = await Promise.all([
+            const [statsRes, proposalsRes, activitiesRes, cyclesRes] = await Promise.all([
                 dashboardApi.getSrcChairStats(),
                 proposalApi.getAll(),
-                cycleApi.getActive(),
+                dashboardApi.getRecentActivities().catch(() => ({ data: [] })),
+                cycleApi.getActive().catch(() => ({ data: [] })),
             ]);
             setStats(statsRes.data);
-            setRecentProposals(proposalsRes.data.slice(0, 5));
-            setActiveCycle(activeCyclesRes.data[0] || null);
+            setRecentProposals(Array.isArray(proposalsRes.data) ? proposalsRes.data.slice(0, 5) : []);
+            setActivities(Array.isArray(activitiesRes.data) ? activitiesRes.data : []);
+            const cycles = Array.isArray(cyclesRes.data) ? cyclesRes.data : [];
+            setActiveCycle(cycles.length > 0 ? cycles[0] : null);
         } catch {
-            // Graceful degradation — show zeroed dashboard rather than error screen
             setStats({
                 total_proposals: 0,
                 pending_reviews: 0,
@@ -98,7 +78,7 @@ const SRCChairDashboard: React.FC = () => {
                 status_breakdown: {}
             });
             setRecentProposals([]);
-            setActiveCycle(null);
+            setActivities([]);
         } finally {
             setLoading(false);
         }
@@ -210,12 +190,12 @@ const SRCChairDashboard: React.FC = () => {
                     <div className="flex justify-between items-start">
                         <div>
                             <h1 className="text-3xl font-bold">Welcome back, SRC Chair</h1>
-                            <p className="text-blue-200 mt-2">{currentDate}</p>
+                            <p className="text-blue-200 mt-2">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
                                 <span className="text-sm font-medium">
-                                    Active Cycle: {activeCycle?.name || 'No active cycle'}
+                                    {activeCycle ? `Active Cycle: ${activeCycle.name}` : 'No Active Cycle'}
                                 </span>
                             </div>
                             <button
@@ -229,7 +209,7 @@ const SRCChairDashboard: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-red-300/30 bg-red-500/20 px-4 py-2 backdrop-blur-sm">
+                    <div className="mt-4 flex items-center gap-2 bg-yellow-500/20 backdrop-blur-sm px-4 py-2 rounded-lg inline-flex">
                         <AlertTriangle size={18} />
                         <span className="text-sm font-medium">{stats?.awaiting_decision || 0} proposals need your attention</span>
                     </div>
@@ -291,7 +271,7 @@ const SRCChairDashboard: React.FC = () => {
                     </div>
 
                     <h3 className="text-sm font-semibold text-gray-700 mb-3 mt-6 pt-6 border-t border-gray-200">Recent Activity</h3>
-                    <ActivityTimeline activities={mockActivities.slice(0, 4)} />
+                    <ActivityTimeline activities={activities.slice(0, 4)} />
                 </div>
             </div>
 
@@ -299,16 +279,9 @@ const SRCChairDashboard: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-gray-900">Recent Proposals</h2>
-                    <div className="flex items-center gap-3">
-                        <input
-                            type="text"
-                            placeholder="Search proposals..."
-                            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <Link to="/admin/proposals" className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center">
-                            View All <ChevronRight size={16} />
-                        </Link>
-                    </div>
+                    <Link to="/admin/proposals" className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center">
+                        View All <ChevronRight size={16} />
+                    </Link>
                 </div>
                 <div className="space-y-3">
                     {recentProposals.map((proposal) => (
@@ -339,19 +312,24 @@ const SRCChairDashboard: React.FC = () => {
             </div>
 
             {/* Cycle Progress Footer */}
-            <CycleProgress
-                currentStage={currentStage}
-                stage1Complete={stage1Total > 0 ? Math.round((stage1Completed / stage1Total) * 100) : 0}
-                stage2Complete={stage2Total > 0 ? Math.round((stage2Completed / stage2Total) * 100) : 0}
-                stage1Date={formatDateRange(activeCycle?.stage1_review_start_date, activeCycle?.stage1_review_end_date)}
-                revisionDate={`${activeCycle?.revision_window_days || 7} day window`}
-                stage2Date={formatDateRange(activeCycle?.stage2_review_start_date, activeCycle?.stage2_review_end_date)}
-                stats={{
-                    stage1Proposals: stats?.status_breakdown?.UNDER_STAGE_1_REVIEW || 0,
-                    revisionProposals: (stats?.status_breakdown?.REVISION_REQUESTED || 0) + (stats?.status_breakdown?.TENTATIVELY_ACCEPTED || 0),
-                    stage2Proposals: stats?.status_breakdown?.UNDER_STAGE_2_REVIEW || 0,
-                }}
-            />
+            {activeCycle && (
+                <CycleProgress
+                    currentStage={
+                        (stats?.status_breakdown?.UNDER_STAGE_2_REVIEW || 0) > 0 ? 'stage2' :
+                        (stats?.awaiting_revision || 0) > 0 ? 'revision' : 'stage1'
+                    }
+                    stage1Complete={stats?.total_proposals ? Math.round(((stats.status_breakdown?.STAGE_1_REJECTED || 0) + (stats.status_breakdown?.ACCEPTED_NO_CORRECTIONS || 0) + (stats.status_breakdown?.TENTATIVELY_ACCEPTED || 0) + (stats.status_breakdown?.FINAL_ACCEPTED || 0) + (stats.status_breakdown?.FINAL_REJECTED || 0)) / stats.total_proposals * 100) : 0}
+                    stage2Complete={stats?.total_proposals ? Math.round(((stats.status_breakdown?.FINAL_ACCEPTED || 0) + (stats.status_breakdown?.FINAL_REJECTED || 0)) / stats.total_proposals * 100) : 0}
+                    stage1Date={activeCycle.stage1_review_start_date && activeCycle.stage1_review_end_date ? `${activeCycle.stage1_review_start_date} - ${activeCycle.stage1_review_end_date}` : 'Not set'}
+                    revisionDate={activeCycle.revision_window_days ? `${activeCycle.revision_window_days} day window` : 'Not set'}
+                    stage2Date={activeCycle.stage2_review_start_date && activeCycle.stage2_review_end_date ? `${activeCycle.stage2_review_start_date} - ${activeCycle.stage2_review_end_date}` : 'Not set'}
+                    stats={{
+                        stage1Proposals: stats?.pending_reviews || 0,
+                        revisionProposals: stats?.awaiting_revision || 0,
+                        stage2Proposals: stats?.status_breakdown?.UNDER_STAGE_2_REVIEW || 0,
+                    }}
+                />
+            )}
         </div>
     );
 };

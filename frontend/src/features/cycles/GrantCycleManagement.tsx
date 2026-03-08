@@ -6,6 +6,39 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Calendar, Users, CheckCircle } from 'lucide-react';
 import { cycleApi, type GrantCycle } from '../../services/api';
 
+interface ScoreWeights {
+    originality_score: number;
+    clarity_score: number;
+    literature_review_score: number;
+    methodology_score: number;
+    impact_score: number;
+    publication_potential_score: number;
+    budget_appropriateness_score: number;
+    timeline_practicality_score: number;
+}
+
+const DEFAULT_WEIGHTS: ScoreWeights = {
+    originality_score: 15,
+    clarity_score: 15,
+    literature_review_score: 15,
+    methodology_score: 15,
+    impact_score: 15,
+    publication_potential_score: 10,
+    budget_appropriateness_score: 10,
+    timeline_practicality_score: 5,
+};
+
+const WEIGHT_LABELS: Record<string, string> = {
+    originality_score: 'Originality',
+    clarity_score: 'Clarity',
+    literature_review_score: 'Literature Review',
+    methodology_score: 'Methodology',
+    impact_score: 'Impact',
+    publication_potential_score: 'Publication Potential',
+    budget_appropriateness_score: 'Budget Appropriateness',
+    timeline_practicality_score: 'Timeline Practicality',
+};
+
 interface CycleFormData {
     name: string;
     year: string;
@@ -18,6 +51,7 @@ interface CycleFormData {
     revision_window_days: number;
     acceptance_threshold: number;
     max_reviewers_per_proposal: number;
+    score_weights: ScoreWeights;
     is_active: boolean;
 }
 
@@ -33,6 +67,7 @@ const initialFormData: CycleFormData = {
     revision_window_days: 7,
     acceptance_threshold: 70,
     max_reviewers_per_proposal: 2,
+    score_weights: { ...DEFAULT_WEIGHTS },
     is_active: true,
 };
 
@@ -71,6 +106,7 @@ const GrantCycleManagement: React.FC = () => {
                 stage1_review_end_date: formData.stage1_review_end_date || null,
                 stage2_review_start_date: formData.stage2_review_start_date || null,
                 stage2_review_end_date: formData.stage2_review_end_date || null,
+                score_weights: formData.score_weights,
             } as unknown as Record<string, unknown>;
 
             if (editingId) {
@@ -104,6 +140,9 @@ const GrantCycleManagement: React.FC = () => {
             revision_window_days: cycle.revision_window_days || 7,
             acceptance_threshold: cycle.acceptance_threshold || 70,
             max_reviewers_per_proposal: cycle.max_reviewers_per_proposal || 2,
+            score_weights: (cycle.score_weights && Object.keys(cycle.score_weights).length > 0)
+                ? { ...DEFAULT_WEIGHTS, ...cycle.score_weights } as ScoreWeights
+                : { ...DEFAULT_WEIGHTS },
             is_active: cycle.is_active,
         });
         setEditingId(cycle.id);
@@ -286,6 +325,33 @@ const GrantCycleManagement: React.FC = () => {
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         />
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Score Weights */}
+                            <div className="border-t pt-4">
+                                <h3 className="text-sm font-semibold text-gray-700 mb-1">Score Weights</h3>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    Customize max scores per criteria. Default total: 100.
+                                    Current total: {Object.values(formData.score_weights).reduce((s, v) => s + v, 0)}
+                                </p>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {(Object.keys(DEFAULT_WEIGHTS) as (keyof ScoreWeights)[]).map(key => (
+                                        <div key={key}>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">{WEIGHT_LABELS[key]}</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="50"
+                                                value={formData.score_weights[key]}
+                                                onChange={(e) => setFormData({
+                                                    ...formData,
+                                                    score_weights: { ...formData.score_weights, [key]: parseInt(e.target.value) || 0 }
+                                                })}
+                                                className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 

@@ -50,5 +50,6 @@ urlpatterns = [
     path('api/', include('reviews.urls')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve media files in both development and production.
+# In a high-traffic production setup, consider serving via nginx or cloud storage instead.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

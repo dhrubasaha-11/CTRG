@@ -16,7 +16,7 @@ from .serializers import (
     FinalDecisionSerializer, FinalDecisionCreateSerializer,
     AuditLogSerializer, DashboardStatsSerializer
 )
-from .services import ProposalService, EmailService
+from .services import ProposalService, EmailService, get_client_ip
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -172,19 +172,23 @@ class ProposalViewSet(viewsets.ModelViewSet):
         proposal = self.get_object()
         try:
             ProposalService.submit_proposal(proposal)
+            # Log IP for audit trail
+            AuditLog.objects.filter(
+                proposal=proposal, action_type='PROPOSAL_SUBMITTED'
+            ).order_by('-timestamp').update(ip_address=get_client_ip(request))
             return Response({'status': 'Proposal submitted successfully.'})
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=True, methods=['post'])
     def submit_revision(self, request, pk=None):
         """Submit a revised proposal."""
         proposal = self.get_object()
         serializer = RevisionSubmitSerializer(data=request.data)
-        
+
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             ProposalService.submit_revision(
                 proposal,
@@ -192,19 +196,22 @@ class ProposalViewSet(viewsets.ModelViewSet):
                 response_file=serializer.validated_data.get('response_to_reviewers_file'),
                 user=request.user
             )
+            AuditLog.objects.filter(
+                proposal=proposal, action_type='REVISION_SUBMITTED'
+            ).order_by('-timestamp').update(ip_address=get_client_ip(request))
             return Response({'status': 'Revision submitted successfully.'})
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def stage1_decision(self, request, pk=None):
         """Apply Stage 1 decision (SRC Chair only)."""
         proposal = self.get_object()
         serializer = Stage1DecisionCreateSerializer(data=request.data)
-        
+
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             decision = ProposalService.apply_stage1_decision(
                 proposal,
@@ -212,29 +219,35 @@ class ProposalViewSet(viewsets.ModelViewSet):
                 chair_comments=serializer.validated_data.get('chair_comments', ''),
                 user=request.user
             )
+            AuditLog.objects.filter(
+                proposal=proposal, action_type='STAGE1_DECISION_MADE'
+            ).order_by('-timestamp').update(ip_address=get_client_ip(request))
             return Response(Stage1DecisionSerializer(decision).data)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def start_stage2(self, request, pk=None):
         """Transition proposal to Stage 2 review (SRC Chair only)."""
         proposal = self.get_object()
         try:
             ProposalService.start_stage2_review(proposal, user=request.user)
+            AuditLog.objects.filter(
+                proposal=proposal, action_type='STAGE2_REVIEW_STARTED'
+            ).order_by('-timestamp').update(ip_address=get_client_ip(request))
             return Response({'status': 'Stage 2 review started.'})
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def final_decision(self, request, pk=None):
         """Apply final decision (SRC Chair only)."""
         proposal = self.get_object()
         serializer = FinalDecisionCreateSerializer(data=request.data)
-        
+
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             decision = ProposalService.apply_final_decision(
                 proposal,
@@ -243,6 +256,9 @@ class ProposalViewSet(viewsets.ModelViewSet):
                 final_remarks=serializer.validated_data['final_remarks'],
                 user=request.user
             )
+            AuditLog.objects.filter(
+                proposal=proposal, action_type='FINAL_DECISION_MADE'
+            ).order_by('-timestamp').update(ip_address=get_client_ip(request))
             # Send notification email
             EmailService.send_final_decision_email(proposal)
             return Response(FinalDecisionSerializer(decision).data)
@@ -265,29 +281,53 @@ class ProposalViewSet(viewsets.ModelViewSet):
         """Download combined review report as PDF."""
         from .reporting import generate_combined_review_pdf
         from django.http import HttpResponse
-        
+
         proposal = self.get_object()
         pdf_buffer = generate_combined_review_pdf(proposal)
-        
+
         response = HttpResponse(pdf_buffer, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="review_report_{proposal.proposal_code}.pdf"'
         return response
 
     @action(detail=True, methods=['get'])
-    def download_report_docx(self, request, pk=None):
-        """Download combined review report as DOCX."""
-        from .reporting import generate_combined_review_docx
+    def download_review_template(self, request, pk=None):
+        """Download a reviewer scoring template PDF for a proposal."""
+        from .reporting import generate_review_template_pdf
         from django.http import HttpResponse
 
         proposal = self.get_object()
-        docx_buffer = generate_combined_review_docx(proposal)
+        pdf_buffer = generate_review_template_pdf(proposal)
 
-        response = HttpResponse(
-            docx_buffer,
-            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        )
-        response['Content-Disposition'] = f'attachment; filename="review_report_{proposal.proposal_code}.docx"'
+        response = HttpResponse(pdf_buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="review_template_{proposal.proposal_code}.pdf"'
         return response
+
+    @action(detail=True, methods=['get'], url_path='download_file/(?P<file_type>[a-z_]+)')
+    def download_file(self, request, pk=None, file_type=None):
+        """Download a specific file from a proposal. PI can download their own files."""
+        from django.http import FileResponse
+
+        proposal = self.get_object()
+
+        file_map = {
+            'proposal': proposal.proposal_file,
+            'application_template': proposal.application_template_file,
+            'revised_proposal': proposal.revised_proposal_file,
+            'response_to_reviewers': proposal.response_to_reviewers_file,
+        }
+
+        file_field = file_map.get(file_type)
+        if not file_field:
+            return Response({'error': 'Invalid file type'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            return FileResponse(
+                file_field.open('rb'),
+                as_attachment=True,
+                filename=file_field.name.rsplit('/', 1)[-1]
+            )
+        except (FileNotFoundError, ValueError):
+            return Response({'error': 'File not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class DashboardViewSet(viewsets.ViewSet):
@@ -406,6 +446,34 @@ class DashboardViewSet(viewsets.ViewSet):
         }
         
         return Response(data)
+
+    @action(detail=False, methods=['get'])
+    def recent_activities(self, request):
+        """Get recent audit log entries for the SRC Chair dashboard."""
+        if not request.user.is_staff:
+            return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+
+        logs = AuditLog.objects.select_related('user', 'proposal').order_by('-timestamp')[:10]
+        activities = []
+        for log in logs:
+            action_type_map = {
+                'PROPOSAL_SUBMITTED': 'submission',
+                'REVISION_SUBMITTED': 'revision',
+                'STAGE1_DECISION_MADE': 'decision',
+                'FINAL_DECISION_MADE': 'decision',
+                'REVIEWER_ASSIGNED': 'review',
+                'STAGE2_REVIEW_STARTED': 'review',
+                'REVISION_DEADLINE_MISSED': 'decision',
+            }
+            activities.append({
+                'id': log.id,
+                'type': action_type_map.get(log.action_type, 'submission'),
+                'description': f"{log.action_type.replace('_', ' ').title()}"
+                               + (f" - {log.proposal.proposal_code}" if log.proposal else ''),
+                'timestamp': log.timestamp.isoformat(),
+                'user': log.user.get_full_name() if log.user else None,
+            })
+        return Response(activities)
 
 
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):

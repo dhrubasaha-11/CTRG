@@ -31,6 +31,7 @@ class GrantCycleSerializer(serializers.ModelSerializer):
             'stage1_review_start_date', 'stage1_review_end_date',
             'stage2_review_start_date', 'stage2_review_end_date',
             'revision_window_days', 'acceptance_threshold', 'max_reviewers_per_proposal',
+            'score_weights',
             'is_active', 'proposal_count', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']

@@ -21,10 +21,15 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.throttling import AnonRateThrottle
 from django.contrib.auth import get_user_model
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils.crypto import get_random_string
+
+
+class LoginRateThrottle(AnonRateThrottle):
+    rate = '5/minute'
 
 from .serializers import (
     UserSerializer,
@@ -47,6 +52,8 @@ def _get_primary_role(user):
     """Return user's primary role from group membership."""
     if user.groups.exists():
         return user.groups.first().name
+    if user.is_staff:
+        return 'SRC_Chair'
     return None
 
 
@@ -118,6 +125,7 @@ class LoginView(ObtainAuthToken):
 
     serializer_class = LoginSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [LoginRateThrottle]
 
     def post(self, request, *args, **kwargs):
         """
@@ -421,7 +429,20 @@ class ImportReviewersFromExcelView(APIView):
                     'username': user.username,
                 }
                 if 'password' not in index_map or not _cell('password'):
-                    created_row['temporary_password'] = password
+                    created_row['has_temporary_password'] = True
+                    # Send temp password via email instead of returning in response
+                    try:
+                        from django.core.mail import send_mail
+                        from django.conf import settings
+                        send_mail(
+                            subject='CTRG Grant System - Your Account Credentials',
+                            message=f"Dear {first_name},\n\nYour reviewer account has been created.\n\nUsername: {username}\nEmail: {email}\nTemporary Password: {password}\n\nPlease change your password after logging in.\n\nBest regards,\nCTRG Grant Review System",
+                            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@nsu.edu'),
+                            recipient_list=[email],
+                            fail_silently=True,
+                        )
+                    except Exception:
+                        pass
                 created.append(created_row)
             else:
                 errors.append({
@@ -593,6 +614,20 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
     queryset = User.objects.all()
     lookup_field = 'pk'
+
+    def destroy(self, request, *args, **kwargs):
+        user = self.get_object()
+        from reviews.models import ReviewAssignment
+        active_assignments = ReviewAssignment.objects.filter(reviewer=user).exists()
+        if active_assignments:
+            # Soft delete: deactivate instead of deleting
+            user.is_active = False
+            user.save(update_fields=['is_active'])
+            return Response(
+                {'message': 'User has review assignments. Account has been deactivated instead of deleted.'},
+                status=status.HTTP_200_OK
+            )
+        return super().destroy(request, *args, **kwargs)
 
 
 class ReviewerPublicRegistrationView(generics.CreateAPIView):

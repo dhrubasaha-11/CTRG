@@ -33,11 +33,12 @@ interface CriteriaConfig {
 type Stage1Recommendation = 'ACCEPT' | 'TENTATIVELY_ACCEPT' | 'REJECT' | '';
 
 /**
- * Scoring criteria definitions — single source of truth for the review form.
+ * Default scoring criteria definitions — single source of truth for the review form.
  * The order here determines the display order in the UI.
- * maxScore values must match the backend Stage1ScoreSerializer validation limits.
+ * maxScore values match the backend Stage1ScoreSerializer validation limits by default,
+ * but can be overridden by cycle-specific score_weights.
  */
-const CRITERIA: CriteriaConfig[] = [
+const DEFAULT_CRITERIA: CriteriaConfig[] = [
     { key: 'originality_score', label: 'Originality', description: 'Innovation and novelty of the research idea', maxScore: 15 },
     { key: 'clarity_score', label: 'Clarity', description: 'Clear presentation of objectives and methodology', maxScore: 15 },
     { key: 'literature_review_score', label: 'Literature Review', description: 'Comprehensive review of relevant literature', maxScore: 15 },
@@ -48,10 +49,20 @@ const CRITERIA: CriteriaConfig[] = [
     { key: 'timeline_practicality_score', label: 'Timeline Practicality', description: 'Realistic and achievable project timeline', maxScore: 5 },
 ];
 
+/** Build criteria with cycle-specific weight overrides if available. */
+const buildCriteria = (scoreWeights?: Record<string, number>): CriteriaConfig[] => {
+    if (!scoreWeights || Object.keys(scoreWeights).length === 0) return DEFAULT_CRITERIA;
+    return DEFAULT_CRITERIA.map(c => ({
+        ...c,
+        maxScore: scoreWeights[c.key] ?? c.maxScore,
+    }));
+};
+
 const Stage1ReviewForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [assignment, setAssignment] = useState<ReviewAssignment | null>(null);
+    const [criteria, setCriteria] = useState<CriteriaConfig[]>(DEFAULT_CRITERIA);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -70,19 +81,15 @@ const Stage1ReviewForm: React.FC = () => {
     const [recommendation, setRecommendation] = useState<Stage1Recommendation>('');
     const [detailedRecommendation, setDetailedRecommendation] = useState('');
 
-    const handleOpenDocument = (url?: string) => {
-        if (!url) {
-            setError('Proposal document is not available.');
-            return;
-        }
-        window.open(resolveBackendFileUrl(url), '_blank', 'noopener,noreferrer');
-    };
-
     const loadAssignment = useCallback(async () => {
         try {
             setLoading(true);
             const response = await assignmentApi.getProposalDetails(Number(id));
             setAssignment(response.data);
+
+            // Apply cycle-specific score weights if available
+            const weights = (response.data as any).score_weights;
+            setCriteria(buildCriteria(weights));
 
             // Load existing score if any
             if (response.data.stage1_score) {
@@ -116,7 +123,8 @@ const Stage1ReviewForm: React.FC = () => {
 
     // Derived values — recalculated on every render (cheap since it's just 8 additions)
     const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
-    const percentageScore = Math.round((totalScore / 100) * 100);
+    const maxTotal = criteria.reduce((sum, c) => sum + c.maxScore, 0);
+    const percentageScore = maxTotal > 0 ? Math.round((totalScore / maxTotal) * 100) : 0;
 
     /** Clamp the score to [0, maxScore] to prevent out-of-range values from manual input. */
     const handleScoreChange = (key: string, value: number, maxScore: number) => {
@@ -259,7 +267,7 @@ const Stage1ReviewForm: React.FC = () => {
                 <h2 className="text-lg font-semibold text-gray-900 mb-6">Evaluation Criteria</h2>
 
                 <div className="space-y-6">
-                    {CRITERIA.map((criterion) => (
+                    {criteria.map((criterion) => (
                         <div key={criterion.key} className="border-b border-gray-100 pb-6 last:border-0">
                             <div className="flex justify-between items-start mb-2">
                                 <div>
@@ -311,7 +319,7 @@ const Stage1ReviewForm: React.FC = () => {
                         <p className="text-sm opacity-75">Sum of all criteria scores</p>
                     </div>
                     <div className="text-right">
-                        <div className="text-4xl font-bold">{totalScore}<span className="text-2xl opacity-75">/100</span></div>
+                        <div className="text-4xl font-bold">{totalScore}<span className="text-2xl opacity-75">/{maxTotal}</span></div>
                         <div className="text-lg opacity-90">{percentageScore}%</div>
                     </div>
                 </div>

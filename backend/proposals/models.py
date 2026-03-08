@@ -25,7 +25,17 @@ class GrantCycle(models.Model):
     revision_window_days = models.IntegerField(default=7, help_text="Number of days for revision after tentative acceptance")
     acceptance_threshold = models.DecimalField(max_digits=5, decimal_places=2, default=70.0, help_text="Minimum percentage score for acceptance")
     max_reviewers_per_proposal = models.IntegerField(default=2, help_text="Maximum number of reviewers (1-4)")
-    
+
+    # Customizable score weights per cycle (JSON field).
+    # Keys match Stage1Score field names. Values are max scores.
+    # Default weights: originality=15, clarity=15, literature_review=15, methodology=15,
+    # impact=15, publication_potential=10, budget_appropriateness=10, timeline_practicality=5 (total=100)
+    score_weights = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Custom score weights per criteria. Leave empty for defaults."
+    )
+
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)

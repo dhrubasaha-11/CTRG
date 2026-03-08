@@ -4,11 +4,12 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Download, Eye, Plus, UserPlus, CheckSquare, FileText, Mail, Clock, Send } from 'lucide-react';
+import { Search, Filter, Download, Eye, Plus, UserPlus, CheckSquare, FileText, Mail, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { proposalApi, assignmentApi, type Proposal, cycleApi, type GrantCycle } from '../../services/api';
 import ReviewerAssignmentModal from './ReviewerAssignmentModal';
 import Stage1DecisionModal from './Stage1DecisionModal';
 import FinalDecisionModal from './FinalDecisionModal';
+import CombinedReviewView from './CombinedReviewView';
 
 const STATUS_COLORS: Record<string, string> = {
     DRAFT: 'bg-gray-100 text-gray-800',
@@ -45,11 +46,14 @@ const ProposalList: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [cycleFilter, setCycleFilter] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 15;
 
     // Modal states
     const [assignModalProposal, setAssignModalProposal] = useState<Proposal | null>(null);
     const [stage1DecisionProposal, setStage1DecisionProposal] = useState<Proposal | null>(null);
     const [finalDecisionProposal, setFinalDecisionProposal] = useState<Proposal | null>(null);
+    const [reviewViewProposal, setReviewViewProposal] = useState<Proposal | null>(null);
 
     useEffect(() => {
         loadData();
@@ -81,6 +85,12 @@ const ProposalList: React.FC = () => {
         return matchesSearch && matchesStatus && matchesCycle;
     });
 
+    const totalPages = Math.ceil(filteredProposals.length / pageSize);
+    const paginatedProposals = filteredProposals.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+    // Reset page when filters change
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, cycleFilter]);
+
     const handleDownloadReport = async (proposal: Proposal) => {
         try {
             const response = await proposalApi.downloadReport(proposal.id);
@@ -93,21 +103,6 @@ const ProposalList: React.FC = () => {
             link.remove();
         } catch {
             alert('Failed to download report. Please try again.');
-        }
-    };
-
-    const handleDownloadReportDocx = async (proposal: Proposal) => {
-        try {
-            const response = await proposalApi.downloadReportDocx(proposal.id);
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `review_report_${proposal.proposal_code}.docx`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-        } catch {
-            alert('Failed to download DOCX report. Please try again.');
         }
     };
 
@@ -201,26 +196,9 @@ const ProposalList: React.FC = () => {
             case 'report':
                 handleDownloadReport(proposal);
                 break;
-            case 'report_docx':
-                handleDownloadReportDocx(proposal);
+            case 'view':
+                setReviewViewProposal(proposal);
                 break;
-            case 'submit':
-                handleSubmitDraft(proposal);
-                break;
-        }
-    };
-
-    const handleSubmitDraft = async (proposal: Proposal) => {
-        if (!window.confirm(`Submit ${proposal.proposal_code}? You will not be able to edit it after submission.`)) {
-            return;
-        }
-
-        try {
-            await proposalApi.submit(proposal.id);
-            await loadData();
-            alert('Proposal submitted successfully.');
-        } catch (err: any) {
-            alert(err.response?.data?.error || 'Failed to submit proposal.');
         }
     };
 
@@ -309,7 +287,7 @@ const ProposalList: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredProposals.map((proposal) => (
+                            {paginatedProposals.map((proposal) => (
                                 <tr key={proposal.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4">
                                         <div>
@@ -374,6 +352,47 @@ const ProposalList: React.FC = () => {
                 </div>
             )}
 
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex justify-between items-center">
+                    <p className="text-sm text-gray-600">
+                        Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredProposals.length)} of {filteredProposals.length}
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="flex items-center px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        >
+                            <ChevronLeft size={14} className="mr-1" /> Prev
+                        </button>
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum: number;
+                            if (totalPages <= 5) pageNum = i + 1;
+                            else if (currentPage <= 3) pageNum = i + 1;
+                            else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                            else pageNum = currentPage - 2 + i;
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`px-3 py-1.5 rounded-lg text-sm ${currentPage === pageNum ? 'bg-blue-600 text-white' : 'border border-gray-300 hover:bg-gray-50'}`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="flex items-center px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        >
+                            Next <ChevronRight size={14} className="ml-1" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Modals */}
             {assignModalProposal && (
                 <ReviewerAssignmentModal
@@ -394,6 +413,12 @@ const ProposalList: React.FC = () => {
                     proposal={finalDecisionProposal}
                     onClose={() => setFinalDecisionProposal(null)}
                     onSuccess={() => { setFinalDecisionProposal(null); loadData(); }}
+                />
+            )}
+            {reviewViewProposal && (
+                <CombinedReviewView
+                    proposal={reviewViewProposal}
+                    onClose={() => setReviewViewProposal(null)}
                 />
             )}
         </div>

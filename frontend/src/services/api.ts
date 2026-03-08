@@ -218,6 +218,7 @@ export interface GrantCycle {
     revision_window_days?: number;
     acceptance_threshold?: number;
     max_reviewers_per_proposal?: number;
+    score_weights?: Record<string, number>;
     is_active: boolean;
     proposal_count?: number;
 }
@@ -378,7 +379,8 @@ export const proposalApi = {
         api.post(`/proposals/${id}/final_decision/`, { decision, approved_grant_amount, final_remarks }),
     getReviews: (id: number) => api.get<ReviewAssignment[]>(`/proposals/${id}/reviews/`),
     downloadReport: (id: number) => api.get(`/proposals/${id}/download_report/`, { responseType: 'blob' }),
-    downloadReportDocx: (id: number) => api.get(`/proposals/${id}/download_report_docx/`, { responseType: 'blob' }),
+    downloadReviewTemplate: (id: number) => api.get(`/proposals/${id}/download_review_template/`, { responseType: 'blob' }),
+    downloadFile: (id: number, fileType: string) => api.get(`/proposals/${id}/download_file/${fileType}/`, { responseType: 'blob' }),
 };
 
 // ===== Dashboard APIs =====
@@ -386,6 +388,7 @@ export const dashboardApi = {
     getSrcChairStats: () => api.get<DashboardStats>('/dashboard/src_chair/'),
     getReviewerStats: () => api.get('/dashboard/reviewer/'),
     getPIStats: () => api.get('/dashboard/pi/'),
+    getRecentActivities: () => api.get('/dashboard/recent_activities/'),
 };
 
 // ===== Reviewer APIs =====
@@ -430,26 +433,30 @@ export const assignmentApi = {
     submitScore: (id: number, data: Record<string, unknown>) =>
         api.post(`/assignments/${id}/submit_score/`, data),
     submitStage2Review: (id: number, data: Record<string, unknown>) =>
-        api.post(`/assignments/${id}/submit_score/`, data),
+        api.post(`/assignments/${id}/submit_score/`, data),  // Backend handles both stages via same endpoint
     getProposalDetails: (id: number) => api.get<ReviewAssignment>(`/assignments/${id}/proposal_details/`),
 };
 
-// ===== Audit Log APIs =====
-export const auditApi = {
-    getAll: (params?: { proposal?: number; action_type?: string }) =>
-        api.get('/audit-logs/', { params }),
+// ===== Auth APIs =====
+export const authApi = {
+    changePassword: (old_password: string, new_password: string) =>
+        api.post('/auth/change-password/', { old_password, new_password }),
 };
 
-export const resolveBackendFileUrl = (url?: string | null) => {
-    if (!url) {
-        return '';
-    }
+// ===== Audit Log APIs =====
+export interface AuditLogEntry {
+    id: number;
+    user: string | null;
+    action_type: string;
+    proposal: number | null;
+    timestamp: string;
+    details: Record<string, unknown>;
+    ip_address: string | null;
+}
 
-    try {
-        return new URL(url, API_ORIGIN).toString();
-    } catch {
-        return url;
-    }
+export const auditApi = {
+    getAll: (params?: { proposal?: number; action_type?: string; page?: number }) =>
+        api.get<AuditLogEntry[]>('/audit-logs/', { params }),
 };
 
 export default api;

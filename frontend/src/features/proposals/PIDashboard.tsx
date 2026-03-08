@@ -2,7 +2,7 @@
  * Enhanced PI Dashboard Component.
  * Shows PI's proposals with status tracking, actions, and notifications.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
     FileText, Plus, Clock, CheckCircle, AlertTriangle, XCircle,
@@ -24,10 +24,19 @@ const PIDashboard: React.FC = () => {
     const [stats, setStats] = useState<PIStats>({ total: 0, drafts: 0, under_review: 0, pending_action: 0, completed: 0 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [, setTick] = useState(0);
 
     useEffect(() => {
         loadProposals();
     }, []);
+
+    // Live countdown timer - updates every minute
+    useEffect(() => {
+        const hasDeadlines = proposals.some(p => p.revision_deadline && ['REVISION_REQUESTED', 'TENTATIVELY_ACCEPTED'].includes(p.status));
+        if (!hasDeadlines) return;
+        const interval = setInterval(() => setTick(t => t + 1), 60000);
+        return () => clearInterval(interval);
+    }, [proposals]);
 
     const loadProposals = async () => {
         try {
@@ -75,6 +84,19 @@ const PIDashboard: React.FC = () => {
         return styles[status] || { bg: 'bg-gray-100', text: 'text-gray-700', icon: null };
     };
 
+    const getCountdown = useCallback((deadline: string) => {
+        const now = new Date();
+        const dl = new Date(deadline);
+        const diff = dl.getTime() - now.getTime();
+        if (diff <= 0) return { text: 'Deadline passed', urgent: true };
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        if (days > 2) return { text: `${days}d ${hours}h remaining`, urgent: false };
+        if (days > 0) return { text: `${days}d ${hours}h remaining`, urgent: true };
+        return { text: `${hours}h ${minutes}m remaining`, urgent: true };
+    }, []);
+
     const needsAction = (status: string) => {
         return ['REVISION_REQUESTED', 'TENTATIVELY_ACCEPTED', 'DRAFT'].includes(status);
     };
@@ -105,7 +127,7 @@ const PIDashboard: React.FC = () => {
             default:
                 return (
                     <Link
-                        to={`/pi/proposals/${proposal.id}`}
+                        to={`/pi/proposals/${proposal.id}/view`}
                         className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
                     >
                         <Eye size={16} className="mr-2" />
@@ -200,20 +222,23 @@ const PIDashboard: React.FC = () => {
                 <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
                     <h2 className="font-semibold text-orange-800 mb-2">⚠️ Action Required</h2>
                     <div className="space-y-2">
-                        {proposals.filter(p => needsAction(p.status)).map(p => (
-                            <div key={p.id} className="flex items-center justify-between bg-white rounded-lg p-3">
-                                <div>
-                                    <span className="font-medium text-gray-900">{p.title}</span>
-                                    {p.revision_deadline && (
-                                        <span className="ml-2 text-sm text-orange-600">
-                                            <Calendar size={14} className="inline mr-1" />
-                                            Deadline: {new Date(p.revision_deadline).toLocaleDateString()}
-                                        </span>
-                                    )}
+                        {proposals.filter(p => needsAction(p.status)).map(p => {
+                            const countdown = p.revision_deadline ? getCountdown(p.revision_deadline) : null;
+                            return (
+                                <div key={p.id} className="flex items-center justify-between bg-white rounded-lg p-3">
+                                    <div>
+                                        <span className="font-medium text-gray-900">{p.title}</span>
+                                        {countdown && (
+                                            <span className={`ml-2 text-sm ${countdown.urgent ? 'text-red-600 font-semibold' : 'text-orange-600'}`}>
+                                                <Clock size={14} className="inline mr-1" />
+                                                {countdown.text}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {getActionButton(p)}
                                 </div>
-                                {getActionButton(p)}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             )}
