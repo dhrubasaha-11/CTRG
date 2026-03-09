@@ -35,7 +35,7 @@ const RevisionForm: React.FC = () => {
 
             setProposal(proposalResponse.data);
             setStage1Reviews(
-                reviewsResponse.data.filter(
+                (reviewsResponse.data.assignments || []).filter(
                     (review) => review.stage === 1 && review.status === 'COMPLETED' && review.stage1_score
                 )
             );

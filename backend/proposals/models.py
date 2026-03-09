@@ -49,6 +49,62 @@ class GrantCycle(models.Model):
         return f"{self.name} ({self.year})"
 
 
+class ResearchArea(models.Model):
+    """Top-level research category used for proposal categorization."""
+    name = models.CharField(max_length=120, unique=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Research Area"
+        verbose_name_plural = "Research Areas"
+
+    def __str__(self):
+        return self.name
+
+
+class Keyword(models.Model):
+    """Canonical keyword used for tagging proposals and reviewer matching."""
+    name = models.CharField(max_length=100, unique=True)
+    normalized_name = models.CharField(max_length=100, unique=True, db_index=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Keyword"
+        verbose_name_plural = "Keywords"
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if self.name:
+            self.name = self.name.strip()
+            self.normalized_name = self.name.lower()
+        super().save(*args, **kwargs)
+
+
+class ResearchAreaKeyword(models.Model):
+    """Weighted mapping used to infer proposal category from entered keywords."""
+    research_area = models.ForeignKey(ResearchArea, on_delete=models.CASCADE, related_name='keyword_mappings')
+    keyword = models.ForeignKey(Keyword, on_delete=models.CASCADE, related_name='research_area_mappings')
+    weight = models.DecimalField(max_digits=5, decimal_places=2, default=1.00)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('research_area', 'keyword')
+        verbose_name = "Research Area Keyword Mapping"
+        verbose_name_plural = "Research Area Keyword Mappings"
+
+    def __str__(self):
+        return f"{self.research_area.name} <- {self.keyword.name} ({self.weight})"
+
+
 class Proposal(models.Model):
     """
     Represents a research grant proposal submitted by a PI.
@@ -101,6 +157,26 @@ class Proposal(models.Model):
     
     # Relationships
     cycle = models.ForeignKey(GrantCycle, on_delete=models.CASCADE, related_name='proposals')
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_proposals',
+        help_text="User who created the proposal record."
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='submitted_proposals',
+        help_text="User who finalized the proposal submission."
+    )
+    primary_research_area = models.ForeignKey(
+        ResearchArea, on_delete=models.SET_NULL, null=True, blank=True, related_name='proposals'
+    )
+    keywords = models.ManyToManyField(Keyword, through='ProposalKeyword', related_name='proposals', blank=True)
     
     # Status tracking
     status = models.CharField(max_length=50, choices=Status.choices, default=Status.DRAFT)
@@ -169,6 +245,21 @@ class Stage1Decision(models.Model):
     
     def __str__(self):
         return f"{self.proposal.proposal_code} - Stage 1: {self.get_decision_display()}"
+
+
+class ProposalKeyword(models.Model):
+    """Join table linking submitted proposals to entered keywords."""
+    proposal = models.ForeignKey(Proposal, on_delete=models.CASCADE, related_name='proposal_keywords')
+    keyword = models.ForeignKey(Keyword, on_delete=models.CASCADE, related_name='proposal_keywords')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('proposal', 'keyword')
+        verbose_name = "Proposal Keyword"
+        verbose_name_plural = "Proposal Keywords"
+
+    def __str__(self):
+        return f"{self.proposal.proposal_code} - {self.keyword.name}"
 
 
 class FinalDecision(models.Model):

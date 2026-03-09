@@ -36,14 +36,19 @@ class Stage1ScoreAdmin(admin.ModelAdmin):
 
 @admin.register(Stage2Review)
 class Stage2ReviewAdmin(admin.ModelAdmin):
-    list_display = ['get_proposal', 'get_reviewer', 'concerns_addressed', 'revised_recommendation', 'is_draft', 'submitted_at']
-    list_filter = ['concerns_addressed', 'revised_recommendation', 'is_draft']
+    list_display = ['get_proposal', 'get_reviewer', 'is_chair_review', 'concerns_addressed', 'revised_recommendation', 'is_draft', 'submitted_at']
+    list_filter = ['is_chair_review', 'concerns_addressed', 'revised_recommendation', 'is_draft']
     readonly_fields = ['submitted_at']
     
     def get_proposal(self, obj):
-        return obj.assignment.proposal.proposal_code
+        proposal = obj.proposal or (obj.assignment.proposal if obj.assignment_id else None)
+        return proposal.proposal_code if proposal else '-'
     get_proposal.short_description = 'Proposal'
     
     def get_reviewer(self, obj):
-        return obj.assignment.reviewer.username
+        if obj.reviewed_by:
+            return obj.reviewed_by.username
+        if obj.assignment_id:
+            return obj.assignment.reviewer.username
+        return '-'
     get_reviewer.short_description = 'Reviewer'

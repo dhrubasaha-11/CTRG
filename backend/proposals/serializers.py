@@ -8,7 +8,13 @@ Provides serializers for the full proposal lifecycle:
 - Audit logs and dashboard statistics
 """
 from rest_framework import serializers
-from .models import GrantCycle, Proposal, Stage1Decision, FinalDecision, AuditLog
+from django.conf import settings
+from decimal import Decimal
+from .models import (
+    GrantCycle, Proposal, Stage1Decision, FinalDecision, AuditLog,
+    ResearchArea, Keyword, ResearchAreaKeyword
+)
+from .services import ProposalService
 
 
 # =============================================================================
@@ -154,6 +160,36 @@ class GrantCycleStatsSerializer(serializers.Serializer):
     revision_deadline_missed = serializers.IntegerField()
 
 
+class ResearchAreaSerializer(serializers.ModelSerializer):
+    """Serializer for research area catalog entries."""
+    class Meta:
+        model = ResearchArea
+        fields = ['id', 'name', 'description', 'is_active', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class KeywordSerializer(serializers.ModelSerializer):
+    """Serializer for keyword catalog entries."""
+    class Meta:
+        model = Keyword
+        fields = ['id', 'name', 'normalized_name', 'is_active', 'created_at', 'updated_at']
+        read_only_fields = ['normalized_name', 'created_at', 'updated_at']
+
+
+class ResearchAreaKeywordSerializer(serializers.ModelSerializer):
+    """Serializer for weighted keyword mappings used by categorization."""
+    research_area_name = serializers.CharField(source='research_area.name', read_only=True)
+    keyword_name = serializers.CharField(source='keyword.name', read_only=True)
+
+    class Meta:
+        model = ResearchAreaKeyword
+        fields = [
+            'id', 'research_area', 'research_area_name',
+            'keyword', 'keyword_name', 'weight', 'created_at'
+        ]
+        read_only_fields = ['created_at']
+
+
 # =============================================================================
 # Proposal Serializers
 # =============================================================================
@@ -167,18 +203,27 @@ class ProposalListSerializer(serializers.ModelSerializer):
     # Flatten the cycle name so the frontend doesn't need a nested lookup
     cycle_name = serializers.CharField(source='cycle.name', read_only=True)
     pi_display_name = serializers.SerializerMethodField()
+    primary_research_area_name = serializers.CharField(source='primary_research_area.name', read_only=True)
+    keywords = serializers.SerializerMethodField()
+    created_by_email = serializers.EmailField(source='created_by.email', read_only=True)
+    submitted_by_email = serializers.EmailField(source='submitted_by.email', read_only=True)
 
     class Meta:
         model = Proposal
         fields = [
             'id', 'proposal_code', 'title', 'pi_name', 'pi_department',
             'pi_display_name', 'cycle', 'cycle_name', 'status',
-            'fund_requested', 'submitted_at', 'revision_deadline'
+            'primary_research_area', 'primary_research_area_name', 'keywords',
+            'fund_requested', 'submitted_at', 'revision_deadline',
+            'created_by', 'created_by_email', 'submitted_by', 'submitted_by_email'
         ]
 
     def get_pi_display_name(self, obj):
         """Fallback to 'Unknown' when pi_name is blank (e.g., legacy data)."""
         return obj.pi_name or 'Unknown'
+
+    def get_keywords(self, obj):
+        return list(obj.keywords.values_list('name', flat=True))
 
 
 class ProposalSerializer(serializers.ModelSerializer):
@@ -192,6 +237,20 @@ class ProposalSerializer(serializers.ModelSerializer):
     cycle_name = serializers.CharField(source='cycle.name', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     is_revision_overdue = serializers.BooleanField(read_only=True)
+    primary_research_area_name = serializers.CharField(source='primary_research_area.name', read_only=True)
+    keywords = serializers.SerializerMethodField(read_only=True)
+    keywords_input = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    created_by_email = serializers.EmailField(source='created_by.email', read_only=True)
+    submitted_by_email = serializers.EmailField(source='submitted_by.email', read_only=True)
+    final_decision = serializers.SerializerMethodField()
+    stage1_decision = serializers.SerializerMethodField()
+    approved_amount = serializers.DecimalField(
+        source='final_decision.approved_grant_amount',
+        read_only=True,
+        max_digits=12,
+        decimal_places=2
+    )
+    final_remarks = serializers.CharField(source='final_decision.final_remarks', read_only=True)
 
     # PI fields are optional — validate() will auto-fill from the logged-in user
     # so the frontend can omit them and still create a valid proposal.
@@ -208,13 +267,18 @@ class ProposalSerializer(serializers.ModelSerializer):
             'proposal_file', 'application_template_file',
             'revised_proposal_file', 'response_to_reviewers_file',
             'cycle', 'cycle_name', 'status', 'status_display',
+            'created_by', 'created_by_email', 'submitted_by', 'submitted_by_email',
+            'primary_research_area', 'primary_research_area_name',
+            'keywords', 'keywords_input',
             'created_at', 'submitted_at', 'updated_at', 'revision_deadline',
-            'is_revision_overdue', 'is_locked'
+            'is_revision_overdue', 'is_locked',
+            'stage1_decision', 'final_decision', 'approved_amount', 'final_remarks'
         ]
         # These fields are managed server-side to prevent client tampering
         read_only_fields = [
             'proposal_code', 'status', 'created_at', 'submitted_at',
-            'updated_at', 'revision_deadline', 'is_locked'
+            'updated_at', 'revision_deadline', 'is_locked',
+            'created_by', 'submitted_by'
         ]
 
     def validate(self, data):
@@ -225,16 +289,76 @@ class ProposalSerializer(serializers.ModelSerializer):
         """
         request = self.context.get('request')
         if request and hasattr(request, 'user'):
-            if not data.get('pi_email'):
+            user = request.user
+            is_staff = getattr(user, 'is_staff', False)
+            if not is_staff and not data.get('pi_email'):
                 data['pi_email'] = request.user.email
-            if not data.get('pi_name'):
+            if not is_staff and not data.get('pi_name'):
                 data['pi_name'] = request.user.get_full_name() or request.user.username
             if not data.get('pi_department'):
                 data['pi_department'] = 'Not Specified'
+
+        for file_field in (
+            'proposal_file',
+            'application_template_file',
+            'revised_proposal_file',
+            'response_to_reviewers_file',
+        ):
+            uploaded_file = data.get(file_field)
+            if uploaded_file and uploaded_file.size > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
+                raise serializers.ValidationError({
+                    file_field: f'File exceeds maximum allowed size of {settings.FILE_UPLOAD_MAX_MEMORY_SIZE // (1024 * 1024)} MB.'
+                })
         return data
 
+    def get_keywords(self, obj):
+        return list(obj.keywords.values_list('name', flat=True))
+
+    def get_stage1_decision(self, obj):
+        if hasattr(obj, 'stage1_decision'):
+            return Stage1DecisionSerializer(obj.stage1_decision).data
+        return None
+
+    def get_final_decision(self, obj):
+        if hasattr(obj, 'final_decision'):
+            return FinalDecisionSerializer(obj.final_decision).data
+        return None
+
+    def _parse_keywords_input(self, value):
+        if not value:
+            return []
+        if isinstance(value, list):
+            raw_tokens = value
+        else:
+            raw_tokens = str(value).split(',')
+
+        cleaned = []
+        seen = set()
+        for token in raw_tokens:
+            normalized = token.strip().lower()
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            cleaned.append(token.strip())
+        return cleaned
+
     def create(self, validated_data):
-        return super().create(validated_data)
+        keyword_names = self._parse_keywords_input(validated_data.pop('keywords_input', ''))
+        request = self.context.get('request')
+        if request and getattr(request, 'user', None) and request.user.is_authenticated:
+            validated_data.setdefault('created_by', request.user)
+        proposal = super().create(validated_data)
+        ProposalService.sync_proposal_keywords_and_category(proposal, keyword_names, user=request.user if request else None)
+        return proposal
+
+    def update(self, instance, validated_data):
+        keyword_names = None
+        if 'keywords_input' in validated_data:
+            keyword_names = self._parse_keywords_input(validated_data.pop('keywords_input', ''))
+        proposal = super().update(instance, validated_data)
+        if keyword_names is not None:
+            ProposalService.sync_proposal_keywords_and_category(proposal, keyword_names, user=self.context.get('request').user if self.context.get('request') else None)
+        return proposal
 
 
 class ProposalSubmitSerializer(serializers.Serializer):
@@ -254,6 +378,21 @@ class RevisionSubmitSerializer(serializers.Serializer):
     """
     revised_proposal_file = serializers.FileField(required=True)
     response_to_reviewers_file = serializers.FileField(required=False)
+
+    def validate_revised_proposal_file(self, value):
+        if value.size > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
+            raise serializers.ValidationError('Revised proposal exceeds the 50 MB upload limit.')
+        return value
+
+    def validate_response_to_reviewers_file(self, value):
+        if value.size > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
+            raise serializers.ValidationError('Response-to-reviewers file exceeds the 50 MB upload limit.')
+        return value
+
+
+class RevisionDeadlineActionSerializer(serializers.Serializer):
+    days = serializers.IntegerField(min_value=1, required=False)
+    reason = serializers.CharField(required=False, allow_blank=True, default='')
 
 
 # =============================================================================
@@ -309,7 +448,7 @@ class FinalDecisionCreateSerializer(serializers.Serializer):
     (may differ from the requested amount) and final remarks.
     """
     decision = serializers.ChoiceField(choices=FinalDecision.Decision.choices)
-    approved_grant_amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0.01)
+    approved_grant_amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('0.01'))
     final_remarks = serializers.CharField()
 
 

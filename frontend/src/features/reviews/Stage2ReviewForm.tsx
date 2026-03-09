@@ -8,19 +8,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, CheckCircle, XCircle, AlertCircle, Send, Save, Download } from 'lucide-react';
 import { assignmentApi, proposalApi, type ReviewAssignment } from '../../services/api';
 
-interface Stage1Summary {
-    originality_score: number;
-    clarity_score: number;
-    literature_review_score: number;
-    methodology_score: number;
-    impact_score: number;
-    publication_potential_score: number;
-    budget_appropriateness_score: number;
-    timeline_practicality_score: number;
-    total_score: number;
-    narrative_comments: string;
-}
-
 const Stage2ReviewForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -65,14 +52,6 @@ const Stage2ReviewForm: React.FC = () => {
             setLoading(false);
         }
     }, [id]);
-
-    const handleOpenDocument = (url?: string) => {
-        if (!url) {
-            setError('Requested document is not available.');
-            return;
-        }
-        window.open(resolveBackendFileUrl(url), '_blank', 'noopener,noreferrer');
-    };
 
     const averageStage1Score = stage1Reviews.length > 0
         ? Math.round(

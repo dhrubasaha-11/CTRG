@@ -226,7 +226,33 @@ class Stage2Review(models.Model):
         ACCEPT = 'ACCEPT', 'Accept'
         REJECT = 'REJECT', 'Reject'
 
-    assignment = models.OneToOneField(ReviewAssignment, on_delete=models.CASCADE, related_name='stage2_review')
+    assignment = models.OneToOneField(
+        ReviewAssignment,
+        on_delete=models.CASCADE,
+        related_name='stage2_review',
+        null=True,
+        blank=True
+    )
+    proposal = models.ForeignKey(
+        Proposal,
+        on_delete=models.CASCADE,
+        related_name='stage2_reviews',
+        null=True,
+        blank=True,
+        help_text="Proposal under Stage 2 review. Required for direct SRC Chair reviews."
+    )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='stage2_reviews_authored',
+        help_text="Reviewer or SRC Chair who authored this Stage 2 review."
+    )
+    is_chair_review = models.BooleanField(
+        default=False,
+        help_text="True when the Stage 2 review is authored directly by the SRC Chair."
+    )
     
     # Stage 2 specific fields
     concerns_addressed = models.CharField(
@@ -262,5 +288,7 @@ class Stage2Review(models.Model):
         verbose_name_plural = "Stage 2 Reviews"
     
     def __str__(self):
-        return f"{self.assignment.proposal.proposal_code} - Stage 2: {self.get_revised_recommendation_display()}"
+        proposal = self.proposal or (self.assignment.proposal if self.assignment_id else None)
+        proposal_code = proposal.proposal_code if proposal else 'Unknown Proposal'
+        return f"{proposal_code} - Stage 2: {self.get_revised_recommendation_display()}"
 

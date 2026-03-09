@@ -140,17 +140,18 @@ class Stage2ReviewSerializer(serializers.ModelSerializer):
     revised_recommendation_display = serializers.CharField(
         source='get_revised_recommendation_display', read_only=True
     )
+    reviewed_by_email = serializers.EmailField(source='reviewed_by.email', read_only=True)
 
     class Meta:
         model = Stage2Review
         fields = [
-            'id', 'assignment',
+            'id', 'assignment', 'proposal', 'reviewed_by', 'reviewed_by_email', 'is_chair_review',
             'concerns_addressed', 'concerns_addressed_display',
             'revised_recommendation', 'revised_recommendation_display',
             'revised_score', 'technical_comments', 'budget_comments',
             'submitted_at', 'is_draft'
         ]
-        read_only_fields = ['assignment', 'submitted_at']
+        read_only_fields = ['assignment', 'proposal', 'reviewed_by', 'reviewed_by_email', 'is_chair_review', 'submitted_at']
 
     def validate_revised_score(self, value):
         if value is None:
@@ -158,6 +159,18 @@ class Stage2ReviewSerializer(serializers.ModelSerializer):
         if value < 0 or value > 100:
             raise serializers.ValidationError("Revised score must be between 0 and 100.")
         return value
+
+    def validate(self, data):
+        is_draft = data.get('is_draft', None)
+        if is_draft is False:
+            required_fields = ['concerns_addressed', 'revised_recommendation', 'technical_comments']
+            missing = {}
+            for field in required_fields:
+                if not data.get(field):
+                    missing[field] = 'This field is required when submitting a final Stage 2 review.'
+            if missing:
+                raise serializers.ValidationError(missing)
+        return data
 
 
 # =============================================================================
@@ -256,6 +269,7 @@ class ReviewerWorkloadSerializer(serializers.Serializer):
     area_of_expertise = serializers.CharField(allow_blank=True)
     current_workload = serializers.IntegerField()
     can_accept_more = serializers.BooleanField()
+    overload_warning = serializers.CharField(allow_blank=True)
     total = serializers.IntegerField()
     pending = serializers.IntegerField()
     completed = serializers.IntegerField()

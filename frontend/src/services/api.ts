@@ -45,6 +45,19 @@ const resolveApiBaseUrl = () => {
 const API_BASE_URL = resolveApiBaseUrl();
 const API_ORIGIN = new URL(API_BASE_URL).origin;
 
+export const resolveBackendFileUrl = (fileUrl?: string | null): string => {
+    if (!fileUrl) return '';
+
+    // Absolute URL (already complete)
+    if (/^https?:\/\//i.test(fileUrl)) {
+        return fileUrl;
+    }
+
+    // Normalize relative media path to backend origin
+    const normalizedPath = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`;
+    return `${API_ORIGIN}${normalizedPath}`;
+};
+
 // Create axios instance with defaults
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -235,6 +248,14 @@ export interface Proposal {
     fund_requested: number;
     cycle: number;
     cycle_name: string;
+    created_by?: number | null;
+    created_by_email?: string | null;
+    submitted_by?: number | null;
+    submitted_by_email?: string | null;
+    primary_research_area?: number | null;
+    primary_research_area_name?: string | null;
+    keywords?: string[];
+    keywords_input?: string;
     status: string;
     status_display: string;
     created_at: string;
@@ -242,7 +263,13 @@ export interface Proposal {
     revision_deadline?: string;
     is_revision_overdue?: boolean;
     proposal_file?: string;
-    approved_amount?: number;
+    application_template_file?: string;
+    revised_proposal_file?: string;
+    response_to_reviewers_file?: string;
+    approved_amount?: number | null;
+    final_remarks?: string | null;
+    stage1_decision?: Record<string, unknown> | null;
+    final_decision?: Record<string, unknown> | null;
 }
 
 export interface Reviewer {
@@ -261,6 +288,7 @@ export interface Reviewer {
     completed?: number;
     stage1_pending?: number;
     stage2_pending?: number;
+    overload_warning?: string;
 }
 
 export interface ReviewAssignment {
@@ -329,11 +357,20 @@ export interface Stage1Score {
 
 export interface Stage2Review {
     id: number;
+    proposal?: number;
+    reviewed_by?: number | null;
+    reviewed_by_email?: string | null;
+    is_chair_review?: boolean;
     concerns_addressed: string;
     revised_recommendation: string;
     technical_comments: string;
     budget_comments: string;
     revised_score?: number;
+}
+
+export interface ProposalReviewsResponse {
+    assignments: ReviewAssignment[];
+    chair_stage2_reviews: Stage2Review[];
 }
 
 export interface DashboardStats {
@@ -359,7 +396,7 @@ export const cycleApi = {
 
 // ===== Proposal APIs =====
 export const proposalApi = {
-    getAll: () => api.get<Proposal[]>('/proposals/'),
+    getAll: (params?: { keyword?: string; research_area?: string | number }) => api.get<Proposal[]>('/proposals/', { params }),
     getById: (id: number) => api.get<Proposal>(`/proposals/${id}/`),
     getMyProposals: () => api.get<Proposal[]>('/proposals/my_proposals/'),
     create: (data: FormData) => api.post<Proposal>('/proposals/', data, {
@@ -375,11 +412,19 @@ export const proposalApi = {
     stage1Decision: (id: number, decision: string, chair_comments?: string) =>
         api.post(`/proposals/${id}/stage1_decision/`, { decision, chair_comments }),
     startStage2: (id: number) => api.post(`/proposals/${id}/start_stage2/`),
+    reopenRevision: (id: number, days?: number, reason?: string) =>
+        api.post<Proposal>(`/proposals/${id}/reopen_revision/`, { days, reason }),
+    markRevisionMissed: (id: number) => api.post<Proposal>(`/proposals/${id}/mark_revision_missed/`),
+    submitChairStage2Review: (id: number, data: Record<string, unknown>) =>
+        api.post<Stage2Review>(`/proposals/${id}/chair_stage2_review/`, data),
     finalDecision: (id: number, decision: string, approved_grant_amount: number, final_remarks: string) =>
         api.post(`/proposals/${id}/final_decision/`, { decision, approved_grant_amount, final_remarks }),
-    getReviews: (id: number) => api.get<ReviewAssignment[]>(`/proposals/${id}/reviews/`),
+    getReviews: (id: number) => api.get<ProposalReviewsResponse>(`/proposals/${id}/reviews/`),
+    getCombinedComments: (id: number) => api.get(`/proposals/${id}/combined_comments/`),
     downloadReport: (id: number) => api.get(`/proposals/${id}/download_report/`, { responseType: 'blob' }),
+    downloadReportDocx: (id: number) => api.get(`/proposals/${id}/download_report_docx/`, { responseType: 'blob' }),
     downloadReviewTemplate: (id: number) => api.get(`/proposals/${id}/download_review_template/`, { responseType: 'blob' }),
+    downloadReviewTemplateDocx: (id: number) => api.get(`/proposals/${id}/download_review_template_docx/`, { responseType: 'blob' }),
     downloadFile: (id: number, fileType: string) => api.get(`/proposals/${id}/download_file/${fileType}/`, { responseType: 'blob' }),
 };
 

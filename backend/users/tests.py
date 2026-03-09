@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.cache import caches
 from django.test import TestCase, override_settings
 from tempfile import TemporaryDirectory
 from rest_framework.test import APIClient
@@ -192,3 +193,23 @@ class ReviewerCVDownloadEndpointTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('download_cv.pdf', response.headers.get('Content-Disposition', ''))
         response.close()
+
+
+class HealthEndpointTests(TestCase):
+    def test_live_health_endpoint_returns_ok(self):
+        response = self.client.get('/health/live/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'ok')
+
+    def test_ready_health_endpoint_returns_ok(self):
+        caches['default'].clear()
+
+        response = self.client.get('/health/ready/')
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['status'], 'ok')
+        self.assertEqual(payload['checks']['database']['status'], 'ok')
+        self.assertEqual(payload['checks']['cache']['status'], 'ok')
+        self.assertEqual(payload['checks']['media_root']['status'], 'ok')

@@ -7,14 +7,18 @@ from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Count, Q
 
-from .models import GrantCycle, Proposal, Stage1Decision, FinalDecision, AuditLog
+from .models import (
+    GrantCycle, Proposal, Stage1Decision, FinalDecision, AuditLog,
+    ResearchArea, Keyword, ResearchAreaKeyword
+)
 from .serializers import (
     GrantCycleSerializer, GrantCycleStatsSerializer,
     ProposalSerializer, ProposalListSerializer,
-    ProposalSubmitSerializer, RevisionSubmitSerializer,
+    ProposalSubmitSerializer, RevisionSubmitSerializer, RevisionDeadlineActionSerializer,
     Stage1DecisionSerializer, Stage1DecisionCreateSerializer,
     FinalDecisionSerializer, FinalDecisionCreateSerializer,
-    AuditLogSerializer, DashboardStatsSerializer
+    AuditLogSerializer, DashboardStatsSerializer,
+    ResearchAreaSerializer, KeywordSerializer, ResearchAreaKeywordSerializer
 )
 from .services import ProposalService, EmailService, get_client_ip
 
@@ -127,23 +131,42 @@ class ProposalViewSet(viewsets.ModelViewSet):
         base_queryset = Proposal.objects.select_related(
             'cycle',          # ForeignKey to GrantCycle
             'stage1_decision',  # Reverse OneToOne to Stage1Decision
-            'final_decision'    # Reverse OneToOne to FinalDecision
-        )
+            'final_decision',    # Reverse OneToOne to FinalDecision
+            'primary_research_area',
+            'created_by',
+            'submitted_by',
+        ).prefetch_related('keywords')
 
         # Admin sees all
         if user.is_staff:
-            return base_queryset.all()
+            queryset = base_queryset.all()
+        else:
+            # Check if user is a reviewer
+            from reviews.models import ReviewAssignment
+            reviewer_proposal_ids = ReviewAssignment.objects.filter(
+                reviewer=user
+            ).values_list('proposal_id', flat=True)
 
-        # Check if user is a reviewer
-        from reviews.models import ReviewAssignment
-        reviewer_proposal_ids = ReviewAssignment.objects.filter(
-            reviewer=user
-        ).values_list('proposal_id', flat=True)
+            # Return own PI proposals and/or assigned proposals for reviewers
+            queryset = base_queryset.filter(
+                Q(pi_email=user.email) | Q(created_by=user) | Q(id__in=reviewer_proposal_ids)
+            ).distinct()
 
-        # Return own PI proposals and/or assigned proposals for reviewers
-        return base_queryset.filter(
-            Q(pi_email=user.email) | Q(id__in=reviewer_proposal_ids)
-        ).distinct()
+        keyword_query = self.request.query_params.get('keyword', '').strip()
+        if keyword_query:
+            queryset = queryset.filter(
+                Q(keywords__name__icontains=keyword_query) |
+                Q(keywords__normalized_name__icontains=keyword_query.lower())
+            )
+
+        research_area = self.request.query_params.get('research_area', '').strip()
+        if research_area:
+            if research_area.isdigit():
+                queryset = queryset.filter(primary_research_area_id=int(research_area))
+            else:
+                queryset = queryset.filter(primary_research_area__name__icontains=research_area)
+
+        return queryset.distinct()
     
     def perform_create(self, serializer):
         """Create a proposal with auto-filled PI info from user."""
@@ -158,11 +181,23 @@ class ProposalViewSet(viewsets.ModelViewSet):
             changed = True
         if changed:
             proposal.save()
+        AuditLog.objects.create(
+            user=self.request.user,
+            action_type='PROPOSAL_CREATED',
+            proposal=proposal,
+            details={
+                'created_by': self.request.user.email,
+                'pi_email': proposal.pi_email,
+            },
+            ip_address=get_client_ip(self.request)
+        )
 
     @action(detail=False, methods=['get'])
     def my_proposals(self, request):
         """Get all proposals with PI email matching current user."""
-        proposals = Proposal.objects.filter(pi_email=request.user.email)
+        proposals = Proposal.objects.filter(
+            Q(pi_email=request.user.email) | Q(created_by=request.user)
+        ).distinct()
         serializer = ProposalListSerializer(proposals, many=True)
         return Response(serializer.data)
 
@@ -171,7 +206,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
         """Submit a draft proposal."""
         proposal = self.get_object()
         try:
-            ProposalService.submit_proposal(proposal)
+            ProposalService.submit_proposal(proposal, user=request.user)
             # Log IP for audit trail
             AuditLog.objects.filter(
                 proposal=proposal, action_type='PROPOSAL_SUBMITTED'
@@ -240,6 +275,56 @@ class ProposalViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def reopen_revision(self, request, pk=None):
+        """Reopen or extend a missed revision window."""
+        proposal = self.get_object()
+        serializer = RevisionDeadlineActionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            updated = ProposalService.reopen_revision_window(
+                proposal,
+                days=serializer.validated_data.get('days'),
+                reason=serializer.validated_data.get('reason', ''),
+                user=request.user,
+            )
+            return Response(ProposalSerializer(updated, context={'request': request}).data)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def mark_revision_missed(self, request, pk=None):
+        """Manually flag a proposal as having missed the revision deadline."""
+        proposal = self.get_object()
+        if not ProposalService.mark_revision_deadline_missed(proposal, user=request.user):
+            return Response({'error': 'Proposal is not awaiting revision.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(ProposalSerializer(proposal, context={'request': request}).data)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def chair_stage2_review(self, request, pk=None):
+        """Create or update a direct SRC Chair Stage 2 review."""
+        from reviews.serializers import Stage2ReviewSerializer
+
+        proposal = self.get_object()
+        serializer = Stage2ReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            review = ProposalService.submit_chair_stage2_review(
+                proposal=proposal,
+                concerns_addressed=serializer.validated_data['concerns_addressed'],
+                revised_recommendation=serializer.validated_data['revised_recommendation'],
+                technical_comments=serializer.validated_data['technical_comments'],
+                budget_comments=serializer.validated_data.get('budget_comments', ''),
+                revised_score=serializer.validated_data.get('revised_score'),
+                is_draft=serializer.validated_data.get('is_draft', False),
+                user=request.user,
+            )
+            return Response(Stage2ReviewSerializer(review).data)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def final_decision(self, request, pk=None):
         """Apply final decision (SRC Chair only)."""
         proposal = self.get_object()
@@ -268,13 +353,42 @@ class ProposalViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def reviews(self, request, pk=None):
         """Get all reviews for a proposal."""
-        from reviews.models import ReviewAssignment
-        from reviews.serializers import ReviewAssignmentSerializer
+        from reviews.models import ReviewAssignment, Stage2Review
+        from reviews.serializers import ReviewAssignmentSerializer, Stage2ReviewSerializer
         
         proposal = self.get_object()
         assignments = ReviewAssignment.objects.filter(proposal=proposal)
-        serializer = ReviewAssignmentSerializer(assignments, many=True)
-        return Response(serializer.data)
+        chair_reviews = Stage2Review.objects.filter(proposal=proposal, is_chair_review=True)
+        return Response({
+            'assignments': ReviewAssignmentSerializer(assignments, many=True).data,
+            'chair_stage2_reviews': Stage2ReviewSerializer(chair_reviews, many=True).data,
+        })
+
+    @action(detail=True, methods=['get'])
+    def combined_comments(self, request, pk=None):
+        """Return a flat combined view of reviewer comments for revision handling."""
+        from reviews.models import ReviewAssignment
+
+        proposal = self.get_object()
+        combined = []
+        stage1_assignments = ReviewAssignment.objects.filter(
+            proposal=proposal,
+            stage=ReviewAssignment.Stage.STAGE_1,
+            status=ReviewAssignment.Status.COMPLETED,
+        ).select_related('stage1_score', 'reviewer')
+
+        for assignment in stage1_assignments:
+            if not hasattr(assignment, 'stage1_score'):
+                continue
+            combined.append({
+                'reviewer': assignment.reviewer.get_full_name() or assignment.reviewer.username,
+                'recommendation': assignment.stage1_score.recommendation,
+                'narrative_comments': assignment.stage1_score.narrative_comments,
+                'detailed_recommendation': assignment.stage1_score.detailed_recommendation,
+                'is_excluded': assignment.is_excluded_from_decision,
+            })
+
+        return Response({'proposal_id': proposal.id, 'comments': combined})
     
     @action(detail=True, methods=['get'])
     def download_report(self, request, pk=None):
@@ -290,6 +404,21 @@ class ProposalViewSet(viewsets.ModelViewSet):
         return response
 
     @action(detail=True, methods=['get'])
+    def download_report_docx(self, request, pk=None):
+        """Download combined review report as DOCX."""
+        from .reporting import generate_combined_review_docx
+        from django.http import HttpResponse
+
+        proposal = self.get_object()
+        docx_buffer = generate_combined_review_docx(proposal)
+        response = HttpResponse(
+            docx_buffer,
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+        response['Content-Disposition'] = f'attachment; filename="review_report_{proposal.proposal_code}.docx"'
+        return response
+
+    @action(detail=True, methods=['get'])
     def download_review_template(self, request, pk=None):
         """Download a reviewer scoring template PDF for a proposal."""
         from .reporting import generate_review_template_pdf
@@ -300,6 +429,22 @@ class ProposalViewSet(viewsets.ModelViewSet):
 
         response = HttpResponse(pdf_buffer, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="review_template_{proposal.proposal_code}.pdf"'
+        return response
+
+    @action(detail=True, methods=['get'])
+    def download_review_template_docx(self, request, pk=None):
+        """Download a reviewer scoring template DOCX for a proposal."""
+        from .reporting import generate_review_template_docx
+        from django.http import HttpResponse
+
+        proposal = self.get_object()
+        docx_buffer = generate_review_template_docx(proposal)
+
+        response = HttpResponse(
+            docx_buffer,
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+        response['Content-Disposition'] = f'attachment; filename="review_template_{proposal.proposal_code}.docx"'
         return response
 
     @action(detail=True, methods=['get'], url_path='download_file/(?P<file_type>[a-z_]+)')
@@ -407,7 +552,9 @@ class DashboardViewSet(viewsets.ViewSet):
         if not request.user.groups.filter(name='PI').exists() and not request.user.is_staff:
             return Response({'error': 'PI access required'}, status=status.HTTP_403_FORBIDDEN)
 
-        proposals = Proposal.objects.filter(pi_email=request.user.email)
+        proposals = Proposal.objects.filter(
+            Q(pi_email=request.user.email) | Q(created_by=request.user)
+        ).distinct()
         
         # Find proposals with upcoming revision deadlines
         from datetime import timedelta
@@ -474,6 +621,43 @@ class DashboardViewSet(viewsets.ViewSet):
                 'user': log.user.get_full_name() if log.user else None,
             })
         return Response(activities)
+
+
+class ResearchAreaViewSet(viewsets.ModelViewSet):
+    """Catalog of research areas used for automatic proposal categorization."""
+    serializer_class = ResearchAreaSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        queryset = ResearchArea.objects.all()
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(is_active=True)
+        return queryset
+
+
+class KeywordViewSet(viewsets.ModelViewSet):
+    """Catalog of canonical proposal/reviewer keywords."""
+    serializer_class = KeywordSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        queryset = Keyword.objects.all()
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(is_active=True)
+
+        q = self.request.query_params.get('q', '').strip()
+        if q:
+            queryset = queryset.filter(
+                Q(name__icontains=q) | Q(normalized_name__icontains=q.lower())
+            )
+        return queryset
+
+
+class ResearchAreaKeywordViewSet(viewsets.ModelViewSet):
+    """Admin-managed weighted mappings from keywords to research areas."""
+    serializer_class = ResearchAreaKeywordSerializer
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+    queryset = ResearchAreaKeyword.objects.select_related('research_area', 'keyword').all()
 
 
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):

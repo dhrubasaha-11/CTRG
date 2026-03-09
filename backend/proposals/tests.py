@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIRequestFactory
 
-from proposals.models import AuditLog, GrantCycle, Proposal
+from proposals.models import AuditLog, GrantCycle, Proposal, Keyword
 from proposals.serializers import GrantCycleSerializer, ProposalSerializer
 from proposals.services import ProposalService
 
@@ -27,7 +27,7 @@ class ProposalModelAndServiceTests(TestCase):
         )
 
     def _create_proposal(self, title):
-        return Proposal.objects.create(
+        proposal = Proposal.objects.create(
             title=title,
             abstract='Test abstract',
             pi_name='PI Name',
@@ -36,6 +36,9 @@ class ProposalModelAndServiceTests(TestCase):
             fund_requested='1000.00',
             cycle=self.cycle,
         )
+        keyword, _ = Keyword.objects.get_or_create(name='Testing', normalized_name='testing')
+        proposal.keywords.add(keyword)
+        return proposal
 
     def test_proposal_code_auto_generates_and_increments(self):
         proposal_1 = self._create_proposal('Proposal One')

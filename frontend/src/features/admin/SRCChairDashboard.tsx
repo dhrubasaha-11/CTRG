@@ -125,49 +125,6 @@ const SRCChairDashboard: React.FC = () => {
         return colors[status] || 'bg-gray-100 text-gray-800';
     };
 
-    const formatDateRange = (start?: string, end?: string, fallback = 'Not scheduled') => {
-        if (!start && !end) {
-            return fallback;
-        }
-
-        const formatter = new Intl.DateTimeFormat('en-US', {
-            month: 'short',
-            day: 'numeric',
-        });
-
-        const startText = start ? formatter.format(new Date(start)) : 'TBD';
-        const endText = end ? formatter.format(new Date(end)) : 'TBD';
-        return `${startText} - ${endText}`;
-    };
-
-    const stage1Total = (stats?.status_breakdown?.UNDER_STAGE_1_REVIEW || 0)
-        + (stats?.status_breakdown?.STAGE_1_REJECTED || 0)
-        + (stats?.status_breakdown?.ACCEPTED_NO_CORRECTIONS || 0)
-        + (stats?.status_breakdown?.REVISION_REQUESTED || 0)
-        + (stats?.status_breakdown?.REVISED_PROPOSAL_SUBMITTED || 0)
-        + (stats?.status_breakdown?.UNDER_STAGE_2_REVIEW || 0)
-        + (stats?.status_breakdown?.FINAL_ACCEPTED || 0)
-        + (stats?.status_breakdown?.FINAL_REJECTED || 0);
-    const stage1Completed = (stats?.status_breakdown?.STAGE_1_REJECTED || 0)
-        + (stats?.status_breakdown?.ACCEPTED_NO_CORRECTIONS || 0)
-        + (stats?.status_breakdown?.REVISION_REQUESTED || 0)
-        + (stats?.status_breakdown?.REVISED_PROPOSAL_SUBMITTED || 0)
-        + (stats?.status_breakdown?.UNDER_STAGE_2_REVIEW || 0)
-        + (stats?.status_breakdown?.FINAL_ACCEPTED || 0)
-        + (stats?.status_breakdown?.FINAL_REJECTED || 0);
-    const stage2Total = (stats?.status_breakdown?.UNDER_STAGE_2_REVIEW || 0)
-        + (stats?.status_breakdown?.FINAL_ACCEPTED || 0)
-        + (stats?.status_breakdown?.FINAL_REJECTED || 0);
-    const stage2Completed = (stats?.status_breakdown?.FINAL_ACCEPTED || 0)
-        + (stats?.status_breakdown?.FINAL_REJECTED || 0);
-    const currentStage: 'stage1' | 'revision' | 'stage2' | 'completed' = activeCycle?.stage2_review_end_date &&
-        new Date(activeCycle.stage2_review_end_date).getTime() < Date.now()
-        ? 'completed'
-        : stage2Total > 0
-            ? 'stage2'
-            : ((stats?.status_breakdown?.REVISION_REQUESTED || 0) + (stats?.status_breakdown?.TENTATIVELY_ACCEPTED || 0)) > 0
-                ? 'revision'
-                : 'stage1';
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">

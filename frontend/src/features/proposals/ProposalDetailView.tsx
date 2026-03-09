@@ -5,15 +5,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
     FileText, Download, Clock, CheckCircle, XCircle,
-    ArrowLeft, Calendar, DollarSign, User, Mail, Building
+    ArrowLeft, Calendar, DollarSign, User, Mail, Building, Tag
 } from 'lucide-react';
-import { proposalApi, type Proposal, type ReviewAssignment } from '../../services/api';
+import { proposalApi, type Proposal, type Stage2Review } from '../../services/api';
 import StatusTracker from './StatusTracker';
 
 const ProposalDetailView: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const [proposal, setProposal] = useState<Proposal | null>(null);
-    const [reviews, setReviews] = useState<ReviewAssignment[]>([]);
+    const [chairStage2Reviews, setChairStage2Reviews] = useState<Stage2Review[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +29,7 @@ const ProposalDetailView: React.FC = () => {
                 proposalApi.getReviews(proposalId).catch(() => ({ data: [] })),
             ]);
             setProposal(proposalRes.data);
-            setReviews(Array.isArray(reviewsRes.data) ? reviewsRes.data : []);
+            setChairStage2Reviews(Array.isArray((reviewsRes.data as any).chair_stage2_reviews) ? (reviewsRes.data as any).chair_stage2_reviews : []);
         } catch {
             setError('Failed to load proposal details.');
         } finally {
@@ -167,6 +167,16 @@ const ProposalDetailView: React.FC = () => {
                                 <span className="text-gray-600">Cycle:</span>
                                 <span className="font-medium">{proposal.cycle_name}</span>
                             </div>
+                            <div className="col-span-2 flex items-center gap-2 text-sm">
+                                <Tag size={16} className="text-gray-400" />
+                                <span className="text-gray-600">Primary Research Area:</span>
+                                <span className="font-medium">{proposal.primary_research_area_name || 'Uncategorized'}</span>
+                            </div>
+                            <div className="col-span-2 flex items-start gap-2 text-sm">
+                                <Tag size={16} className="text-gray-400 mt-0.5" />
+                                <span className="text-gray-600">Keywords:</span>
+                                <span className="font-medium">{(proposal.keywords || []).join(', ') || 'No keywords'}</span>
+                            </div>
                         </div>
                         {proposal.abstract && (
                             <div className="mt-4 pt-4 border-t">
@@ -186,6 +196,9 @@ const ProposalDetailView: React.FC = () => {
                             <p className="text-sm text-green-700">
                                 Approved Grant Amount: <span className="font-bold text-lg">${proposal.approved_amount.toLocaleString()}</span>
                             </p>
+                            {proposal.final_remarks && (
+                                <p className="text-sm text-green-700 mt-2">Remarks: {proposal.final_remarks}</p>
+                            )}
                         </div>
                     )}
                     {(proposal.status === 'STAGE_1_REJECTED' || proposal.status === 'FINAL_REJECTED') && (
@@ -277,6 +290,19 @@ const ProposalDetailView: React.FC = () => {
                             )}
                         </div>
                     </div>
+
+                    {chairStage2Reviews.length > 0 && (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h3 className="text-sm font-semibold text-gray-700 mb-4">Chair Stage 2 Review</h3>
+                            {chairStage2Reviews.map((review) => (
+                                <div key={review.id} className="rounded-lg border border-gray-200 p-4 text-sm text-gray-700">
+                                    <p><span className="font-medium">Recommendation:</span> {review.revised_recommendation}</p>
+                                    <p className="mt-2"><span className="font-medium">Concerns Addressed:</span> {review.concerns_addressed}</p>
+                                    <p className="mt-2 whitespace-pre-wrap">{review.technical_comments}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

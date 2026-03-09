@@ -44,6 +44,9 @@ env = environ.Env(
     DATABASE_PORT=(str, '5432'),
     EMAIL_BACKEND=(str, 'django.core.mail.backends.console.EmailBackend'),
     CORS_ALLOW_CREDENTIALS=(bool, True),
+    USE_X_FORWARDED_HOST=(bool, False),
+    SECURE_PROXY_SSL_HEADER_ENABLED=(bool, False),
+    CACHE_BACKEND=(str, 'locmemcache'),
 )
 
 # Read .env file if it exists
@@ -95,6 +98,7 @@ MIDDLEWARE = [
 
     # Django core middleware
     'django.middleware.security.SecurityMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -221,6 +225,26 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = env.int('DATA_UPLOAD_MAX_MEMORY_SIZE', default=524
 FILE_ENCRYPTION_KEY = env('FILE_ENCRYPTION_KEY', default='')
 
 # ========================================
+# Cache Configuration
+# ========================================
+
+CACHE_BACKEND = env('CACHE_BACKEND')
+if CACHE_BACKEND == 'redis':
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': env('CACHE_LOCATION', default='redis://127.0.0.1:6379/1'),
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'ctrg-default',
+        }
+    }
+
+# ========================================
 # Authentication Configuration
 # ========================================
 
@@ -284,6 +308,11 @@ REST_FRAMEWORK = {
     },
 }
 
+if not DEBUG:
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
+        'rest_framework.renderers.JSONRenderer',
+    ]
+
 # ========================================
 # CORS Configuration
 # ========================================
@@ -303,6 +332,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://127\.0\.0\.1:\d+$",
     r"^http://192\.168\.\d{1,3}\.\d{1,3}:\d+$",
 ]
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
 
 # Allow credentials (cookies, authorization headers)
 CORS_ALLOW_CREDENTIALS = env('CORS_ALLOW_CREDENTIALS')
@@ -388,6 +418,11 @@ CELERY_BEAT_SCHEDULE = {
 # Security headers
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
+SECURE_REFERRER_POLICY = env('SECURE_REFERRER_POLICY', default='same-origin')
+SECURE_CROSS_ORIGIN_OPENER_POLICY = env('SECURE_CROSS_ORIGIN_OPENER_POLICY', default='same-origin')
+SECURE_HSTS_PRELOAD = env.bool('SECURE_HSTS_PRELOAD', default=False)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if env.bool('SECURE_PROXY_SSL_HEADER_ENABLED') else None
+USE_X_FORWARDED_HOST = env.bool('USE_X_FORWARDED_HOST', default=False)
 
 # HTTPS/SSL settings (production only)
 SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)
@@ -400,12 +435,22 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', defa
 SESSION_COOKIE_AGE = 86400  # 24 hours
 SESSION_SAVE_EVERY_REQUEST = False
 SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_NAME = env('SESSION_COOKIE_NAME', default='ctrg_sessionid')
 
 # CSRF settings
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_NAME = env('CSRF_COOKIE_NAME', default='ctrg_csrftoken')
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
+    SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=True)
+    CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=True)
+    SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=31536000)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True)
+    SECURE_HSTS_PRELOAD = env.bool('SECURE_HSTS_PRELOAD', default=True)
 
 # ========================================
 # Logging Configuration

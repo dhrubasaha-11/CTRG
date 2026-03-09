@@ -151,6 +151,15 @@ const Stage1ReviewForm: React.FC = () => {
         }
     };
 
+    const handleOpenDocument = (fileUrl?: string) => {
+        const resolved = resolveBackendFileUrl(fileUrl);
+        if (!resolved) {
+            setError('Proposal file is not available for this assignment.');
+            return;
+        }
+        window.open(resolved, '_blank', 'noopener,noreferrer');
+    };
+
     const handleSubmit = async () => {
         // Validate all scores are filled
         const hasEmptyScores = Object.values(scores).some(s => s == null);

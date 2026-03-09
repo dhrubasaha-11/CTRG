@@ -25,7 +25,7 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
         try {
             setLoading(true);
             const response = await proposalApi.getReviews(proposal.id);
-            setReviews(response.data);
+            setReviews(response.data.assignments || []);
             setError(null);
         } catch (err) {
             console.error("Failed to load reviews", err);

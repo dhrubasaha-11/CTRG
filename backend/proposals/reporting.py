@@ -102,7 +102,7 @@ def generate_combined_review_pdf(proposal):
     story.append(Paragraph("Stage 1 Reviews", styles['Heading2']))
     story.append(Spacer(1, 10))
 
-    from reviews.models import ReviewAssignment
+    from reviews.models import ReviewAssignment, Stage2Review
     stage1_assignments = ReviewAssignment.objects.filter(
         proposal=proposal,
         stage=ReviewAssignment.Stage.STAGE_1,
@@ -206,7 +206,28 @@ def generate_combined_review_pdf(proposal):
         
         story.append(Spacer(1, 15))
     
-    if not stage2_assignments.exists():
+    chair_stage2_reviews = Stage2Review.objects.filter(
+        proposal=proposal,
+        is_chair_review=True,
+        is_draft=False
+    ).select_related('reviewed_by')
+
+    for review in chair_stage2_reviews:
+        author_name = review.reviewed_by.get_full_name() if review.reviewed_by else 'SRC Chair'
+        story.append(Paragraph(f"<b>{_safe_text(author_name or 'SRC Chair')}</b>", styles['Heading3']))
+        story.append(Paragraph(f"<b>Concerns Addressed:</b> {_safe_text(review.get_concerns_addressed_display())}", styles['Normal']))
+        story.append(Paragraph(f"<b>Recommendation:</b> {_safe_text(review.get_revised_recommendation_display())}", styles['Normal']))
+        if review.revised_score is not None:
+            story.append(Paragraph(f"<b>Revised Score:</b> {_safe_text(review.revised_score)}%", styles['Normal']))
+        if review.technical_comments:
+            story.append(Paragraph(f"<b>Technical Comments:</b>", styles['Normal']))
+            story.append(Paragraph(_safe_text(review.technical_comments), styles['Normal']))
+        if review.budget_comments:
+            story.append(Paragraph(f"<b>Budget Comments:</b>", styles['Normal']))
+            story.append(Paragraph(_safe_text(review.budget_comments), styles['Normal']))
+        story.append(Spacer(1, 15))
+
+    if not stage2_assignments.exists() and not chair_stage2_reviews.exists():
         story.append(Paragraph("No Stage 2 reviews completed yet.", styles['Normal']))
 
     # --- Decisions Section ---
@@ -220,7 +241,7 @@ def generate_combined_review_pdf(proposal):
         story.append(Paragraph(f"<b>Decision:</b> {_safe_text(s1_decision.get_decision_display())}", styles['Normal']))
         if s1_decision.chair_comments:
             story.append(Paragraph(f"<b>Chair Comments:</b> {_safe_text(s1_decision.chair_comments)}", styles['Normal']))
-        story.append(Paragraph(f"<b>Date:</b> {s1_decision.created_at.strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+        story.append(Paragraph(f"<b>Date:</b> {s1_decision.decision_date.strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     except (ObjectDoesNotExist, Stage1Decision.DoesNotExist):
         pass
 
@@ -234,7 +255,7 @@ def generate_combined_review_pdf(proposal):
             story.append(Paragraph(f"<b>Approved Amount:</b> ${final.approved_grant_amount:,.2f}", styles['Normal']))
         if final.final_remarks:
             story.append(Paragraph(f"<b>Remarks:</b> {_safe_text(final.final_remarks)}", styles['Normal']))
-        story.append(Paragraph(f"<b>Date:</b> {final.created_at.strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+        story.append(Paragraph(f"<b>Date:</b> {final.decision_date.strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     except (ObjectDoesNotExist, FinalDecision.DoesNotExist):
         pass
 
@@ -561,3 +582,256 @@ def generate_review_template_pdf(proposal):
     doc.build(story)
     buffer.seek(0)
     return buffer
+
+
+def _build_docx_document(title):
+    from docx import Document
+
+    document = Document()
+    document.add_heading(title, level=1)
+    document.add_paragraph(f"Generated on {timezone.localtime().strftime('%Y-%m-%d %H:%M:%S')}")
+    return document
+
+
+def _docx_buffer(document):
+    buffer = io.BytesIO()
+    document.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+def generate_combined_review_docx(proposal):
+    from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+    from reviews.models import ReviewAssignment, Stage2Review
+
+    document = _build_docx_document("Combined Review Report")
+    document.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+    document.add_heading("Proposal Details", level=2)
+    details = [
+        ("Proposal Code", proposal.proposal_code),
+        ("Title", proposal.title),
+        ("PI", proposal.pi_name),
+        ("Department", proposal.pi_department),
+        ("Funding Requested", f"${proposal.fund_requested:,.2f}" if proposal.fund_requested is not None else "N/A"),
+        ("Status", proposal.get_status_display()),
+    ]
+    for label, value in details:
+        document.add_paragraph(f"{label}: {value}")
+    if proposal.abstract:
+        document.add_paragraph(f"Abstract: {proposal.abstract}")
+
+    document.add_heading("Stage 1 Reviews", level=2)
+    stage1_assignments = ReviewAssignment.objects.filter(
+        proposal=proposal,
+        stage=ReviewAssignment.Stage.STAGE_1,
+        status=ReviewAssignment.Status.COMPLETED,
+    ).select_related('stage1_score', 'reviewer')
+    if not stage1_assignments.exists():
+        document.add_paragraph("No Stage 1 reviews completed yet.")
+    for index, assignment in enumerate(stage1_assignments, start=1):
+        if not hasattr(assignment, 'stage1_score'):
+            continue
+        score = assignment.stage1_score
+        document.add_heading(f"Reviewer {index}", level=3)
+        document.add_paragraph(f"Recommendation: {score.get_recommendation_display() if score.recommendation else 'N/A'}")
+        rubric_table = document.add_table(rows=1, cols=3)
+        rubric_table.rows[0].cells[0].text = "Criteria"
+        rubric_table.rows[0].cells[1].text = "Score"
+        rubric_table.rows[0].cells[2].text = "Max"
+        rows = [
+            ("Originality", score.originality_score, 15),
+            ("Clarity", score.clarity_score, 15),
+            ("Literature Review", score.literature_review_score, 15),
+            ("Methodology", score.methodology_score, 15),
+            ("Impact", score.impact_score, 15),
+            ("Publication Potential", score.publication_potential_score, 10),
+            ("Budget Appropriateness", score.budget_appropriateness_score, 10),
+            ("Timeline Practicality", score.timeline_practicality_score, 5),
+            ("Total", score.total_score, 100),
+        ]
+        for label, value, max_score in rows:
+            row = rubric_table.add_row().cells
+            row[0].text = str(label)
+            row[1].text = str(value)
+            row[2].text = str(max_score)
+        document.add_paragraph(f"Narrative Comments: {score.narrative_comments or 'N/A'}")
+        if score.detailed_recommendation:
+            document.add_paragraph(f"Detailed Recommendation: {score.detailed_recommendation}")
+
+    document.add_heading("Stage 2 Reviews", level=2)
+    stage2_reviews = []
+    for assignment in ReviewAssignment.objects.filter(
+        proposal=proposal,
+        stage=ReviewAssignment.Stage.STAGE_2,
+        status=ReviewAssignment.Status.COMPLETED,
+    ).select_related('stage2_review', 'reviewer'):
+        if hasattr(assignment, 'stage2_review'):
+            stage2_reviews.append((assignment.reviewer.get_full_name() or assignment.reviewer.username, assignment.stage2_review))
+    for chair_review in Stage2Review.objects.filter(proposal=proposal, is_chair_review=True, is_draft=False).select_related('reviewed_by'):
+        author = chair_review.reviewed_by.get_full_name() if chair_review.reviewed_by else 'SRC Chair'
+        stage2_reviews.append((author or 'SRC Chair', chair_review))
+
+    if not stage2_reviews:
+        document.add_paragraph("No Stage 2 reviews completed yet.")
+    for author, review in stage2_reviews:
+        document.add_heading(author, level=3)
+        document.add_paragraph(f"Concerns Addressed: {review.get_concerns_addressed_display()}")
+        document.add_paragraph(f"Recommendation: {review.get_revised_recommendation_display()}")
+        if review.revised_score is not None:
+            document.add_paragraph(f"Revised Score: {review.revised_score}%")
+        document.add_paragraph(f"Technical Comments: {review.technical_comments or 'N/A'}")
+        if review.budget_comments:
+            document.add_paragraph(f"Budget Comments: {review.budget_comments}")
+
+    if hasattr(proposal, 'stage1_decision'):
+        document.add_heading("Stage 1 Decision", level=2)
+        document.add_paragraph(f"Decision: {proposal.stage1_decision.get_decision_display()}")
+        document.add_paragraph(f"Average Score: {proposal.stage1_decision.average_score}")
+        if proposal.stage1_decision.chair_comments:
+            document.add_paragraph(f"Chair Comments: {proposal.stage1_decision.chair_comments}")
+    if hasattr(proposal, 'final_decision'):
+        document.add_heading("Final Decision", level=2)
+        document.add_paragraph(f"Decision: {proposal.final_decision.get_decision_display()}")
+        document.add_paragraph(f"Approved Amount: ${proposal.final_decision.approved_grant_amount:,.2f}")
+        document.add_paragraph(f"Final Remarks: {proposal.final_decision.final_remarks}")
+
+    return _docx_buffer(document)
+
+
+def generate_review_template_docx(proposal):
+    document = _build_docx_document("CTRG Review Scoring Template")
+    document.add_heading("Proposal Details", level=2)
+    for line in (
+        f"Proposal Code: {proposal.proposal_code}",
+        f"Title: {proposal.title}",
+        f"PI: {proposal.pi_name}",
+        f"Department: {proposal.pi_department}",
+        f"Funding Requested: ${proposal.fund_requested:,.2f}" if proposal.fund_requested is not None else "Funding Requested: N/A",
+    ):
+        document.add_paragraph(line)
+    if proposal.abstract:
+        document.add_paragraph(f"Abstract: {proposal.abstract}")
+
+    document.add_heading("Stage 1 Scoring Rubric", level=2)
+    table = document.add_table(rows=1, cols=4)
+    for cell, header in zip(table.rows[0].cells, ["Criteria", "Max Score", "Your Score", "Comments"]):
+        cell.text = header
+    rubric_rows = [
+        ("Originality", "15"),
+        ("Clarity of Research Problem", "15"),
+        ("Literature Review", "15"),
+        ("Methodology", "15"),
+        ("Potential Impact", "15"),
+        ("Publication Potential", "10"),
+        ("Budget Appropriateness", "10"),
+        ("Timeline Practicality", "5"),
+        ("Total", "100"),
+    ]
+    for label, max_score in rubric_rows:
+        row = table.add_row().cells
+        row[0].text = label
+        row[1].text = max_score
+        row[2].text = ""
+        row[3].text = ""
+    document.add_heading("Recommendation", level=2)
+    for option in (
+        "[ ] Accept without corrections",
+        "[ ] Tentatively accept (revisions needed)",
+        "[ ] Reject",
+    ):
+        document.add_paragraph(option)
+    document.add_paragraph("Narrative Comments:")
+    for _ in range(6):
+        document.add_paragraph("____________________________________________________________")
+    return _docx_buffer(document)
+
+
+def generate_summary_report_docx(cycle):
+    from proposals.models import Proposal
+    from reviews.models import ReviewAssignment, ReviewerProfile
+
+    document = _build_docx_document("CTRG Grant Cycle Summary Report")
+    document.add_paragraph(f"Cycle: {cycle.name} ({cycle.year})")
+
+    proposals = cycle.proposals.all()
+    status_rows = [
+        ("Total Proposals", proposals.count()),
+        ("Submitted", proposals.filter(status=Proposal.Status.SUBMITTED).count()),
+        ("Under Stage 1 Review", proposals.filter(status=Proposal.Status.UNDER_STAGE_1_REVIEW).count()),
+        ("Stage 1 Rejected", proposals.filter(status=Proposal.Status.STAGE_1_REJECTED).count()),
+        ("Accepted (No Corrections)", proposals.filter(status=Proposal.Status.ACCEPTED_NO_CORRECTIONS).count()),
+        ("Tentatively Accepted", proposals.filter(status=Proposal.Status.TENTATIVELY_ACCEPTED).count()),
+        ("Revision Requested", proposals.filter(status=Proposal.Status.REVISION_REQUESTED).count()),
+        ("Revised Proposal Submitted", proposals.filter(status=Proposal.Status.REVISED_PROPOSAL_SUBMITTED).count()),
+        ("Under Stage 2 Review", proposals.filter(status=Proposal.Status.UNDER_STAGE_2_REVIEW).count()),
+        ("Final Accepted", proposals.filter(status=Proposal.Status.FINAL_ACCEPTED).count()),
+        ("Final Rejected", proposals.filter(status=Proposal.Status.FINAL_REJECTED).count()),
+        ("Revision Deadline Missed", proposals.filter(status=Proposal.Status.REVISION_DEADLINE_MISSED).count()),
+    ]
+    document.add_heading("Status Breakdown", level=2)
+    table = document.add_table(rows=1, cols=2)
+    table.rows[0].cells[0].text = "Status"
+    table.rows[0].cells[1].text = "Count"
+    for label, value in status_rows:
+        row = table.add_row().cells
+        row[0].text = label
+        row[1].text = str(value)
+
+    stage1_decided = proposals.filter(stage1_decision__isnull=False).count()
+    stage1_accepted = proposals.filter(
+        status__in=[
+            Proposal.Status.ACCEPTED_NO_CORRECTIONS,
+            Proposal.Status.TENTATIVELY_ACCEPTED,
+            Proposal.Status.REVISION_REQUESTED,
+            Proposal.Status.REVISED_PROPOSAL_SUBMITTED,
+            Proposal.Status.UNDER_STAGE_2_REVIEW,
+            Proposal.Status.FINAL_ACCEPTED,
+            Proposal.Status.FINAL_REJECTED,
+            Proposal.Status.REVISION_DEADLINE_MISSED,
+        ]
+    ).count()
+    final_decided = proposals.filter(final_decision__isnull=False).count()
+    final_accepted = proposals.filter(status=Proposal.Status.FINAL_ACCEPTED).count()
+    document.add_heading("Acceptance Rates", level=2)
+    document.add_paragraph(
+        f"Stage 1 Acceptance Rate: {(stage1_accepted / stage1_decided * 100):.1f}%" if stage1_decided else "Stage 1 Acceptance Rate: N/A"
+    )
+    document.add_paragraph(
+        f"Final Acceptance Rate: {(final_accepted / final_decided * 100):.1f}%" if final_decided else "Final Acceptance Rate: N/A"
+    )
+
+    document.add_heading("Reviewer Workloads", level=2)
+    workload_table = document.add_table(rows=1, cols=6)
+    headers = ["Reviewer", "Department", "Stage 1", "Stage 2", "Total", "Pending"]
+    for cell, header in zip(workload_table.rows[0].cells, headers):
+        cell.text = header
+    reviewer_profiles = ReviewerProfile.objects.select_related('user').filter(
+        user__review_assignments__proposal__cycle=cycle
+    ).annotate(
+        s1_count=Count('user__review_assignments', filter=Q(
+            user__review_assignments__stage=ReviewAssignment.Stage.STAGE_1,
+            user__review_assignments__proposal__cycle=cycle,
+        )),
+        s2_count=Count('user__review_assignments', filter=Q(
+            user__review_assignments__stage=ReviewAssignment.Stage.STAGE_2,
+            user__review_assignments__proposal__cycle=cycle,
+        )),
+        total=Count('user__review_assignments', filter=Q(user__review_assignments__proposal__cycle=cycle)),
+        pending=Count('user__review_assignments', filter=Q(
+            user__review_assignments__status=ReviewAssignment.Status.PENDING,
+            user__review_assignments__proposal__cycle=cycle,
+        )),
+    ).distinct()
+    for profile in reviewer_profiles:
+        if profile.total <= 0:
+            continue
+        row = workload_table.add_row().cells
+        row[0].text = profile.user.get_full_name() or profile.user.username
+        row[1].text = profile.department or ''
+        row[2].text = str(profile.s1_count)
+        row[3].text = str(profile.s2_count)
+        row[4].text = str(profile.total)
+        row[5].text = str(profile.pending)
+
+    return _docx_buffer(document)

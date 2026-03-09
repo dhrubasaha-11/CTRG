@@ -562,12 +562,18 @@ Update `backend/.env`:
 DEBUG=False
 SECRET_KEY=<strong-random-key-50+-characters>
 ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 
 SECURE_SSL_REDIRECT=True
 SESSION_COOKIE_SECURE=True
 CSRF_COOKIE_SECURE=True
 SECURE_HSTS_SECONDS=31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS=True
+SECURE_HSTS_PRELOAD=True
+USE_X_FORWARDED_HOST=True
+SECURE_PROXY_SSL_HEADER_ENABLED=True
+SECURE_REFERRER_POLICY=strict-origin-when-cross-origin
+SECURE_CROSS_ORIGIN_OPENER_POLICY=same-origin
 ```
 
 ### 2. Database
@@ -586,6 +592,8 @@ DATABASE_USER=ctrg_prod_user
 DATABASE_PASSWORD=<strong-password>
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
+CACHE_BACKEND=redis
+CACHE_LOCATION=redis://localhost:6379/1
 ```
 
 ### 3. Email Service
@@ -674,6 +682,9 @@ Set up:
 - Log monitoring (Sentry, LogDNA)
 - Uptime monitoring (UptimeRobot, Pingdom)
 - Performance monitoring (New Relic, DataDog)
+- Health probes:
+  `GET /health/live/` for liveness
+  `GET /health/ready/` for readiness
 
 ### 10. Backups
 
@@ -681,6 +692,7 @@ Regular backups of:
 - PostgreSQL database (pg_dump)
 - Media files (uploaded proposals)
 - Environment configuration
+- Redis persistence strategy if used for cache/broker durability assumptions
 
 ---
 

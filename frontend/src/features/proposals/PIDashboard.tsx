@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
     FileText, Plus, Clock, CheckCircle, AlertTriangle, XCircle,
-    Edit3, Eye, Upload, Calendar, ChevronRight, RefreshCw
+    Edit3, Eye, Upload, ChevronRight, RefreshCw
 } from 'lucide-react';
 import { proposalApi, type Proposal } from '../../services/api';
 import StatusTracker from './StatusTracker';

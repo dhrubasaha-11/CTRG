@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, AlertCircle, CheckCircle, XCircle, DollarSign, FileText } from 'lucide-react';
-import { proposalApi, type Proposal, type ReviewAssignment } from '../../services/api';
+import { proposalApi, type Proposal, type ReviewAssignment, type Stage2Review } from '../../services/api';
 
 interface Props {
     proposal: Proposal;
@@ -17,6 +17,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
     const [approvedAmount, setApprovedAmount] = useState(proposal.fund_requested?.toString() || '');
     const [finalRemarks, setFinalRemarks] = useState('');
     const [reviews, setReviews] = useState<ReviewAssignment[]>([]);
+    const [chairStage2Reviews, setChairStage2Reviews] = useState<Stage2Review[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -25,7 +26,8 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
         try {
             setLoading(true);
             const response = await proposalApi.getReviews(proposal.id);
-            setReviews(response.data);
+            setReviews(response.data.assignments || []);
+            setChairStage2Reviews(response.data.chair_stage2_reviews || []);
             setError(null);
         } catch (err) {
             console.error("Failed to load reviews", err);
@@ -71,8 +73,9 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
 
     const stage2Reviews = reviews.filter(r => r.stage === 2 && r.stage2_review);
     const recommendations = stage2Reviews.map(r => r.stage2_review?.revised_recommendation);
-    const acceptCount = recommendations.filter(r => r === 'ACCEPT').length;
-    const rejectCount = recommendations.filter(r => r === 'REJECT').length;
+    const chairRecommendations = chairStage2Reviews.map((review) => review.revised_recommendation);
+    const acceptCount = recommendations.filter(r => r === 'ACCEPT').length + chairRecommendations.filter(r => r === 'ACCEPT').length;
+    const rejectCount = recommendations.filter(r => r === 'REJECT').length + chairRecommendations.filter(r => r === 'REJECT').length;
 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 px-3 py-4 sm:px-6 sm:py-8">

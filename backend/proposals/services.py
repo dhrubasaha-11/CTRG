@@ -7,7 +7,11 @@ from django.utils import timezone
 
 from decimal import Decimal
 from datetime import timedelta
-from .models import Proposal, Stage1Decision, FinalDecision, AuditLog
+from django.db.models import Sum
+from .models import (
+    Proposal, Stage1Decision, FinalDecision, AuditLog,
+    Keyword, ResearchArea, ResearchAreaKeyword
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,22 +42,106 @@ class ProposalService:
         return proposal_code
     
     @staticmethod
-    def submit_proposal(proposal):
+    def submit_proposal(proposal, user=None):
         """Submit a draft proposal for review."""
         if proposal.status != Proposal.Status.DRAFT:
             raise ValueError("Only draft proposals can be submitted")
+        if not proposal.keywords.exists():
+            raise ValueError("Add at least one keyword before submission")
         
         proposal.status = Proposal.Status.SUBMITTED
         proposal.submitted_at = timezone.now()
-        proposal.save()
+        proposal.submitted_by = user
+        proposal.save(update_fields=['status', 'submitted_at', 'submitted_by', 'updated_at'])
         
         AuditLog.objects.create(
-            user=None,  # PI relationship removed - audit without specific user
+            user=user,
             action_type='PROPOSAL_SUBMITTED',
             proposal=proposal,
-            details={'proposal_code': proposal.proposal_code, 'pi_email': proposal.pi_email}
+            details={
+                'proposal_code': proposal.proposal_code,
+                'pi_email': proposal.pi_email,
+                'submitted_by': user.email if user else None,
+            }
         )
         return proposal
+
+    @staticmethod
+    def sync_proposal_keywords_and_category(proposal, keyword_names, user=None):
+        """
+        Persist normalized proposal keywords and infer the best matching research area.
+        """
+        cleaned_names = []
+        seen = set()
+        for name in keyword_names or []:
+            normalized = (name or '').strip().lower()
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            cleaned_names.append((name.strip(), normalized))
+
+        keywords = []
+        for display_name, normalized_name in cleaned_names:
+            keyword, _ = Keyword.objects.get_or_create(
+                normalized_name=normalized_name,
+                defaults={'name': display_name}
+            )
+            if keyword.name != display_name and not keyword.name:
+                keyword.name = display_name
+                keyword.save(update_fields=['name'])
+            keywords.append(keyword)
+
+        proposal.keywords.set(keywords)
+        inferred_area = ProposalService.infer_research_area(proposal)
+        proposal.primary_research_area = inferred_area
+        proposal.save(update_fields=['primary_research_area', 'updated_at'])
+
+        if cleaned_names:
+            AuditLog.objects.create(
+                user=user,
+                action_type='PROPOSAL_KEYWORDS_UPDATED',
+                proposal=proposal,
+                details={
+                    'keywords': [name for name, _ in cleaned_names],
+                    'primary_research_area': inferred_area.name if inferred_area else None
+                }
+            )
+
+        return proposal
+
+    @staticmethod
+    def infer_research_area(proposal):
+        """
+        Pick the best matching research area based on mapped keyword weights.
+        """
+        keyword_ids = list(proposal.keywords.values_list('id', flat=True))
+        if not keyword_ids:
+            return None
+
+        area_scores = (
+            ResearchAreaKeyword.objects.filter(
+                keyword_id__in=keyword_ids,
+                research_area__is_active=True
+            )
+            .values('research_area_id')
+            .annotate(score=Sum('weight'))
+            .order_by('-score', 'research_area_id')
+        )
+        if not area_scores:
+            area, _ = ResearchArea.objects.get_or_create(
+                name='General Research',
+                defaults={
+                    'description': 'Fallback category used when no keyword-to-area mapping exists.',
+                    'is_active': True,
+                }
+            )
+            return area
+
+        best_area_id = area_scores[0]['research_area_id']
+        try:
+            return ResearchArea.objects.get(id=best_area_id)
+        except ResearchArea.DoesNotExist:
+            return None
     
     @staticmethod
     def check_stage1_completion(proposal):
@@ -165,10 +253,18 @@ class ProposalService:
         
         proposal.status = Proposal.Status.REVISION_REQUESTED
         proposal.revision_deadline = timezone.now() + timedelta(days=days)
-        proposal.save()
+        proposal.save(update_fields=['status', 'revision_deadline', 'updated_at'])
 
         # Notify PI that revision is required.
         EmailService.send_revision_request_email(proposal)
+        AuditLog.objects.create(
+            action_type='REVISION_REQUESTED',
+            proposal=proposal,
+            details={
+                'revision_deadline': str(proposal.revision_deadline),
+                'window_days': days,
+            }
+        )
         return proposal
     
     @staticmethod
@@ -178,8 +274,7 @@ class ProposalService:
             raise ValueError("Proposal is not awaiting revision")
         
         if proposal.is_revision_overdue:
-            proposal.status = Proposal.Status.REVISION_DEADLINE_MISSED
-            proposal.save()
+            ProposalService.mark_revision_deadline_missed(proposal)
             raise ValueError("Revision deadline has passed")
         
         if revised_file:
@@ -188,7 +283,12 @@ class ProposalService:
             proposal.response_to_reviewers_file = response_file
         
         proposal.status = Proposal.Status.REVISED_PROPOSAL_SUBMITTED
-        proposal.save()
+        proposal.save(update_fields=[
+            'revised_proposal_file',
+            'response_to_reviewers_file',
+            'status',
+            'updated_at',
+        ])
         
         AuditLog.objects.create(
             user=user,
@@ -219,16 +319,20 @@ class ProposalService:
     @staticmethod
     def check_stage2_completion(proposal):
         """Check if all Stage 2 reviews are completed."""
-        from reviews.models import ReviewAssignment
+        from reviews.models import ReviewAssignment, Stage2Review
         
         assignments = ReviewAssignment.objects.filter(
             proposal=proposal,
             stage=ReviewAssignment.Stage.STAGE_2
         )
-        if not assignments.exists():
-            return False
+        if assignments.exists():
+            return all(a.status == ReviewAssignment.Status.COMPLETED for a in assignments)
 
-        return all(a.status == ReviewAssignment.Status.COMPLETED for a in assignments)
+        return Stage2Review.objects.filter(
+            proposal=proposal,
+            is_chair_review=True,
+            is_draft=False,
+        ).exists()
     
     @staticmethod
     def apply_final_decision(proposal, decision, approved_amount, final_remarks, user=None):
@@ -244,14 +348,22 @@ class ProposalService:
         if hasattr(proposal, 'final_decision'):
             raise ValueError("Final decision already exists for this proposal")
 
-        # If Stage 2 assignments exist, ensure they are complete before final decision.
-        from reviews.models import ReviewAssignment
+        # If Stage 2 assignments exist, ensure they are complete. Otherwise require
+        # an explicit completed chair-authored Stage 2 review.
+        from reviews.models import ReviewAssignment, Stage2Review
         stage2_assignments = ReviewAssignment.objects.filter(
             proposal=proposal,
             stage=ReviewAssignment.Stage.STAGE_2
         )
+        has_chair_stage2_review = Stage2Review.objects.filter(
+            proposal=proposal,
+            is_chair_review=True,
+            is_draft=False,
+        ).exists()
         if stage2_assignments.exists() and not ProposalService.check_stage2_completion(proposal):
             raise ValueError("Not all Stage 2 reviews are complete")
+        if not stage2_assignments.exists() and not has_chair_stage2_review:
+            raise ValueError("A completed Stage 2 review is required before final decision")
 
         # Create final decision record
         final_decision = FinalDecision.objects.create(
@@ -285,33 +397,109 @@ class ProposalService:
         return final_decision
     
     @staticmethod
+    def mark_revision_deadline_missed(proposal, user=None):
+        """Flag the proposal when the revision deadline is missed."""
+        if proposal.status != Proposal.Status.REVISION_REQUESTED:
+            return False
+
+        proposal.status = Proposal.Status.REVISION_DEADLINE_MISSED
+        proposal.save(update_fields=['status', 'updated_at'])
+        EmailService.send_deadline_missed_email(proposal)
+        AuditLog.objects.create(
+            user=user,
+            action_type='REVISION_DEADLINE_MISSED',
+            proposal=proposal,
+            details={
+                'deadline': str(proposal.revision_deadline),
+                'auto_rejected': False,
+            }
+        )
+        return True
+
+    @staticmethod
+    def reopen_revision_window(proposal, days=None, reason='', user=None):
+        """Reopen or extend a missed revision deadline."""
+        if proposal.status not in {
+            Proposal.Status.REVISION_REQUESTED,
+            Proposal.Status.REVISION_DEADLINE_MISSED,
+        }:
+            raise ValueError("Revision window can only be reopened for proposals awaiting revision or marked missed")
+
+        extension_days = days or proposal.cycle.revision_window_days
+        proposal.status = Proposal.Status.REVISION_REQUESTED
+        proposal.revision_deadline = timezone.now() + timedelta(days=extension_days)
+        proposal.is_locked = False
+        proposal.save(update_fields=['status', 'revision_deadline', 'is_locked', 'updated_at'])
+
+        AuditLog.objects.create(
+            user=user,
+            action_type='REVISION_REOPENED',
+            proposal=proposal,
+            details={
+                'new_deadline': str(proposal.revision_deadline),
+                'days': extension_days,
+                'reason': reason,
+            }
+        )
+        return proposal
+
+    @staticmethod
+    def submit_chair_stage2_review(
+        proposal,
+        concerns_addressed,
+        revised_recommendation,
+        technical_comments,
+        budget_comments='',
+        revised_score=None,
+        is_draft=False,
+        user=None,
+    ):
+        """Create or update a direct SRC Chair Stage 2 review."""
+        from reviews.models import Stage2Review
+
+        if proposal.status not in {
+            Proposal.Status.REVISED_PROPOSAL_SUBMITTED,
+            Proposal.Status.UNDER_STAGE_2_REVIEW,
+        }:
+            raise ValueError("Chair Stage 2 review is only allowed after revision submission")
+
+        if proposal.status == Proposal.Status.REVISED_PROPOSAL_SUBMITTED:
+            proposal.status = Proposal.Status.UNDER_STAGE_2_REVIEW
+            proposal.save(update_fields=['status', 'updated_at'])
+
+        review, _ = Stage2Review.objects.update_or_create(
+            proposal=proposal,
+            is_chair_review=True,
+            defaults={
+                'assignment': None,
+                'reviewed_by': user,
+                'concerns_addressed': concerns_addressed,
+                'revised_recommendation': revised_recommendation,
+                'technical_comments': technical_comments,
+                'budget_comments': budget_comments,
+                'revised_score': revised_score,
+                'is_draft': is_draft,
+            }
+        )
+
+        AuditLog.objects.create(
+            user=user,
+            action_type='CHAIR_STAGE2_REVIEW_SAVED' if is_draft else 'CHAIR_STAGE2_REVIEW_SUBMITTED',
+            proposal=proposal,
+            details={
+                'review_id': review.id,
+                'is_draft': is_draft,
+                'revised_recommendation': revised_recommendation,
+            }
+        )
+        return review
+
+    @staticmethod
     def check_revision_deadline(proposal):
-        """Check and auto-reject proposal if revision deadline passed."""
+        """Check and flag proposal if revision deadline passed."""
         if proposal.status == Proposal.Status.REVISION_REQUESTED:
             if proposal.revision_deadline and timezone.now() > proposal.revision_deadline:
-                proposal.status = Proposal.Status.REVISION_DEADLINE_MISSED
-                proposal.is_locked = True
-                proposal.save()
-
-                # Auto-reject: create a final decision record
-                FinalDecision.objects.get_or_create(
-                    proposal=proposal,
-                    defaults={
-                        'decision': FinalDecision.Decision.REJECTED,
-                        'approved_grant_amount': 0,
-                        'final_remarks': 'Auto-rejected: revision deadline missed.',
-                    }
-                )
-
-                AuditLog.objects.create(
-                    action_type='REVISION_DEADLINE_MISSED',
-                    proposal=proposal,
-                    details={
-                        'deadline': str(proposal.revision_deadline),
-                        'auto_rejected': True,
-                    }
-                )
-                return True
+                return ProposalService.mark_revision_deadline_missed(proposal)
         return False
 
 
@@ -460,6 +648,8 @@ class ReviewerService:
         target_count = max(1, min(requested, max_allowed))
         excluded_ids = set(exclude_reviewer_ids or [])
         keywords = expertise_keywords or []
+        if not keywords:
+            keywords = list(proposal.keywords.values_list('name', flat=True))
 
         candidate_profiles = ReviewerProfile.objects.select_related('user').filter(
             is_active_reviewer=True,
@@ -577,6 +767,7 @@ class ReviewerService:
                 'area_of_expertise': profile.area_of_expertise,
                 'current_workload': current_workload,
                 'can_accept_more': profile.can_accept_review(),
+                'overload_warning': '' if profile.can_accept_review() else f"At or above maximum review load ({profile.max_review_load})",
                 **workload
             })
 

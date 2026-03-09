@@ -299,6 +299,16 @@ class ReviewAssignmentViewSet(viewsets.ModelViewSet):
                     
                     # Check if all Stage 1 reviews complete
                     ProposalService.check_stage1_completion(assignment.proposal)
+
+                AuditLog.objects.create(
+                    user=request.user,
+                    action_type='STAGE1_REVIEW_DRAFT_SAVED' if score.is_draft else 'STAGE1_REVIEW_SUBMITTED',
+                    proposal=assignment.proposal,
+                    details={
+                        'assignment_id': assignment.id,
+                        'reviewer_id': request.user.id,
+                    }
+                )
                 
                 return Response(Stage1ScoreSerializer(score).data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -314,11 +324,26 @@ class ReviewAssignmentViewSet(viewsets.ModelViewSet):
                     existing.save()
                     review = existing
                 except Stage2Review.DoesNotExist:
-                    review = serializer.save(assignment=assignment)
+                    review = serializer.save(
+                        assignment=assignment,
+                        proposal=assignment.proposal,
+                        reviewed_by=request.user,
+                        is_chair_review=False,
+                    )
                 
                 if not review.is_draft:
                     assignment.status = ReviewAssignment.Status.COMPLETED
                     assignment.save()
+
+                AuditLog.objects.create(
+                    user=request.user,
+                    action_type='STAGE2_REVIEW_DRAFT_SAVED' if review.is_draft else 'STAGE2_REVIEW_SUBMITTED',
+                    proposal=assignment.proposal,
+                    details={
+                        'assignment_id': assignment.id,
+                        'reviewer_id': request.user.id,
+                    }
+                )
                 
                 return Response(Stage2ReviewSerializer(review).data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -355,6 +380,10 @@ class ReviewAssignmentViewSet(viewsets.ModelViewSet):
             )
             proposal_data['stage1_reviews'] = ReviewAssignmentSerializer(
                 stage1_assignments, many=True
+            ).data
+            proposal_data['chair_stage2_reviews'] = Stage2ReviewSerializer(
+                Stage2Review.objects.filter(proposal=proposal, is_chair_review=True),
+                many=True
             ).data
         
         return Response(proposal_data)

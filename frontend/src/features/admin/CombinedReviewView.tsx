@@ -5,7 +5,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { X, Download, Star, MessageSquare, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { proposalApi, type Proposal, type ReviewAssignment } from '../../services/api';
+import { proposalApi, type Proposal, type ReviewAssignment, type Stage2Review } from '../../services/api';
 
 interface Props {
     proposal: Proposal;
@@ -25,6 +25,7 @@ const SCORE_LABELS: Record<string, { label: string; max: number }> = {
 
 const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
     const [reviews, setReviews] = useState<ReviewAssignment[]>([]);
+    const [chairStage2Reviews, setChairStage2Reviews] = useState<Stage2Review[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -35,9 +36,11 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
         try {
             setLoading(true);
             const response = await proposalApi.getReviews(proposal.id);
-            setReviews(Array.isArray(response.data) ? response.data : []);
+            setReviews(Array.isArray(response.data.assignments) ? response.data.assignments : []);
+            setChairStage2Reviews(Array.isArray(response.data.chair_stage2_reviews) ? response.data.chair_stage2_reviews : []);
         } catch {
             setReviews([]);
+            setChairStage2Reviews([]);
         } finally {
             setLoading(false);
         }
@@ -74,6 +77,22 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
         }
     };
 
+    const handleDownloadReportDocx = async () => {
+        try {
+            const response = await proposalApi.downloadReportDocx(proposal.id);
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `review_report_${proposal.proposal_code}.docx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            alert('Failed to download DOCX report.');
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -89,6 +108,12 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                             className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                         >
                             <Download size={16} className="mr-1" /> Download PDF
+                        </button>
+                        <button
+                            onClick={handleDownloadReportDocx}
+                            className="flex items-center px-3 py-2 bg-gray-900 text-white rounded-lg hover:bg-black text-sm"
+                        >
+                            <Download size={16} className="mr-1" /> Download DOCX
                         </button>
                         <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
                             <X size={20} />
@@ -194,7 +219,7 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                             {/* Stage 2 Reviews */}
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Stage 2 Reviews</h3>
-                                {stage2Reviews.length === 0 ? (
+                                {stage2Reviews.length === 0 && chairStage2Reviews.length === 0 ? (
                                     <p className="text-gray-500 text-sm">No completed Stage 2 reviews yet.</p>
                                 ) : (
                                     <div className="space-y-4">
@@ -228,6 +253,27 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                                                         <p className="text-sm text-gray-700 mt-1">{review.stage2_review.budget_comments}</p>
                                                     </div>
                                                 )}
+                                            </div>
+                                        ))}
+                                        {chairStage2Reviews.map((review) => (
+                                            <div key={review.id} className="bg-white border border-gray-200 rounded-xl p-5">
+                                                <h4 className="font-semibold text-gray-900 mb-3">SRC Chair</h4>
+                                                <div className="grid grid-cols-2 gap-4 mb-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm text-gray-500">Concerns Addressed:</span>
+                                                        <span className="text-sm font-medium">{review.concerns_addressed}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm text-gray-500">Recommendation:</span>
+                                                        <span className={`text-sm font-medium ${review.revised_recommendation === 'ACCEPT' ? 'text-green-600' : 'text-red-600'}`}>
+                                                            {review.revised_recommendation}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-2">
+                                                    <span className="text-xs font-semibold text-gray-500 uppercase">Technical Comments</span>
+                                                    <p className="text-sm text-gray-700 mt-1">{review.technical_comments}</p>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

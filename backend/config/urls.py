@@ -19,6 +19,7 @@ from django.urls import path, include
 from django.http import JsonResponse
 from django.conf import settings
 from django.conf.urls.static import static
+from . import health
 
 
 def root_view(request):
@@ -36,6 +37,8 @@ def root_view(request):
 urlpatterns = [
     # Public root route for quick health/info check
     path('', root_view, name='root'),
+    path('health/live/', health.live, name='health-live'),
+    path('health/ready/', health.ready, name='health-ready'),
 
     # Django admin interface
     path('admin/', admin.site.urls),

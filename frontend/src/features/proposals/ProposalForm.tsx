@@ -28,6 +28,7 @@ interface ProposalFormData {
     co_investigators: string;
     fund_requested: number;
     cycle: number | '';
+    keywords_input: string;
     /** New file selected by the user (not yet uploaded) */
     file: File | null;
     /** New application template file selected by the user */
@@ -61,6 +62,7 @@ const ProposalForm: React.FC = () => {
         co_investigators: '',
         fund_requested: 0,
         cycle: '',
+        keywords_input: '',
         file: null,
         templateFile: null,
     });
@@ -95,6 +97,7 @@ const ProposalForm: React.FC = () => {
                         co_investigators: propRes.data.co_investigators || '',
                         fund_requested: propRes.data.fund_requested,
                         cycle: propRes.data.cycle,
+                        keywords_input: (propRes.data.keywords || []).join(', '),
                         file: null,
                         templateFile: null,
                     });
@@ -183,6 +186,10 @@ const ProposalForm: React.FC = () => {
             setError('Please enter a valid funding amount');
             return false;
         }
+        if (!formData.keywords_input.trim()) {
+            setError('Please add at least one keyword');
+            return false;
+        }
         if (!isEditing && !formData.file && !existingFile) {
             setError('Please upload a proposal document');
             return false;
@@ -201,6 +208,7 @@ const ProposalForm: React.FC = () => {
         if (formData.co_investigators) data.append('co_investigators', formData.co_investigators);
         data.append('fund_requested', String(formData.fund_requested));
         data.append('cycle', String(formData.cycle));
+        data.append('keywords_input', formData.keywords_input.trim());
         if (formData.file) data.append('proposal_file', formData.file);
         if (formData.templateFile) data.append('application_template_file', formData.templateFile);
         return data;
@@ -438,6 +446,24 @@ const ProposalForm: React.FC = () => {
                             className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                     </div>
+                </div>
+
+                {/* Keywords */}
+                <div>
+                    <label className="block font-medium text-gray-900 mb-2">
+                        Research Keywords <span className="text-red-500">*</span>
+                    </label>
+                    <p className="text-sm text-gray-500 mb-2">
+                        Enter 3-10 keywords separated by commas. Example: machine learning, computer vision, optimization
+                    </p>
+                    <input
+                        type="text"
+                        name="keywords_input"
+                        value={formData.keywords_input}
+                        onChange={handleChange}
+                        placeholder="keyword1, keyword2, keyword3"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
                 </div>
 
                 {/* File Upload */}

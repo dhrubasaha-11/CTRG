@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Download, Eye, Plus, UserPlus, CheckSquare, FileText, Mail, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Download, Eye, Plus, UserPlus, CheckSquare, FileText, Mail, Clock, ChevronLeft, ChevronRight, Send } from 'lucide-react';
 import { proposalApi, assignmentApi, type Proposal, cycleApi, type GrantCycle } from '../../services/api';
 import ReviewerAssignmentModal from './ReviewerAssignmentModal';
 import Stage1DecisionModal from './Stage1DecisionModal';
@@ -79,7 +79,9 @@ const ProposalList: React.FC = () => {
         const matchesSearch =
             p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.pi_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.proposal_code.toLowerCase().includes(searchTerm.toLowerCase());
+            p.proposal_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.primary_research_area_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.keywords || []).some((kw) => kw.toLowerCase().includes(searchTerm.toLowerCase()));
         const matchesStatus = !statusFilter || p.status === statusFilter;
         const matchesCycle = !cycleFilter || p.cycle.toString() === cycleFilter;
         return matchesSearch && matchesStatus && matchesCycle;
@@ -91,18 +93,32 @@ const ProposalList: React.FC = () => {
     // Reset page when filters change
     useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, cycleFilter]);
 
+    const downloadBlob = (data: BlobPart, filename: string) => {
+        const url = window.URL.createObjectURL(new Blob([data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    };
+
     const handleDownloadReport = async (proposal: Proposal) => {
         try {
             const response = await proposalApi.downloadReport(proposal.id);
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `review_report_${proposal.proposal_code}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
+            downloadBlob(response.data, `review_report_${proposal.proposal_code}.pdf`);
         } catch {
             alert('Failed to download report. Please try again.');
+        }
+    };
+
+    const handleDownloadReportDocx = async (proposal: Proposal) => {
+        try {
+            const response = await proposalApi.downloadReportDocx(proposal.id);
+            downloadBlob(response.data, `review_report_${proposal.proposal_code}.docx`);
+        } catch {
+            alert('Failed to download DOCX report. Please try again.');
         }
     };
 
@@ -131,6 +147,11 @@ const ProposalList: React.FC = () => {
         // Stage 2 assignment for revised proposals
         if (['REVISED_PROPOSAL_SUBMITTED'].includes(proposal.status)) {
             actions.push({ key: 'assign_s2', label: 'Assign Stage 2', icon: UserPlus, color: 'text-cyan-600' });
+            actions.push({ key: 'chair_stage2', label: 'Chair Stage 2 Review', icon: CheckSquare, color: 'text-teal-700' });
+        }
+
+        if (proposal.status === 'REVISION_DEADLINE_MISSED') {
+            actions.push({ key: 'reopen_revision', label: 'Reopen Revision', icon: Clock, color: 'text-orange-700' });
         }
 
         // Final decision for Stage 2 completed
@@ -149,7 +170,7 @@ const ProposalList: React.FC = () => {
     const handleNotifyReviewers = async (proposal: Proposal) => {
         try {
             const response = await proposalApi.getReviews(proposal.id);
-            const assignments = response.data;
+            const assignments = response.data.assignments || [];
             const pendingIds = assignments
                 .filter((a: any) => a.status === 'PENDING')
                 .map((a: any) => a.id);
@@ -180,6 +201,14 @@ const ProposalList: React.FC = () => {
 
     const handleAction = (action: string, proposal: Proposal) => {
         switch (action) {
+            case 'submit':
+                proposalApi.submit(proposal.id)
+                    .then(() => {
+                        alert('Proposal submitted successfully.');
+                        loadData();
+                    })
+                    .catch(() => alert('Failed to submit proposal.'));
+                break;
             case 'assign':
             case 'assign_s2':
                 setAssignModalProposal(proposal);
@@ -196,6 +225,42 @@ const ProposalList: React.FC = () => {
             case 'report':
                 handleDownloadReport(proposal);
                 break;
+            case 'report_docx':
+                handleDownloadReportDocx(proposal);
+                break;
+            case 'reopen_revision': {
+                const daysRaw = window.prompt('Extend revision window by how many days?', '7');
+                if (!daysRaw) break;
+                const reason = window.prompt('Reason for reopening the revision window:', '') || '';
+                proposalApi.reopenRevision(proposal.id, Number(daysRaw), reason)
+                    .then(() => {
+                        alert('Revision window reopened.');
+                        loadData();
+                    })
+                    .catch(() => alert('Failed to reopen revision window.'));
+                break;
+            }
+            case 'chair_stage2': {
+                const concerns_addressed = window.prompt('Concerns addressed? Enter YES, PARTIALLY, or NO.', 'YES');
+                const revised_recommendation = window.prompt('Recommendation? Enter ACCEPT or REJECT.', 'ACCEPT');
+                const technical_comments = window.prompt('Technical comments for this Stage 2 chair review:', '');
+                if (!concerns_addressed || !revised_recommendation || !technical_comments) {
+                    break;
+                }
+                proposalApi.submitChairStage2Review(proposal.id, {
+                    concerns_addressed,
+                    revised_recommendation,
+                    technical_comments,
+                    budget_comments: '',
+                    is_draft: false,
+                })
+                    .then(() => {
+                        alert('Chair Stage 2 review submitted.');
+                        loadData();
+                    })
+                    .catch(() => alert('Failed to submit chair Stage 2 review.'));
+                break;
+            }
             case 'view':
                 setReviewViewProposal(proposal);
                 break;
@@ -279,6 +344,9 @@ const ProposalList: React.FC = () => {
                                     Funding
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Category / Keywords
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Status
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -307,6 +375,14 @@ const ProposalList: React.FC = () => {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-gray-900">
                                             ${proposal.fund_requested?.toLocaleString()}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="text-sm font-medium text-gray-900">
+                                            {proposal.primary_research_area_name || 'Uncategorized'}
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-1 max-w-xs truncate">
+                                            {(proposal.keywords || []).join(', ') || 'No keywords'}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
