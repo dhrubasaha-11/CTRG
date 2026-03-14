@@ -4,8 +4,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.cache import caches
 from django.test import TestCase, override_settings
 from tempfile import TemporaryDirectory
+from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
+from proposals.models import AuditLog
 from reviews.models import ReviewerProfile
 from users.serializers import LoginSerializer, ReviewerRegistrationSerializer, UserCreateSerializer
 
@@ -106,13 +108,19 @@ class UserCreateSerializerTests(TestCase):
             'first_name': 'Chair',
             'last_name': 'Created',
             'role': 'Reviewer',
+            'department': 'CSE',
+            'area_of_expertise': 'Distributed Systems',
+            'max_review_load': 7,
         })
 
         self.assertTrue(serializer.is_valid(), serializer.errors)
         user = serializer.save()
 
         self.assertTrue(user.groups.filter(name='Reviewer').exists())
-        self.assertTrue(ReviewerProfile.objects.filter(user=user).exists())
+        profile = ReviewerProfile.objects.get(user=user)
+        self.assertEqual(profile.department, 'CSE')
+        self.assertEqual(profile.area_of_expertise, 'Distributed Systems')
+        self.assertEqual(profile.max_review_load, 7)
 
 
 class TokenValidationEndpointTests(TestCase):
@@ -152,6 +160,72 @@ class TokenValidationEndpointTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['role'], 'Reviewer')
         self.assertEqual(response.data['redirect_to'], '/reviewer/dashboard')
+
+
+class UserAuditTrailTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        reviewer_group, _ = Group.objects.get_or_create(name='Reviewer')
+        self.admin = User.objects.create_user(
+            username='audit.admin',
+            email='audit.admin@nsu.edu',
+            password='StrongPass123!',
+            is_staff=True,
+        )
+        self.user = User.objects.create_user(
+            username='audit.user',
+            email='audit.user@nsu.edu',
+            password='StrongPass123!',
+        )
+        self.user.groups.add(reviewer_group)
+        ReviewerProfile.objects.create(user=self.user, area_of_expertise='Testing')
+
+    def test_login_and_logout_create_audit_entries(self):
+        login_response = self.client.post('/api/auth/login/', {
+            'email': self.user.email,
+            'password': 'StrongPass123!',
+        }, format='json')
+
+        self.assertEqual(login_response.status_code, 200, login_response.data)
+        self.assertTrue(AuditLog.objects.filter(action_type='USER_LOGIN', user=self.user).exists())
+
+        token = Token.objects.get(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+        logout_response = self.client.post('/api/auth/logout/')
+
+        self.assertEqual(logout_response.status_code, 200, logout_response.data)
+        self.assertTrue(AuditLog.objects.filter(action_type='USER_LOGOUT', user=self.user).exists())
+
+    def test_admin_user_creation_is_logged(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post('/api/auth/register/', {
+            'username': 'new.pi.user',
+            'email': 'new.pi@nsu.edu',
+            'password': 'StrongPass123!',
+            'first_name': 'New',
+            'last_name': 'PI',
+            'role': 'PI',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 201, response.data)
+        created_user = User.objects.get(email='new.pi@nsu.edu')
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action_type='USER_CREATED',
+                user=self.admin,
+                details__target_user_id=created_user.id,
+            ).exists()
+        )
+
+    def test_password_change_is_logged(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post('/api/auth/change-password/', {
+            'old_password': 'StrongPass123!',
+            'new_password': 'EvenStrongerPass123!',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertTrue(AuditLog.objects.filter(action_type='PASSWORD_CHANGED', user=self.user).exists())
 
 
 class ReviewerCVDownloadEndpointTests(TestCase):

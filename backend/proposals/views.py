@@ -31,6 +31,96 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         return request.user and request.user.is_staff
 
 
+class ProposalAccessPermission(permissions.BasePermission):
+    """
+    Enforce the CTRG role model:
+    - SRC Chair has full access.
+    - Reviewers can only view proposals assigned to them.
+    - PIs can manage their own proposals.
+    """
+
+    admin_only_actions = {
+        'destroy',
+        'stage1_decision',
+        'start_stage2',
+        'reopen_revision',
+        'mark_revision_missed',
+        'chair_stage2_review',
+        'final_decision',
+        'download_report',
+        'download_report_docx',
+        'download_review_template',
+        'download_review_template_docx',
+    }
+    pi_write_actions = {'create', 'update', 'partial_update', 'submit', 'submit_revision'}
+    owner_only_read_actions = {'reviews', 'combined_comments'}
+
+    @staticmethod
+    def _has_group(user, group_name):
+        return bool(user and user.is_authenticated and user.groups.filter(name=group_name).exists())
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+
+        if user.is_staff:
+            return True
+
+        if view.action in self.admin_only_actions:
+            return False
+
+        if view.action == 'create':
+            return self._has_group(user, 'PI')
+
+        if view.action in self.pi_write_actions:
+            return self._has_group(user, 'PI')
+
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if user.is_staff:
+            return True
+
+        is_owner = obj.created_by_id == user.id or (
+            bool(obj.pi_email) and bool(user.email) and obj.pi_email.lower() == user.email.lower()
+        )
+
+        if view.action in self.pi_write_actions:
+            if obj.is_locked:
+                return False
+            if view.action in {'update', 'partial_update'} and obj.status != Proposal.Status.DRAFT:
+                return False
+            return is_owner and self._has_group(user, 'PI')
+
+        if view.action in self.owner_only_read_actions:
+            return is_owner
+
+        if view.action == 'download_file':
+            return is_owner or obj.review_assignments.filter(reviewer=user).exists()
+
+        if view.action == 'retrieve':
+            return is_owner or obj.review_assignments.filter(reviewer=user).exists()
+
+        return is_owner or obj.review_assignments.filter(reviewer=user).exists()
+
+
+def build_canonical_status_breakdown(proposals_queryset):
+    """Return counts keyed by the required canonical lifecycle statuses."""
+    breakdown = {
+        status: 0
+        for status in Proposal.CANONICAL_LIFECYCLE_STATUSES
+    }
+
+    for row in proposals_queryset.values('status').annotate(total=Count('id')):
+        reportable = Proposal.reportable_status(row['status'])
+        if reportable:
+            breakdown[reportable] += row['total']
+
+    return breakdown
+
+
 class GrantCycleViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Grant Cycle management.
@@ -113,7 +203,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
 
     OPTIMIZED: Uses select_related and prefetch_related to reduce database queries
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [ProposalAccessPermission]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -487,36 +577,48 @@ class DashboardViewSet(viewsets.ViewSet):
         if not request.user.is_staff:
             return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
         
-        from reviews.models import ReviewAssignment
+        from reviews.models import ReviewAssignment, Stage2Review
         
         proposals = Proposal.objects.all()
         pending_reviews = ReviewAssignment.objects.filter(
             status=ReviewAssignment.Status.PENDING
         ).count()
         
-        # Proposals awaiting Stage 1 decision (all reviews complete but no decision)
-        awaiting_decision = proposals.filter(
+        stage1_awaiting_decision = proposals.filter(
             status=Proposal.Status.UNDER_STAGE_1_REVIEW
         ).annotate(
             pending_reviews=Count('review_assignments', filter=Q(
                 review_assignments__status=ReviewAssignment.Status.PENDING,
                 review_assignments__stage=1
+            )),
+            completed_reviews=Count('review_assignments', filter=Q(
+                review_assignments__status=ReviewAssignment.Status.COMPLETED,
+                review_assignments__stage=1
             ))
-        ).filter(pending_reviews=0).count()
+        ).filter(
+            pending_reviews=0,
+            completed_reviews__gt=0,
+            stage1_decision__isnull=True,
+        ).count()
+
+        stage2_candidates = proposals.filter(
+            status=Proposal.Status.UNDER_STAGE_2_REVIEW,
+            final_decision__isnull=True,
+        )
+        stage2_awaiting_decision = 0
+        for proposal in stage2_candidates:
+            if ProposalService.check_stage2_completion(proposal):
+                stage2_awaiting_decision += 1
         
         awaiting_revision = proposals.filter(
-            status=Proposal.Status.REVISION_REQUESTED
+            status__in=[Proposal.Status.REVISION_REQUESTED, Proposal.Status.REVISION_DEADLINE_MISSED]
         ).count()
-        
-        # Status breakdown
-        status_breakdown = {}
-        for choice in Proposal.Status.choices:
-            status_breakdown[choice[0]] = proposals.filter(status=choice[0]).count()
+        status_breakdown = build_canonical_status_breakdown(proposals.exclude(status=Proposal.Status.DRAFT))
         
         data = {
-            'total_proposals': proposals.count(),
+            'total_proposals': sum(status_breakdown.values()),
             'pending_reviews': pending_reviews,
-            'awaiting_decision': awaiting_decision,
+            'awaiting_decision': stage1_awaiting_decision + stage2_awaiting_decision,
             'awaiting_revision': awaiting_revision,
             'status_breakdown': status_breakdown
         }
@@ -535,6 +637,9 @@ class DashboardViewSet(viewsets.ViewSet):
         assignments = ReviewAssignment.objects.filter(reviewer=request.user)
         
         data = {
+            'assigned_proposals': assignments.values('proposal_id').distinct().count(),
+            'pending_reviews': assignments.filter(status=ReviewAssignment.Status.PENDING).count(),
+            'submitted_reviews': assignments.filter(status=ReviewAssignment.Status.COMPLETED).count(),
             'total_assigned': assignments.count(),
             'pending': assignments.filter(status=ReviewAssignment.Status.PENDING).count(),
             'completed': assignments.filter(status=ReviewAssignment.Status.COMPLETED).count(),
@@ -559,12 +664,25 @@ class DashboardViewSet(viewsets.ViewSet):
         # Find proposals with upcoming revision deadlines
         from datetime import timedelta
         upcoming_deadlines = proposals.filter(
-            status=Proposal.Status.REVISION_REQUESTED,
+            status__in=[Proposal.Status.REVISION_REQUESTED, Proposal.Status.REVISION_DEADLINE_MISSED],
             revision_deadline__gt=timezone.now()
         ).values('id', 'proposal_code', 'title', 'revision_deadline')
+        upcoming_deadlines_list = list(upcoming_deadlines)
+        submitted_proposals = proposals.exclude(status=Proposal.Status.DRAFT)
+        final_decisions = proposals.filter(
+            status__in=[
+                Proposal.Status.STAGE_1_REJECTED,
+                Proposal.Status.ACCEPTED_NO_CORRECTIONS,
+                Proposal.Status.FINAL_ACCEPTED,
+                Proposal.Status.FINAL_REJECTED,
+            ]
+        )
         
         data = {
-            'total_submitted': proposals.exclude(status=Proposal.Status.DRAFT).count(),
+            'submitted_proposals': submitted_proposals.count(),
+            'revision_deadlines': len(upcoming_deadlines_list),
+            'final_decisions': final_decisions.count(),
+            'total_submitted': submitted_proposals.count(),
             'drafts': proposals.filter(status=Proposal.Status.DRAFT).count(),
             'under_review': proposals.filter(
                 status__in=[
@@ -588,7 +706,7 @@ class DashboardViewSet(viewsets.ViewSet):
                     Proposal.Status.FINAL_REJECTED
                 ]
             ).count(),
-            'upcoming_deadlines': list(upcoming_deadlines),
+            'upcoming_deadlines': upcoming_deadlines_list,
             'proposals': ProposalListSerializer(proposals, many=True).data
         }
         

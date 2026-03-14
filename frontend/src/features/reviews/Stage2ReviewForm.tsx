@@ -58,6 +58,7 @@ const Stage2ReviewForm: React.FC = () => {
             stage1Reviews.reduce((sum, review) => sum + (review.stage1_score?.total_score || 0), 0) / stage1Reviews.length
         )
         : 0;
+    const isFinalized = assignment?.status === 'COMPLETED' && assignment?.stage2_review?.is_draft === false;
 
     useEffect(() => {
         loadData();
@@ -81,6 +82,9 @@ const Stage2ReviewForm: React.FC = () => {
     };
 
     const handleSaveDraft = async () => {
+        if (isFinalized) {
+            return;
+        }
         try {
             setSubmitting(true);
             setError(null);
@@ -101,6 +105,9 @@ const Stage2ReviewForm: React.FC = () => {
     };
 
     const handleSubmit = async () => {
+        if (isFinalized) {
+            return;
+        }
         if (!concernsAddressed) {
             setError('Please indicate whether concerns were addressed');
             return;
@@ -182,6 +189,11 @@ const Stage2ReviewForm: React.FC = () => {
                     {error}
                 </div>
             )}
+            {isFinalized && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                    This Stage 2 review has already been submitted and is locked.
+                </div>
+            )}
 
             {/* Stage 1 Summary */}
             {stage1Reviews.length > 0 && (
@@ -259,13 +271,19 @@ const Stage2ReviewForm: React.FC = () => {
                                 <Download size={18} className="mr-2" />
                                 Download Revised Proposal
                             </button>
-                            <button
-                                onClick={() => handleDownloadFile('response_to_reviewers')}
-                                className="w-full flex items-center px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
-                            >
-                                <Download size={18} className="mr-2" />
-                                Response to Reviewers
-                            </button>
+                            {assignment?.response_to_reviewers_file ? (
+                                <button
+                                    onClick={() => handleDownloadFile('response_to_reviewers')}
+                                    className="w-full flex items-center px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+                                >
+                                    <Download size={18} className="mr-2" />
+                                    Response to Reviewers
+                                </button>
+                            ) : (
+                                <div className="rounded-lg border border-dashed border-orange-300 bg-orange-100 px-4 py-3 text-sm text-orange-800">
+                                    No response-to-reviewers document was uploaded by the PI.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -287,11 +305,13 @@ const Stage2ReviewForm: React.FC = () => {
                     ].map((option) => (
                         <button
                             key={option.value}
+                            type="button"
                             onClick={() => setConcernsAddressed(option.value as any)}
+                            disabled={isFinalized}
                             className={`p-4 rounded-xl border-2 transition-all ${concernsAddressed === option.value
                                 ? `${option.activeBorder} ${option.activeBg}`
                                 : 'border-gray-200 hover:border-gray-300'
-                                }`}
+                                } disabled:cursor-not-allowed disabled:opacity-70`}
                         >
                             <option.icon
                                 size={32}
@@ -312,11 +332,13 @@ const Stage2ReviewForm: React.FC = () => {
                 </h2>
                 <div className="grid grid-cols-2 gap-4">
                     <button
+                        type="button"
                         onClick={() => setRevisedRecommendation('ACCEPT')}
+                        disabled={isFinalized}
                         className={`p-6 rounded-xl border-2 transition-all ${revisedRecommendation === 'ACCEPT'
                             ? 'border-green-500 bg-green-50'
                             : 'border-gray-200 hover:border-gray-300'
-                            }`}
+                            } disabled:cursor-not-allowed disabled:opacity-70`}
                     >
                         <CheckCircle
                             size={40}
@@ -327,11 +349,13 @@ const Stage2ReviewForm: React.FC = () => {
                         <div className="text-sm text-gray-500">The proposal is ready for funding consideration</div>
                     </button>
                     <button
+                        type="button"
                         onClick={() => setRevisedRecommendation('REJECT')}
+                        disabled={isFinalized}
                         className={`p-6 rounded-xl border-2 transition-all ${revisedRecommendation === 'REJECT'
                             ? 'border-red-500 bg-red-50'
                             : 'border-gray-200 hover:border-gray-300'
-                            }`}
+                            } disabled:cursor-not-allowed disabled:opacity-70`}
                     >
                         <XCircle
                             size={40}
@@ -357,8 +381,9 @@ const Stage2ReviewForm: React.FC = () => {
                         max="100"
                         value={revisedScore}
                         onChange={(e) => setRevisedScore(e.target.value)}
+                        disabled={isFinalized}
                         placeholder="Enter an optional revised score"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                     />
                 </div>
                 <div>
@@ -371,9 +396,10 @@ const Stage2ReviewForm: React.FC = () => {
                     <textarea
                         value={technicalComments}
                         onChange={(e) => setTechnicalComments(e.target.value)}
+                        disabled={isFinalized}
                         rows={4}
                         placeholder="Describe how technical concerns were addressed..."
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                     />
                 </div>
                 <div>
@@ -386,9 +412,10 @@ const Stage2ReviewForm: React.FC = () => {
                     <textarea
                         value={budgetComments}
                         onChange={(e) => setBudgetComments(e.target.value)}
+                        disabled={isFinalized}
                         rows={3}
                         placeholder="Describe budget-related feedback..."
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                     />
                 </div>
             </div>
@@ -404,7 +431,7 @@ const Stage2ReviewForm: React.FC = () => {
                 <div className="flex space-x-3">
                     <button
                         onClick={handleSaveDraft}
-                        disabled={submitting}
+                        disabled={submitting || isFinalized}
                         className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                     >
                         <Save size={18} className="mr-2" />
@@ -412,7 +439,7 @@ const Stage2ReviewForm: React.FC = () => {
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={submitting}
+                        disabled={submitting || isFinalized}
                         className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                     >
                         <Send size={18} className="mr-2" />

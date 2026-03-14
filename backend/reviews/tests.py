@@ -174,3 +174,89 @@ class ReviewsDomainTests(TestCase):
             ).count(),
             2
         )
+
+    def test_admin_can_update_reviewer_identity_and_profile(self):
+        self.client.force_authenticate(user=self.admin_user)
+        response = self.client.patch(
+            f'/api/reviewers/{self.profile.id}/',
+            {
+                'first_name': 'Updated',
+                'last_name': 'Reviewer',
+                'email': 'updated.reviewer@nsu.edu',
+                'department': 'EEE',
+                'area_of_expertise': 'AI Systems',
+                'max_review_load': 3,
+                'user_is_active': False,
+                'is_active_reviewer': False,
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        self.reviewer.refresh_from_db()
+        self.profile.refresh_from_db()
+        self.assertEqual(self.reviewer.first_name, 'Updated')
+        self.assertEqual(self.reviewer.email, 'updated.reviewer@nsu.edu')
+        self.assertFalse(self.reviewer.is_active)
+        self.assertEqual(self.profile.department, 'EEE')
+        self.assertEqual(self.profile.area_of_expertise, 'AI Systems')
+        self.assertEqual(self.profile.max_review_load, 3)
+        self.assertFalse(self.profile.is_active_reviewer)
+
+    def test_workload_report_endpoint_returns_csv(self):
+        self.client.force_authenticate(user=self.admin_user)
+        response = self.client.get('/api/reviewers/workload_report/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertIn('Reviewer Name,Email,Department', response.content.decode())
+
+    def test_final_stage1_review_cannot_be_resubmitted(self):
+        assignment = ReviewAssignment.objects.create(
+            proposal=self.proposal,
+            reviewer=self.reviewer,
+            stage=ReviewAssignment.Stage.STAGE_1,
+            deadline=timezone.now() + timedelta(days=3),
+        )
+
+        self.client.force_authenticate(user=self.reviewer)
+        first_response = self.client.post(
+            f'/api/assignments/{assignment.id}/submit_score/',
+            {
+                'originality_score': 10,
+                'clarity_score': 10,
+                'literature_review_score': 10,
+                'methodology_score': 10,
+                'impact_score': 10,
+                'publication_potential_score': 8,
+                'budget_appropriateness_score': 8,
+                'timeline_practicality_score': 4,
+                'narrative_comments': 'Final review comments',
+                'recommendation': 'ACCEPT',
+                'detailed_recommendation': 'Recommend acceptance based on the overall merits.',
+                'is_draft': False,
+            },
+            format='json',
+        )
+        second_response = self.client.post(
+            f'/api/assignments/{assignment.id}/submit_score/',
+            {
+                'originality_score': 9,
+                'clarity_score': 9,
+                'literature_review_score': 9,
+                'methodology_score': 9,
+                'impact_score': 9,
+                'publication_potential_score': 7,
+                'budget_appropriateness_score': 7,
+                'timeline_practicality_score': 3,
+                'narrative_comments': 'Attempted overwrite',
+                'recommendation': 'REJECT',
+                'detailed_recommendation': 'This should not be accepted after final submission.',
+                'is_draft': False,
+            },
+            format='json',
+        )
+
+        self.assertEqual(first_response.status_code, 200, first_response.data)
+        self.assertEqual(second_response.status_code, 400)
+        self.assertEqual(second_response.data['error'], 'Review already completed')

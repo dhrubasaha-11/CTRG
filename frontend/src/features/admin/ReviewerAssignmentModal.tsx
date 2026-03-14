@@ -91,7 +91,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
         }
     };
 
-    const availableReviewers = reviewers.filter(r => r.is_active_reviewer && r.can_accept_more);
+    const availableReviewers = reviewers.filter(r => r.is_active_reviewer);
     const canAssignStage2 = ['REVISED_PROPOSAL_SUBMITTED', 'UNDER_STAGE_2_REVIEW'].includes(proposal.status);
 
     return (
@@ -207,7 +207,12 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                                                 </div>
                                                 <div>
                                                     <div className="font-medium text-gray-900">{reviewer.user_name}</div>
-                                                    <div className="text-sm text-gray-500">{reviewer.area_of_expertise}</div>
+                                                    <div className="text-sm text-gray-500">{reviewer.area_of_expertise || reviewer.department || 'No expertise added'}</div>
+                                                    {reviewer.overload_warning && (
+                                                        <div className="mt-1 text-xs font-medium text-amber-700">
+                                                            {reviewer.overload_warning}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="text-right">
@@ -216,8 +221,8 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                                                 </span>
                                                 <div className="w-16 h-1.5 bg-gray-200 rounded-full mt-1">
                                                     <div
-                                                        className="h-full bg-blue-500 rounded-full"
-                                                        style={{ width: `${(reviewer.current_workload / reviewer.max_review_load) * 100}%` }}
+                                                        className={`h-full rounded-full ${reviewer.can_accept_more ? 'bg-blue-500' : 'bg-amber-500'}`}
+                                                        style={{ width: `${Math.min((reviewer.current_workload / reviewer.max_review_load) * 100, 100)}%` }}
                                                     />
                                                 </div>
                                             </div>

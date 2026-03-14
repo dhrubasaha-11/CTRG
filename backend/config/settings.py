@@ -19,6 +19,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 import sys
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 from celery.schedules import crontab
 import environ
 
@@ -223,6 +224,8 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = env.int('DATA_UPLOAD_MAX_MEMORY_SIZE', default=524
 # Generate a key with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 # When not set, files are stored unencrypted (development fallback).
 FILE_ENCRYPTION_KEY = env('FILE_ENCRYPTION_KEY', default='')
+if not DEBUG and not FILE_ENCRYPTION_KEY:
+    raise ImproperlyConfigured('FILE_ENCRYPTION_KEY must be set when DEBUG=False.')
 
 # ========================================
 # Cache Configuration

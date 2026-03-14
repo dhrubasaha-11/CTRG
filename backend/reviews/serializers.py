@@ -24,6 +24,10 @@ class ReviewerProfileSerializer(serializers.ModelSerializer):
     # Flatten user fields so the frontend doesn't need nested user lookups
     user_email = serializers.EmailField(source='user.email', read_only=True)
     user_name = serializers.SerializerMethodField()
+    first_name = serializers.CharField(source='user.first_name', required=False, allow_blank=True)
+    last_name = serializers.CharField(source='user.last_name', required=False, allow_blank=True)
+    email = serializers.EmailField(source='user.email', required=False)
+    user_is_active = serializers.BooleanField(source='user.is_active', required=False)
     # These delegate to model methods that count active (non-completed) assignments
     current_workload = serializers.SerializerMethodField()
     can_accept_more = serializers.SerializerMethodField()
@@ -32,6 +36,7 @@ class ReviewerProfileSerializer(serializers.ModelSerializer):
         model = ReviewerProfile
         fields = [
             'id', 'user', 'user_email', 'user_name',
+            'first_name', 'last_name', 'email', 'user_is_active',
             'department', 'area_of_expertise', 'max_review_load', 'is_active_reviewer',
             'current_workload', 'can_accept_more'
         ]
@@ -46,6 +51,32 @@ class ReviewerProfileSerializer(serializers.ModelSerializer):
     def get_can_accept_more(self, obj):
         """True if current workload is below max_review_load."""
         return obj.can_accept_review()
+
+    def validate(self, attrs):
+        user_data = attrs.get('user', {})
+        email = user_data.get('email')
+        if email:
+            queryset = self.instance.user.__class__.objects.exclude(pk=self.instance.user_id) if self.instance else None
+            if queryset is not None and queryset.filter(email=email).exists():
+                raise serializers.ValidationError({'email': 'A user with this email already exists.'})
+        return attrs
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
+        user = instance.user
+
+        for field in ('first_name', 'last_name', 'email', 'is_active'):
+            if field in user_data:
+                setattr(user, field, user_data[field])
+
+        if user_data:
+            user.save(update_fields=list(user_data.keys()))
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
 
 
 # =============================================================================
@@ -263,6 +294,9 @@ class ReviewerWorkloadSerializer(serializers.Serializer):
     user = serializers.IntegerField()
     user_email = serializers.EmailField()
     user_name = serializers.CharField()
+    first_name = serializers.CharField(allow_blank=True)
+    last_name = serializers.CharField(allow_blank=True)
+    user_is_active = serializers.BooleanField()
     is_active_reviewer = serializers.BooleanField()
     max_review_load = serializers.IntegerField()
     department = serializers.CharField(allow_blank=True)

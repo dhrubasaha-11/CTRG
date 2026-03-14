@@ -193,10 +193,17 @@ class UserCreateSerializer(serializers.ModelSerializer):
         required=True,
         write_only=True
     )
+    department = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    area_of_expertise = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    max_review_load = serializers.IntegerField(required=False, min_value=1, max_value=50, write_only=True)
+    is_active_reviewer = serializers.BooleanField(required=False, write_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'password', 'first_name', 'last_name', 'role']
+        fields = [
+            'id', 'username', 'email', 'password', 'first_name', 'last_name', 'role',
+            'department', 'area_of_expertise', 'max_review_load', 'is_active_reviewer'
+        ]
         read_only_fields = ['id']
         extra_kwargs = {
             'first_name': {'required': True},
@@ -235,6 +242,10 @@ class UserCreateSerializer(serializers.ModelSerializer):
         """
         # Extract role from validated data (not a User model field)
         role = validated_data.pop('role')
+        department = validated_data.pop('department', '')
+        area_of_expertise = validated_data.pop('area_of_expertise', '')
+        max_review_load = validated_data.pop('max_review_load', 5)
+        is_active_reviewer = validated_data.pop('is_active_reviewer', True)
 
         # Create user with hashed password
         user = User.objects.create_user(**validated_data)
@@ -251,7 +262,13 @@ class UserCreateSerializer(serializers.ModelSerializer):
         # Create ReviewerProfile if role is Reviewer
         if role == 'Reviewer':
             from reviews.models import ReviewerProfile
-            ReviewerProfile.objects.create(user=user, area_of_expertise='')
+            ReviewerProfile.objects.create(
+                user=user,
+                department=department,
+                area_of_expertise=area_of_expertise,
+                max_review_load=max_review_load,
+                is_active_reviewer=is_active_reviewer,
+            )
 
         return user
 

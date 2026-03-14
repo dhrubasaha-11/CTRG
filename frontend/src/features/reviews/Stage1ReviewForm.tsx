@@ -39,14 +39,14 @@ type Stage1Recommendation = 'ACCEPT' | 'TENTATIVELY_ACCEPT' | 'REJECT' | '';
  * but can be overridden by cycle-specific score_weights.
  */
 const DEFAULT_CRITERIA: CriteriaConfig[] = [
-    { key: 'originality_score', label: 'Originality', description: 'Innovation and novelty of the research idea', maxScore: 15 },
-    { key: 'clarity_score', label: 'Clarity', description: 'Clear presentation of objectives and methodology', maxScore: 15 },
-    { key: 'literature_review_score', label: 'Literature Review', description: 'Comprehensive review of relevant literature', maxScore: 15 },
-    { key: 'methodology_score', label: 'Methodology', description: 'Appropriateness and rigor of research methods', maxScore: 15 },
-    { key: 'impact_score', label: 'Impact', description: 'Potential contribution to the field and society', maxScore: 15 },
-    { key: 'publication_potential_score', label: 'Publication Potential', description: 'Likelihood of peer-reviewed publications', maxScore: 10 },
-    { key: 'budget_appropriateness_score', label: 'Budget Appropriateness', description: 'Budget justification and cost-effectiveness', maxScore: 10 },
-    { key: 'timeline_practicality_score', label: 'Timeline Practicality', description: 'Realistic and achievable project timeline', maxScore: 5 },
+    { key: 'originality_score', label: 'Originality of the proposed research', description: 'Score the originality and novelty of the proposed research.', maxScore: 15 },
+    { key: 'clarity_score', label: 'Clarity and rationality of the research question, thesis, hypotheses', description: 'Evaluate the clarity and rationality of the research question, thesis, and hypotheses.', maxScore: 15 },
+    { key: 'literature_review_score', label: 'Literature review', description: 'Assess the relevant background materials and prior related studies.', maxScore: 15 },
+    { key: 'methodology_score', label: 'Appropriateness of the methodology', description: 'For statistical studies, consider sampling adequacy, analysis plan, data safety, and monitoring.', maxScore: 15 },
+    { key: 'impact_score', label: 'Potential impact of research findings', description: 'Consider policy implication and contribution to existing knowledge.', maxScore: 15 },
+    { key: 'publication_potential_score', label: 'Potential for publication / dissemination of research results', description: 'Assess the potential for publication or dissemination of the research results.', maxScore: 10 },
+    { key: 'budget_appropriateness_score', label: 'Appropriateness of the proposed budget', description: 'Evaluate the appropriateness of the proposed budget.', maxScore: 10 },
+    { key: 'timeline_practicality_score', label: 'Practicality of the proposed time frame', description: 'Assess whether the proposed time frame is practical and achievable.', maxScore: 5 },
 ];
 
 /** Build criteria with cycle-specific weight overrides if available. */
@@ -121,6 +121,8 @@ const Stage1ReviewForm: React.FC = () => {
         loadAssignment();
     }, [loadAssignment]);
 
+    const isFinalized = assignment?.status === 'COMPLETED' && assignment?.stage1_score?.is_draft === false;
+
     // Derived values — recalculated on every render (cheap since it's just 8 additions)
     const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
     const maxTotal = criteria.reduce((sum, c) => sum + c.maxScore, 0);
@@ -133,6 +135,9 @@ const Stage1ReviewForm: React.FC = () => {
     };
 
     const handleSaveDraft = async () => {
+        if (isFinalized) {
+            return;
+        }
         try {
             setSubmitting(true);
             setError(null);
@@ -161,6 +166,9 @@ const Stage1ReviewForm: React.FC = () => {
     };
 
     const handleSubmit = async () => {
+        if (isFinalized) {
+            return;
+        }
         // Validate all scores are filled
         const hasEmptyScores = Object.values(scores).some(s => s == null);
         if (hasEmptyScores) {
@@ -237,6 +245,11 @@ const Stage1ReviewForm: React.FC = () => {
                     </button>
                     <h1 className="text-2xl font-bold text-gray-900">Stage 1 Review</h1>
                     <p className="text-gray-500">{assignment?.proposal_code} - {assignment?.proposal_title}</p>
+                    {isFinalized && (
+                        <p className="mt-1 text-sm font-medium text-emerald-700">
+                            Final review submitted. This form is locked and shown in read-only mode.
+                        </p>
+                    )}
                 </div>
                 <div className="text-right">
                     <div className="text-sm text-gray-500">Deadline</div>
@@ -297,6 +310,7 @@ const Stage1ReviewForm: React.FC = () => {
                                     min="0"
                                     max={criterion.maxScore}
                                     value={scores[criterion.key]}
+                                    disabled={isFinalized}
                                     onChange={(e) => handleScoreChange(criterion.key, parseInt(e.target.value), criterion.maxScore)}
                                     className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                                 />
@@ -305,6 +319,7 @@ const Stage1ReviewForm: React.FC = () => {
                                     min="0"
                                     max={criterion.maxScore}
                                     value={scores[criterion.key]}
+                                    disabled={isFinalized}
                                     onChange={(e) => handleScoreChange(criterion.key, parseInt(e.target.value) || 0, criterion.maxScore)}
                                     className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center"
                                 />
@@ -344,6 +359,7 @@ const Stage1ReviewForm: React.FC = () => {
                 </p>
                 <textarea
                     value={comments}
+                    disabled={isFinalized}
                     onChange={(e) => setComments(e.target.value)}
                     rows={6}
                     placeholder="Enter your detailed comments here..."
@@ -359,6 +375,7 @@ const Stage1ReviewForm: React.FC = () => {
                     </label>
                     <select
                         value={recommendation}
+                        disabled={isFinalized}
                         onChange={(e) => setRecommendation(e.target.value as Stage1Recommendation)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
@@ -377,6 +394,7 @@ const Stage1ReviewForm: React.FC = () => {
                     </p>
                     <textarea
                         value={detailedRecommendation}
+                        disabled={isFinalized}
                         onChange={(e) => setDetailedRecommendation(e.target.value)}
                         rows={5}
                         placeholder="Enter detailed recommendation and rationale..."
@@ -396,7 +414,7 @@ const Stage1ReviewForm: React.FC = () => {
                 <div className="flex space-x-3">
                     <button
                         onClick={handleSaveDraft}
-                        disabled={submitting}
+                        disabled={submitting || isFinalized}
                         className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                     >
                         <Save size={18} className="mr-2" />
@@ -404,7 +422,7 @@ const Stage1ReviewForm: React.FC = () => {
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={submitting}
+                        disabled={submitting || isFinalized}
                         className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                     >
                         <Send size={18} className="mr-2" />

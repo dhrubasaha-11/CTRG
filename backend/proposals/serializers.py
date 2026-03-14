@@ -52,6 +52,8 @@ class GrantCycleSerializer(serializers.ModelSerializer):
         """
         mutable = data.copy()
         optional_date_fields = [
+            'start_date',
+            'end_date',
             'stage1_review_start_date',
             'stage1_review_end_date',
             'stage2_review_start_date',
@@ -91,6 +93,16 @@ class GrantCycleSerializer(serializers.ModelSerializer):
         if stage1_start and stage1_end and stage1_start > stage1_end:
             raise serializers.ValidationError({
                 'stage1_review_end_date': 'Stage 1 end date must be on or after Stage 1 start date.'
+            })
+
+        if not stage2_start:
+            raise serializers.ValidationError({
+                'stage2_review_start_date': 'Stage 2 review start date is required.'
+            })
+
+        if not stage2_end:
+            raise serializers.ValidationError({
+                'stage2_review_end_date': 'Stage 2 review end date is required.'
             })
 
         if stage2_start and stage2_end and stage2_start > stage2_end:
@@ -448,8 +460,18 @@ class FinalDecisionCreateSerializer(serializers.Serializer):
     (may differ from the requested amount) and final remarks.
     """
     decision = serializers.ChoiceField(choices=FinalDecision.Decision.choices)
-    approved_grant_amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('0.01'))
+    approved_grant_amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('0.00'))
     final_remarks = serializers.CharField()
+
+    def validate(self, attrs):
+        if (
+            attrs['decision'] == FinalDecision.Decision.ACCEPTED
+            and attrs['approved_grant_amount'] <= Decimal('0.00')
+        ):
+            raise serializers.ValidationError({
+                'approved_grant_amount': 'Approved grant amount must be greater than 0 for accepted proposals.'
+            })
+        return attrs
 
 
 # =============================================================================

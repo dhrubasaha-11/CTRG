@@ -12,16 +12,22 @@ import { proposalApi, type Proposal } from '../../services/api';
 import StatusTracker from './StatusTracker';
 
 interface PIStats {
-    total: number;
-    drafts: number;
+    submitted_proposals: number;
+    revision_deadlines: number;
+    final_decisions: number;
     under_review: number;
     pending_action: number;
-    completed: number;
 }
 
 const PIDashboard: React.FC = () => {
     const [proposals, setProposals] = useState<Proposal[]>([]);
-    const [stats, setStats] = useState<PIStats>({ total: 0, drafts: 0, under_review: 0, pending_action: 0, completed: 0 });
+    const [stats, setStats] = useState<PIStats>({
+        submitted_proposals: 0,
+        revision_deadlines: 0,
+        final_decisions: 0,
+        under_review: 0,
+        pending_action: 0,
+    });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [, setTick] = useState(0);
@@ -45,23 +51,38 @@ const PIDashboard: React.FC = () => {
             setProposals(response.data);
 
             // Calculate stats
-            const drafts = response.data.filter(p => p.status === 'DRAFT').length;
             const underReview = response.data.filter(p =>
                 ['SUBMITTED', 'UNDER_STAGE_1_REVIEW', 'UNDER_STAGE_2_REVIEW'].includes(p.status)
             ).length;
             const pendingAction = response.data.filter(p =>
                 ['REVISION_REQUESTED', 'TENTATIVELY_ACCEPTED'].includes(p.status)
             ).length;
-            const completed = response.data.filter(p =>
-                ['FINAL_ACCEPTED', 'FINAL_REJECTED', 'STAGE_1_REJECTED'].includes(p.status)
+            const revisionDeadlines = response.data.filter(p =>
+                Boolean(p.revision_deadline) && ['REVISION_REQUESTED', 'REVISION_DEADLINE_MISSED'].includes(p.status)
             ).length;
+            const finalDecisions = response.data.filter(p =>
+                ['ACCEPTED_NO_CORRECTIONS', 'STAGE_1_REJECTED', 'FINAL_ACCEPTED', 'FINAL_REJECTED'].includes(p.status)
+            ).length;
+            const submittedProposals = response.data.filter(p => p.status !== 'DRAFT').length;
 
-            setStats({ total: response.data.length, drafts, under_review: underReview, pending_action: pendingAction, completed });
+            setStats({
+                submitted_proposals: submittedProposals,
+                revision_deadlines: revisionDeadlines,
+                final_decisions: finalDecisions,
+                under_review: underReview,
+                pending_action: pendingAction,
+            });
         } catch (err) {
             console.error("Failed to load proposals:", err);
             setError("Failed to load proposals. Please try again.");
             setProposals([]); // Clear proposals on error
-            setStats({ total: 0, drafts: 0, under_review: 0, pending_action: 0, completed: 0 }); // Reset stats on error
+            setStats({
+                submitted_proposals: 0,
+                revision_deadlines: 0,
+                final_decisions: 0,
+                under_review: 0,
+                pending_action: 0,
+            });
         } finally {
             setLoading(false);
         }
@@ -173,8 +194,8 @@ const PIDashboard: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase">Total</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                            <p className="text-xs font-medium text-gray-500 uppercase">Submitted</p>
+                            <p className="text-2xl font-bold text-gray-900">{stats.submitted_proposals}</p>
                         </div>
                         <FileText size={24} className="text-gray-400" />
                     </div>
@@ -182,10 +203,10 @@ const PIDashboard: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase">Drafts</p>
-                            <p className="text-2xl font-bold text-gray-600">{stats.drafts}</p>
+                            <p className="text-xs font-medium text-gray-500 uppercase">Revision Deadlines</p>
+                            <p className="text-2xl font-bold text-orange-600">{stats.revision_deadlines}</p>
                         </div>
-                        <Edit3 size={24} className="text-gray-400" />
+                        <Clock size={24} className="text-orange-400" />
                     </div>
                 </div>
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
@@ -209,8 +230,8 @@ const PIDashboard: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase">Completed</p>
-                            <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+                            <p className="text-xs font-medium text-gray-500 uppercase">Final Decisions</p>
+                            <p className="text-2xl font-bold text-green-600">{stats.final_decisions}</p>
                         </div>
                         <CheckCircle size={24} className="text-green-400" />
                     </div>

@@ -262,6 +262,7 @@ export interface Proposal {
     submitted_at?: string;
     revision_deadline?: string;
     is_revision_overdue?: boolean;
+    is_locked?: boolean;
     proposal_file?: string;
     application_template_file?: string;
     revised_proposal_file?: string;
@@ -277,6 +278,10 @@ export interface Reviewer {
     user: number;
     user_email: string;
     user_name: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    user_is_active?: boolean;
     department: string;
     area_of_expertise: string;
     max_review_load: number;
@@ -353,6 +358,8 @@ export interface Stage1Score {
     total_score: number;
     percentage_score: number;
     weighted_percentage_score: number;
+    submitted_at?: string;
+    is_draft?: boolean;
 }
 
 export interface Stage2Review {
@@ -366,6 +373,8 @@ export interface Stage2Review {
     technical_comments: string;
     budget_comments: string;
     revised_score?: number;
+    submitted_at?: string;
+    is_draft?: boolean;
 }
 
 export interface ProposalReviewsResponse {
@@ -440,6 +449,7 @@ export const dashboardApi = {
 export const reviewerApi = {
     getAll: () => api.get<Reviewer[]>('/reviewers/'),
     getWorkloads: () => api.get<Reviewer[]>('/reviewers/workloads/'),
+    downloadWorkloadReport: () => api.get('/reviewers/workload_report/', { responseType: 'blob' }),
     getMyProfile: () => api.get<Reviewer>('/reviewers/my_profile/'),
     update: (id: number, data: Partial<Reviewer>) => api.patch<Reviewer>(`/reviewers/${id}/`, data),
     emailReviewers: (reviewer_ids: number[], subject?: string, message?: string) =>

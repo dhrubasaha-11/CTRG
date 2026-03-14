@@ -3,7 +3,7 @@
  * Allows SRC Chair to make final funding decisions after Stage 2 review.
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, AlertCircle, CheckCircle, XCircle, DollarSign, FileText } from 'lucide-react';
+import { X, AlertCircle, CheckCircle, XCircle, DollarSign, FileText, Download } from 'lucide-react';
 import { proposalApi, type Proposal, type ReviewAssignment, type Stage2Review } from '../../services/api';
 
 interface Props {
@@ -60,7 +60,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
             await proposalApi.finalDecision(
                 proposal.id,
                 decision,
-                parseFloat(approvedAmount) || 0,
+                decision === 'REJECTED' ? 0 : (parseFloat(approvedAmount) || 0),
                 finalRemarks
             );
             onSuccess();
@@ -71,11 +71,33 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
         }
     };
 
+    const handleDownload = async (fileType: string, fileName: string) => {
+        try {
+            const response = await proposalApi.downloadFile(proposal.id, fileType);
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            alert('File not available for download.');
+        }
+    };
+
+    const stage1Reviews = reviews.filter(r => r.stage === 1 && r.stage1_score);
     const stage2Reviews = reviews.filter(r => r.stage === 2 && r.stage2_review);
     const recommendations = stage2Reviews.map(r => r.stage2_review?.revised_recommendation);
     const chairRecommendations = chairStage2Reviews.map((review) => review.revised_recommendation);
     const acceptCount = recommendations.filter(r => r === 'ACCEPT').length + chairRecommendations.filter(r => r === 'ACCEPT').length;
     const rejectCount = recommendations.filter(r => r === 'REJECT').length + chairRecommendations.filter(r => r === 'REJECT').length;
+    const averageStage1Score = stage1Reviews.length > 0
+        ? Math.round(
+            stage1Reviews.reduce((sum, review) => sum + (review.stage1_score?.total_score || 0), 0) / stage1Reviews.length
+        )
+        : 0;
 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 px-3 py-4 sm:px-6 sm:py-8">
@@ -117,6 +139,86 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <div className="mb-6 grid gap-4 lg:grid-cols-3">
+                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Stage 1 Reviews</p>
+                            <p className="mt-2 text-2xl font-semibold text-gray-900">{stage1Reviews.length}</p>
+                        </div>
+                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Average Stage 1 Score</p>
+                            <p className="mt-2 text-2xl font-semibold text-gray-900">{averageStage1Score}%</p>
+                        </div>
+                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Proposal Lock</p>
+                            <p className="mt-2 text-sm font-medium text-gray-900">Finalization will lock all further edits.</p>
+                        </div>
+                    </div>
+
+                    <div className="mb-6 rounded-xl border border-gray-200 p-5">
+                        <div className="flex items-center gap-2">
+                            <FileText size={18} className="text-gray-700" />
+                            <h3 className="font-semibold text-gray-900">Revision Record</h3>
+                        </div>
+                        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                            <button
+                                type="button"
+                                onClick={() => handleDownload('proposal', `proposal_${proposal.proposal_code}.pdf`)}
+                                className="flex items-center justify-center rounded-lg bg-blue-600 px-4 py-3 text-white hover:bg-blue-700"
+                            >
+                                <Download size={16} className="mr-2" />
+                                Original Proposal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleDownload('revised_proposal', `revised_${proposal.proposal_code}.pdf`)}
+                                className="flex items-center justify-center rounded-lg bg-purple-600 px-4 py-3 text-white hover:bg-purple-700"
+                            >
+                                <Download size={16} className="mr-2" />
+                                Revised Proposal
+                            </button>
+                            {proposal.response_to_reviewers_file ? (
+                                <button
+                                    type="button"
+                                    onClick={() => handleDownload('response_to_reviewers', `response_${proposal.proposal_code}.pdf`)}
+                                    className="flex items-center justify-center rounded-lg bg-amber-600 px-4 py-3 text-white hover:bg-amber-700"
+                                >
+                                    <Download size={16} className="mr-2" />
+                                    PI Response
+                                </button>
+                            ) : (
+                                <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                    No response-to-reviewers document was uploaded.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="mb-6 rounded-xl border border-gray-200 p-5">
+                        <h3 className="font-semibold text-gray-900">Stage 1 Review Record</h3>
+                        {stage1Reviews.length === 0 ? (
+                            <p className="mt-3 text-sm text-gray-500">No completed Stage 1 reviews available.</p>
+                        ) : (
+                            <div className="mt-4 space-y-3">
+                                {stage1Reviews.map((review, idx) => (
+                                    <div key={review.id} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                                        <div className="flex justify-between gap-3">
+                                            <div>
+                                                <p className="font-medium text-gray-900">Reviewer {idx + 1}</p>
+                                                <p className="text-sm text-gray-500">{review.reviewer_name}</p>
+                                            </div>
+                                            <div className="text-right text-sm text-gray-600">
+                                                <p>{review.stage1_score?.total_score ?? 0}/100</p>
+                                                <p>{review.stage1_score?.recommendation?.replace(/_/g, ' ') || 'No recommendation'}</p>
+                                            </div>
+                                        </div>
+                                        <p className="mt-3 whitespace-pre-wrap text-sm text-gray-700">
+                                            {review.stage1_score?.narrative_comments || 'No narrative comments provided.'}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Stage 2 Review Summary */}
@@ -184,6 +286,51 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                                             <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded mt-2">
                                                 <FileText size={14} className="inline mr-1" />
                                                 <strong>Budget:</strong> {review.stage2_review.budget_comments}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                {chairStage2Reviews.map((review) => (
+                                    <div key={review.id} className="bg-white p-4 rounded-lg border border-gray-200">
+                                        <div className="mb-2 flex justify-between items-start">
+                                            <div>
+                                                <span className="text-sm font-medium text-gray-900">SRC Chair</span>
+                                                <span className="ml-2 text-sm text-gray-500">Direct Stage 2 review</span>
+                                            </div>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${review.revised_recommendation === 'ACCEPT'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                {review.revised_recommendation}
+                                            </span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4 text-sm mb-2">
+                                            <div>
+                                                <span className="text-gray-500">Concerns Addressed:</span>
+                                                <span className={`ml-2 font-medium ${review.concerns_addressed === 'YES' ? 'text-green-600' :
+                                                    review.concerns_addressed === 'PARTIALLY' ? 'text-yellow-600' :
+                                                        'text-red-600'
+                                                    }`}>
+                                                    {review.concerns_addressed}
+                                                </span>
+                                            </div>
+                                            {review.revised_score != null && (
+                                                <div>
+                                                    <span className="text-gray-500">Revised Score:</span>
+                                                    <span className="ml-2 font-medium text-gray-900">{review.revised_score}%</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {review.technical_comments && (
+                                            <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded mt-2">
+                                                <FileText size={14} className="inline mr-1" />
+                                                <strong>Technical:</strong> {review.technical_comments}
+                                            </div>
+                                        )}
+                                        {review.budget_comments && (
+                                            <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded mt-2">
+                                                <FileText size={14} className="inline mr-1" />
+                                                <strong>Budget:</strong> {review.budget_comments}
                                             </div>
                                         )}
                                     </div>

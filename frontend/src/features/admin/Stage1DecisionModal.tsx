@@ -104,6 +104,17 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
         return 'text-red-600';
     };
 
+    const scoreFields = [
+        { key: 'originality_score', label: 'Originality', max: 15 },
+        { key: 'clarity_score', label: 'Clarity', max: 15 },
+        { key: 'literature_review_score', label: 'Literature Review', max: 15 },
+        { key: 'methodology_score', label: 'Methodology', max: 15 },
+        { key: 'impact_score', label: 'Impact', max: 15 },
+        { key: 'publication_potential_score', label: 'Publication', max: 10 },
+        { key: 'budget_appropriateness_score', label: 'Budget', max: 10 },
+        { key: 'timeline_practicality_score', label: 'Timeline', max: 5 },
+    ] as const;
+
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 px-3 py-4 sm:px-6 sm:py-8">
             <div className="flex min-h-full items-start justify-center">
@@ -225,28 +236,23 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                                         </div>
 
                                         <div className="mb-4 grid gap-2 text-xs md:grid-cols-2 xl:grid-cols-4">
-                                            <div className="rounded-2xl bg-white p-3 text-center">
-                                                <div className="font-medium">{review.stage1_score?.originality_score}/15</div>
-                                                <div className="text-gray-500">Originality</div>
-                                            </div>
-                                            <div className="rounded-2xl bg-white p-3 text-center">
-                                                <div className="font-medium">{review.stage1_score?.methodology_score}/15</div>
-                                                <div className="text-gray-500">Methodology</div>
-                                            </div>
-                                            <div className="rounded-2xl bg-white p-3 text-center">
-                                                <div className="font-medium">{review.stage1_score?.impact_score}/15</div>
-                                                <div className="text-gray-500">Impact</div>
-                                            </div>
-                                            <div className="rounded-2xl bg-white p-3 text-center">
-                                                <div className="font-medium">{review.stage1_score?.budget_appropriateness_score}/10</div>
-                                                <div className="text-gray-500">Budget</div>
-                                            </div>
+                                            {scoreFields.map((field) => (
+                                                <div key={field.key} className="rounded-2xl bg-white p-3 text-center">
+                                                    <div className="font-medium">{(review.stage1_score as any)?.[field.key]}/{field.max}</div>
+                                                    <div className="text-gray-500">{field.label}</div>
+                                                </div>
+                                            ))}
                                         </div>
 
                                         {review.stage1_score?.narrative_comments && (
                                             <div className="rounded-2xl border border-[#ece7db] bg-white p-3 text-sm text-gray-600">
                                                 <FileText size={14} className="mr-1 inline" />
                                                 {review.stage1_score.narrative_comments}
+                                            </div>
+                                        )}
+                                        {review.stage1_score?.detailed_recommendation && (
+                                            <div className="mt-3 rounded-2xl border border-[#ece7db] bg-white p-3 text-sm text-gray-600">
+                                                <strong>Detailed recommendation:</strong> {review.stage1_score.detailed_recommendation}
                                             </div>
                                         )}
                                         {review.review_validity === 'REJECTED' && review.chair_rejection_reason && (

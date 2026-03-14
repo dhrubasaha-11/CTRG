@@ -3,7 +3,7 @@
  * View and manage reviewer profiles and workloads.
  */
 import React, { useState, useEffect } from 'react';
-import { Users, Mail, BarChart3, CheckCircle, XCircle, AlertCircle, Edit2, ToggleLeft, ToggleRight, Plus, Upload, Send } from 'lucide-react';
+import { Users, Mail, BarChart3, CheckCircle, XCircle, AlertCircle, Edit2, ToggleLeft, ToggleRight, Plus, Upload, Send, Download } from 'lucide-react';
 import { reviewerApi, type Reviewer } from '../../services/api';
 import { register, importReviewersFromExcel } from '../../services/authService';
 import EmailReviewersModal from './EmailReviewersModal';
@@ -24,8 +24,11 @@ const ReviewerManagement: React.FC = () => {
         first_name: '',
         last_name: '',
         email: '',
+        department: '',
+        area_of_expertise: '',
+        max_review_load: 5,
         password: '',
-        confirm_password: ''
+        confirm_password: '',
     });
 
     useEffect(() => {
@@ -51,12 +54,27 @@ const ReviewerManagement: React.FC = () => {
         return true;
     });
 
+    const downloadBlob = (data: BlobPart, filename: string) => {
+        const url = window.URL.createObjectURL(new Blob([data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    };
+
     const handleToggleActive = async (reviewer: Reviewer) => {
         try {
             setSaving(true);
-            await reviewerApi.update(reviewer.id, { is_active_reviewer: !reviewer.is_active_reviewer });
+            const nextActive = !reviewer.is_active_reviewer;
+            await reviewerApi.update(reviewer.id, {
+                is_active_reviewer: nextActive,
+                user_is_active: nextActive,
+            });
             setReviewers(prev => prev.map(r =>
-                r.id === reviewer.id ? { ...r, is_active_reviewer: !r.is_active_reviewer } : r
+                r.id === reviewer.id ? { ...r, is_active_reviewer: nextActive, user_is_active: nextActive } : r
             ));
         } catch {
             alert('Failed to update reviewer status');
@@ -70,12 +88,29 @@ const ReviewerManagement: React.FC = () => {
         try {
             setSaving(true);
             await reviewerApi.update(editingReviewer.id, {
+                first_name: editingReviewer.first_name,
+                last_name: editingReviewer.last_name,
+                email: editingReviewer.email,
                 department: editingReviewer.department,
                 area_of_expertise: editingReviewer.area_of_expertise,
                 max_review_load: editingReviewer.max_review_load,
+                user_is_active: editingReviewer.user_is_active,
+                is_active_reviewer: editingReviewer.is_active_reviewer,
             });
             setReviewers(prev => prev.map(r =>
-                r.id === editingReviewer.id ? { ...r, department: editingReviewer.department, area_of_expertise: editingReviewer.area_of_expertise, max_review_load: editingReviewer.max_review_load } : r
+                r.id === editingReviewer.id ? {
+                    ...r,
+                    first_name: editingReviewer.first_name,
+                    last_name: editingReviewer.last_name,
+                    email: editingReviewer.email,
+                    user_email: editingReviewer.email || editingReviewer.user_email,
+                    user_name: `${editingReviewer.first_name || ''} ${editingReviewer.last_name || ''}`.trim() || editingReviewer.user_name,
+                    department: editingReviewer.department,
+                    area_of_expertise: editingReviewer.area_of_expertise,
+                    max_review_load: editingReviewer.max_review_load,
+                    user_is_active: editingReviewer.user_is_active,
+                    is_active_reviewer: editingReviewer.is_active_reviewer,
+                } : r
             ));
             setEditingReviewer(null);
             alert('Reviewer updated successfully');
@@ -100,7 +135,11 @@ const ReviewerManagement: React.FC = () => {
                 password: addFormData.password,
                 first_name: addFormData.first_name,
                 last_name: addFormData.last_name,
-                role: 'Reviewer'
+                role: 'Reviewer',
+                department: addFormData.department,
+                area_of_expertise: addFormData.area_of_expertise,
+                max_review_load: addFormData.max_review_load,
+                is_active_reviewer: true,
             }, localStorage.getItem('token') || '');
 
             // Refresh list
@@ -111,8 +150,11 @@ const ReviewerManagement: React.FC = () => {
                 first_name: '',
                 last_name: '',
                 email: '',
+                department: '',
+                area_of_expertise: '',
+                max_review_load: 5,
                 password: '',
-                confirm_password: ''
+                confirm_password: '',
             });
             alert('Reviewer added successfully');
         } catch (err: any) {
@@ -164,6 +206,15 @@ const ReviewerManagement: React.FC = () => {
         }
     };
 
+    const handleDownloadReport = async () => {
+        try {
+            const response = await reviewerApi.downloadWorkloadReport();
+            downloadBlob(response.data, 'reviewer_workload_report.csv');
+        } catch {
+            alert('Failed to download reviewer status report.');
+        }
+    };
+
     const getWorkloadColor = (current: number, max: number) => {
         if (max <= 0) return 'text-gray-600';
         const ratio = current / max;
@@ -192,6 +243,13 @@ const ReviewerManagement: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-3">
                     <button
+                        onClick={handleDownloadReport}
+                        className="flex items-center px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 shadow-sm transition-colors"
+                    >
+                        <Download size={18} className="mr-2" />
+                        Download Report
+                    </button>
+                    <button
                         onClick={() => setShowEmailModal(true)}
                         disabled={selectedForEmail.size === 0}
                         className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -202,6 +260,16 @@ const ReviewerManagement: React.FC = () => {
                     <button
                         onClick={() => {
                             setExcelFile(null);
+                            setAddFormData({
+                                first_name: '',
+                                last_name: '',
+                                email: '',
+                                department: '',
+                                area_of_expertise: '',
+                                max_review_load: 5,
+                                password: '',
+                                confirm_password: '',
+                            });
                             setShowAddModal(true);
                         }}
                         className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition-colors"
@@ -454,6 +522,35 @@ const ReviewerManagement: React.FC = () => {
                             <p className="text-sm text-gray-500">{editingReviewer.user_name}</p>
                         </div>
                         <div className="p-6 space-y-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                                    <input
+                                        type="text"
+                                        value={editingReviewer.first_name || ''}
+                                        onChange={(e) => setEditingReviewer({ ...editingReviewer, first_name: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                                    <input
+                                        type="text"
+                                        value={editingReviewer.last_name || ''}
+                                        onChange={(e) => setEditingReviewer({ ...editingReviewer, last_name: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input
+                                    type="email"
+                                    value={editingReviewer.email || editingReviewer.user_email}
+                                    onChange={(e) => setEditingReviewer({ ...editingReviewer, email: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
                                 <input
@@ -482,6 +579,26 @@ const ReviewerManagement: React.FC = () => {
                                     onChange={(e) => setEditingReviewer({ ...editingReviewer, max_review_load: Number(e.target.value) })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 />
+                            </div>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <label className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
+                                    <span className="text-sm font-medium text-gray-700">Account Active</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={!!editingReviewer.user_is_active}
+                                        onChange={(e) => setEditingReviewer({ ...editingReviewer, user_is_active: e.target.checked })}
+                                        className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                                    />
+                                </label>
+                                <label className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
+                                    <span className="text-sm font-medium text-gray-700">Reviewer Active</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={editingReviewer.is_active_reviewer}
+                                        onChange={(e) => setEditingReviewer({ ...editingReviewer, is_active_reviewer: e.target.checked })}
+                                        className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                                    />
+                                </label>
                             </div>
                         </div>
                         <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
@@ -565,6 +682,35 @@ const ReviewerManagement: React.FC = () => {
                                     required
                                     value={addFormData.email}
                                     onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                                <input
+                                    type="text"
+                                    value={addFormData.department}
+                                    onChange={(e) => setAddFormData({ ...addFormData, department: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Area of Expertise</label>
+                                <input
+                                    type="text"
+                                    value={addFormData.area_of_expertise}
+                                    onChange={(e) => setAddFormData({ ...addFormData, area_of_expertise: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Max Review Load</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="50"
+                                    value={addFormData.max_review_load}
+                                    onChange={(e) => setAddFormData({ ...addFormData, max_review_load: Number(e.target.value) })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
@@ -656,10 +802,16 @@ const ReviewerManagement: React.FC = () => {
                             </div>
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
-                                    <h3 className="text-sm font-medium text-gray-500">Status</h3>
-                                    <span className={`inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedReviewer.is_active_reviewer ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                        <h3 className="text-sm font-medium text-gray-500">Status</h3>
+                                        <span className={`inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedReviewer.is_active_reviewer ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                                         }`}>
                                         {selectedReviewer.is_active_reviewer ? 'Active Reviewer' : 'Inactive'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500">Account</h3>
+                                    <span className={`inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedReviewer.user_is_active ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
+                                        {selectedReviewer.user_is_active ? 'Login Enabled' : 'Login Disabled'}
                                     </span>
                                 </div>
                                 <div>

@@ -14,8 +14,8 @@ class GrantCycle(models.Model):
     year = models.CharField(max_length=20, help_text="e.g., 2025-2026")
     
     # Dates
-    start_date = models.DateField()
-    end_date = models.DateField()
+    start_date = models.DateField(null=True, blank=True, help_text="Optional overall cycle start date")
+    end_date = models.DateField(null=True, blank=True, help_text="Optional overall cycle end date")
     stage1_review_start_date = models.DateField(null=True, blank=True, help_text="Optional Stage 1 review start date")
     stage1_review_end_date = models.DateField(null=True, blank=True, help_text="Optional Stage 1 review end date")
     stage2_review_start_date = models.DateField(null=True, blank=True, help_text="Stage 2 review start date")
@@ -133,6 +133,23 @@ class Proposal(models.Model):
         FINAL_ACCEPTED = 'FINAL_ACCEPTED', 'Final Accepted'
         FINAL_REJECTED = 'FINAL_REJECTED', 'Final Rejected'
 
+    CANONICAL_LIFECYCLE_STATUSES = (
+        Status.SUBMITTED,
+        Status.UNDER_STAGE_1_REVIEW,
+        Status.STAGE_1_REJECTED,
+        Status.ACCEPTED_NO_CORRECTIONS,
+        Status.TENTATIVELY_ACCEPTED,
+        Status.REVISION_REQUESTED,
+        Status.REVISED_PROPOSAL_SUBMITTED,
+        Status.UNDER_STAGE_2_REVIEW,
+        Status.FINAL_ACCEPTED,
+        Status.FINAL_REJECTED,
+    )
+
+    STATUS_REPORTING_ROLLUP = {
+        Status.REVISION_DEADLINE_MISSED: Status.REVISION_REQUESTED,
+    }
+
     # Unique identifier
     proposal_code = models.CharField(max_length=50, unique=True, editable=False, help_text="Auto-generated unique code (e.g., CTRG-2025-001)")
     
@@ -222,6 +239,14 @@ class Proposal(models.Model):
         if self.revision_deadline and self.status == self.Status.REVISION_REQUESTED:
             return timezone.now() > self.revision_deadline
         return False
+
+    @classmethod
+    def reportable_status(cls, status):
+        """Map operational-only states into the canonical lifecycle when reporting."""
+        rolled_up = cls.STATUS_REPORTING_ROLLUP.get(status, status)
+        if rolled_up in cls.CANONICAL_LIFECYCLE_STATUSES:
+            return rolled_up
+        return None
 
 
 class Stage1Decision(models.Model):

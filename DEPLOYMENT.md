@@ -694,6 +694,30 @@ Regular backups of:
 - Environment configuration
 - Redis persistence strategy if used for cache/broker durability assumptions
 
+Recommended minimum backup policy:
+- Database: nightly `pg_dump` with at least 7 daily retention points
+- Media: nightly snapshot or object-storage versioning for `backend/media/`
+- Encryption key: store `FILE_ENCRYPTION_KEY` in a secrets manager and back it up separately from the database dump
+- Restore drill: test full restore of database + media + `.env` on a non-production host at least once per quarter
+
+Example backup commands:
+
+```bash
+# Database backup
+pg_dump "$DATABASE_URL" > backups/ctrg_$(date +%F).sql
+
+# Media backup
+tar -czf backups/ctrg_media_$(date +%F).tar.gz backend/media/
+
+# Environment backup (store securely, never commit)
+cp backend/.env backups/ctrg_env_$(date +%F).env.secure
+```
+
+Critical note on encrypted files:
+- Proposal files are encrypted at rest when `FILE_ENCRYPTION_KEY` is configured.
+- Production deployments must set `FILE_ENCRYPTION_KEY`; the backend now refuses to start with `DEBUG=False` if the key is missing.
+- Database backups are not sufficient by themselves. You must preserve the matching encrypted media files and the encryption key, otherwise uploaded proposal documents cannot be restored.
+
 ---
 
 ## Quick Reference

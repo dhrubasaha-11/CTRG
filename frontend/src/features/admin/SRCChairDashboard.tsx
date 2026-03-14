@@ -96,7 +96,7 @@ const SRCChairDashboard: React.FC = () => {
         { label: 'Total Proposals', value: stats?.total_proposals || 0, icon: FileText, bgColor: 'bg-blue-500', cssColor: '#3b82f6' },
         { label: 'Pending Reviews', value: stats?.pending_reviews || 0, icon: Clock, bgColor: 'bg-yellow-500', cssColor: '#eab308' },
         { label: 'Awaiting Decision', value: stats?.awaiting_decision || 0, icon: AlertTriangle, bgColor: 'bg-purple-500', cssColor: '#a855f7' },
-        { label: 'Awaiting Revision', value: stats?.awaiting_revision || 0, icon: RefreshCw, bgColor: 'bg-orange-500', cssColor: '#f97316' },
+        { label: 'Tentative Awaiting Revision', value: stats?.awaiting_revision || 0, icon: RefreshCw, bgColor: 'bg-orange-500', cssColor: '#f97316' },
     ];
 
     const quickActions = [
@@ -116,8 +116,11 @@ const SRCChairDashboard: React.FC = () => {
         const colors: Record<string, string> = {
             SUBMITTED: 'bg-blue-100 text-blue-800',
             UNDER_STAGE_1_REVIEW: 'bg-indigo-100 text-indigo-800',
+            STAGE_1_REJECTED: 'bg-red-100 text-red-800',
+            ACCEPTED_NO_CORRECTIONS: 'bg-green-100 text-green-800',
             TENTATIVELY_ACCEPTED: 'bg-yellow-100 text-yellow-800',
             REVISION_REQUESTED: 'bg-orange-100 text-orange-800',
+            REVISED_PROPOSAL_SUBMITTED: 'bg-violet-100 text-violet-800',
             UNDER_STAGE_2_REVIEW: 'bg-cyan-100 text-cyan-800',
             FINAL_ACCEPTED: 'bg-green-100 text-green-800',
             FINAL_REJECTED: 'bg-red-100 text-red-800',

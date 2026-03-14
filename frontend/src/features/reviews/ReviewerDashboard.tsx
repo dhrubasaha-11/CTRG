@@ -138,7 +138,7 @@ const ReviewerDashboard: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-500">Total Assignments</p>
+                            <p className="text-sm font-medium text-gray-500">Assigned Proposals</p>
                             <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total_assignments}</p>
                         </div>
                         <div className="p-3 bg-blue-100 rounded-lg">
@@ -149,7 +149,7 @@ const ReviewerDashboard: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-500">Pending</p>
+                            <p className="text-sm font-medium text-gray-500">Pending Reviews</p>
                             <p className="text-2xl font-bold text-yellow-600 mt-1">{stats.pending}</p>
                         </div>
                         <div className="p-3 bg-yellow-100 rounded-lg">
@@ -160,7 +160,7 @@ const ReviewerDashboard: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-500">Completed</p>
+                            <p className="text-sm font-medium text-gray-500">Submitted Reviews</p>
                             <p className="text-2xl font-bold text-green-600 mt-1">{stats.completed}</p>
                         </div>
                         <div className="p-3 bg-green-100 rounded-lg">

@@ -10,6 +10,7 @@ import ReviewerAssignmentModal from './ReviewerAssignmentModal';
 import Stage1DecisionModal from './Stage1DecisionModal';
 import FinalDecisionModal from './FinalDecisionModal';
 import CombinedReviewView from './CombinedReviewView';
+import ChairStage2ReviewModal from './ChairStage2ReviewModal';
 
 const STATUS_COLORS: Record<string, string> = {
     DRAFT: 'bg-gray-100 text-gray-800',
@@ -54,6 +55,7 @@ const ProposalList: React.FC = () => {
     const [stage1DecisionProposal, setStage1DecisionProposal] = useState<Proposal | null>(null);
     const [finalDecisionProposal, setFinalDecisionProposal] = useState<Proposal | null>(null);
     const [reviewViewProposal, setReviewViewProposal] = useState<Proposal | null>(null);
+    const [chairStage2Proposal, setChairStage2Proposal] = useState<Proposal | null>(null);
 
     useEffect(() => {
         loadData();
@@ -145,7 +147,7 @@ const ProposalList: React.FC = () => {
         }
 
         // Stage 2 assignment for revised proposals
-        if (['REVISED_PROPOSAL_SUBMITTED'].includes(proposal.status)) {
+        if (['REVISED_PROPOSAL_SUBMITTED', 'UNDER_STAGE_2_REVIEW'].includes(proposal.status)) {
             actions.push({ key: 'assign_s2', label: 'Assign Stage 2', icon: UserPlus, color: 'text-cyan-600' });
             actions.push({ key: 'chair_stage2', label: 'Chair Stage 2 Review', icon: CheckSquare, color: 'text-teal-700' });
         }
@@ -241,24 +243,7 @@ const ProposalList: React.FC = () => {
                 break;
             }
             case 'chair_stage2': {
-                const concerns_addressed = window.prompt('Concerns addressed? Enter YES, PARTIALLY, or NO.', 'YES');
-                const revised_recommendation = window.prompt('Recommendation? Enter ACCEPT or REJECT.', 'ACCEPT');
-                const technical_comments = window.prompt('Technical comments for this Stage 2 chair review:', '');
-                if (!concerns_addressed || !revised_recommendation || !technical_comments) {
-                    break;
-                }
-                proposalApi.submitChairStage2Review(proposal.id, {
-                    concerns_addressed,
-                    revised_recommendation,
-                    technical_comments,
-                    budget_comments: '',
-                    is_draft: false,
-                })
-                    .then(() => {
-                        alert('Chair Stage 2 review submitted.');
-                        loadData();
-                    })
-                    .catch(() => alert('Failed to submit chair Stage 2 review.'));
+                setChairStage2Proposal(proposal);
                 break;
             }
             case 'view':
@@ -489,6 +474,13 @@ const ProposalList: React.FC = () => {
                     proposal={finalDecisionProposal}
                     onClose={() => setFinalDecisionProposal(null)}
                     onSuccess={() => { setFinalDecisionProposal(null); loadData(); }}
+                />
+            )}
+            {chairStage2Proposal && (
+                <ChairStage2ReviewModal
+                    proposal={chairStage2Proposal}
+                    onClose={() => setChairStage2Proposal(null)}
+                    onSuccess={() => { setChairStage2Proposal(null); loadData(); }}
                 />
             )}
             {reviewViewProposal && (

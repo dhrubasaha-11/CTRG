@@ -5,6 +5,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from django.http import HttpResponse
+import csv
 
 from .models import ReviewerProfile, ReviewAssignment, Stage1Score, Stage2Review
 from .serializers import (
@@ -41,6 +43,50 @@ class ReviewerProfileViewSet(viewsets.ModelViewSet):
         stats = ReviewerService.get_all_reviewers_stats()
         serializer = ReviewerWorkloadSerializer(stats, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAdminUser])
+    def workload_report(self, request):
+        """Download a CSV report of reviewer workload and review status."""
+        stats = ReviewerService.get_all_reviewers_stats()
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="reviewer_workload_report.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow([
+            'Reviewer Name',
+            'Email',
+            'Department',
+            'Area of Expertise',
+            'Account Active',
+            'Reviewer Active',
+            'Max Review Load',
+            'Assigned Proposals',
+            'Pending Reviews',
+            'Completed Reviews',
+            'Stage 1 Pending',
+            'Stage 2 Pending',
+            'Overload Warning',
+        ])
+
+        for stat in stats:
+            writer.writerow([
+                stat['user_name'],
+                stat['user_email'],
+                stat['department'],
+                stat['area_of_expertise'],
+                'Yes' if stat['user_is_active'] else 'No',
+                'Yes' if stat['is_active_reviewer'] else 'No',
+                stat['max_review_load'],
+                stat['total'],
+                stat['pending'],
+                stat['completed'],
+                stat['stage1_pending'],
+                stat['stage2_pending'],
+                stat['overload_warning'],
+            ])
+
+        return response
     
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def email_reviewers(self, request):

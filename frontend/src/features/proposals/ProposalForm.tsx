@@ -103,6 +103,10 @@ const ProposalForm: React.FC = () => {
                     });
                     setExistingFile(propRes.data.proposal_file || null);
                     setExistingTemplate((propRes.data as any).application_template_file || null);
+                    if (role !== 'SRC_Chair' && propRes.data.status !== 'DRAFT') {
+                        navigate(`/pi/proposals/${propRes.data.id}/view`, { replace: true });
+                        return;
+                    }
                 } catch (err) {
                     console.error("Failed to load proposal", err);
                     setError("Failed to load proposal details.");
@@ -112,7 +116,7 @@ const ProposalForm: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [id, navigate, returnPath]);
+    }, [id, navigate, returnPath, role]);
 
     useEffect(() => {
         loadData();

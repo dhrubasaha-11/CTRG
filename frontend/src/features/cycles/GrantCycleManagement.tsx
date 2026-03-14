@@ -102,6 +102,8 @@ const GrantCycleManagement: React.FC = () => {
         try {
             const payload = {
                 ...formData,
+                start_date: formData.start_date || null,
+                end_date: formData.end_date || null,
                 stage1_review_start_date: formData.stage1_review_start_date || null,
                 stage1_review_end_date: formData.stage1_review_end_date || null,
                 stage2_review_start_date: formData.stage2_review_start_date || null,
@@ -220,20 +222,18 @@ const GrantCycleManagement: React.FC = () => {
 
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cycle Start Date</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cycle Start Date (Optional)</label>
                                     <input
                                         type="date"
-                                        required
                                         value={formData.start_date}
                                         onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cycle End Date</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cycle End Date (Optional)</label>
                                     <input
                                         type="date"
-                                        required
                                         value={formData.end_date}
                                         onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -272,6 +272,7 @@ const GrantCycleManagement: React.FC = () => {
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                                         <input
                                             type="date"
+                                            required
                                             value={formData.stage2_review_start_date}
                                             onChange={(e) => setFormData({ ...formData, stage2_review_start_date: e.target.value })}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -281,6 +282,7 @@ const GrantCycleManagement: React.FC = () => {
                                         <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
                                         <input
                                             type="date"
+                                            required
                                             value={formData.stage2_review_end_date}
                                             onChange={(e) => setFormData({ ...formData, stage2_review_end_date: e.target.value })}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -432,7 +434,11 @@ const GrantCycleManagement: React.FC = () => {
                             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div className="flex items-center text-sm text-gray-600">
                                     <Calendar size={16} className="mr-2 text-gray-400" />
-                                    <span>{cycle.start_date} - {cycle.end_date}</span>
+                                    <span>
+                                        {cycle.start_date && cycle.end_date
+                                            ? `${cycle.start_date} - ${cycle.end_date}`
+                                            : `${cycle.stage2_review_start_date || 'TBD'} - ${cycle.stage2_review_end_date || 'TBD'}`}
+                                    </span>
                                 </div>
                                 <div className="flex items-center text-sm text-gray-600">
                                     <Users size={16} className="mr-2 text-gray-400" />

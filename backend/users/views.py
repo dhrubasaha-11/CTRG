@@ -26,6 +26,8 @@ from django.contrib.auth import get_user_model
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils.crypto import get_random_string
+from proposals.models import AuditLog
+from proposals.services import get_client_ip
 
 
 class LoginRateThrottle(AnonRateThrottle):
@@ -83,6 +85,22 @@ def _generate_unique_username(email):
 def _generate_temp_password():
     # Meets minimum length and avoids common-password/numeric-only failures.
     return f"Rvwr!{get_random_string(10)}"
+
+
+def _audit_user_event(request, action_type, actor=None, target_user=None, details=None):
+    """Write auth and user-management events into the shared audit trail."""
+    AuditLog.objects.create(
+        user=actor,
+        proposal=None,
+        action_type=action_type,
+        details={
+            'actor_email': actor.email if actor else None,
+            'target_user_id': target_user.id if target_user else None,
+            'target_user_email': target_user.email if target_user else None,
+            **(details or {}),
+        },
+        ip_address=get_client_ip(request),
+    )
 
 
 class LoginView(ObtainAuthToken):
@@ -157,6 +175,13 @@ class LoginView(ObtainAuthToken):
         user_serializer = UserSerializer(user)
 
         # Return token, role, and user details
+        _audit_user_event(
+            request,
+            action_type='USER_LOGIN',
+            actor=user,
+            target_user=user,
+            details={'role': role, 'token_created': created},
+        )
         return Response({
             'access': token.key,  # Named 'access' for frontend compatibility
             'role': role,
@@ -202,6 +227,12 @@ class LogoutView(APIView):
         try:
             # Delete the user's token
             request.user.auth_token.delete()
+            _audit_user_event(
+                request,
+                action_type='USER_LOGOUT',
+                actor=request.user,
+                target_user=request.user,
+            )
             return Response(
                 {'message': 'Successfully logged out.'},
                 status=status.HTTP_200_OK
@@ -329,8 +360,13 @@ class UserRegistrationView(generics.CreateAPIView):
         # Save the new user (serializer handles password hashing and role assignment)
         user = serializer.save()
 
-        # Log user creation for audit trail
-        # Note: Could extend this to log to AuditLog model if needed
+        _audit_user_event(
+            self.request,
+            action_type='USER_CREATED',
+            actor=self.request.user,
+            target_user=user,
+            details={'role': _get_primary_role(user)},
+        )
 
 
 class ImportReviewersFromExcelView(APIView):
@@ -444,6 +480,13 @@ class ImportReviewersFromExcelView(APIView):
                     except Exception:
                         pass
                 created.append(created_row)
+                _audit_user_event(
+                    request,
+                    action_type='REVIEWER_IMPORTED',
+                    actor=request.user,
+                    target_user=user,
+                    details={'row': row_idx, 'temporary_password_emailed': created_row.get('has_temporary_password', False)},
+                )
             else:
                 errors.append({
                     'row': row_idx,
@@ -510,6 +553,12 @@ class ChangePasswordView(APIView):
 
         # Save new password (serializer handles hashing)
         serializer.save()
+        _audit_user_event(
+            request,
+            action_type='PASSWORD_CHANGED',
+            actor=request.user,
+            target_user=request.user,
+        )
 
         return Response(
             {'message': 'Password successfully changed.'},
@@ -615,6 +664,16 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     lookup_field = 'pk'
 
+    def perform_update(self, serializer):
+        user = serializer.save()
+        _audit_user_event(
+            self.request,
+            action_type='USER_UPDATED',
+            actor=self.request.user,
+            target_user=user,
+            details={'role': _get_primary_role(user), 'is_active': user.is_active},
+        )
+
     def destroy(self, request, *args, **kwargs):
         user = self.get_object()
         from reviews.models import ReviewAssignment
@@ -623,10 +682,23 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
             # Soft delete: deactivate instead of deleting
             user.is_active = False
             user.save(update_fields=['is_active'])
+            _audit_user_event(
+                request,
+                action_type='USER_DEACTIVATED',
+                actor=request.user,
+                target_user=user,
+                details={'reason': 'active_review_assignments'},
+            )
             return Response(
                 {'message': 'User has review assignments. Account has been deactivated instead of deleted.'},
                 status=status.HTTP_200_OK
             )
+        _audit_user_event(
+            request,
+            action_type='USER_DELETED',
+            actor=request.user,
+            target_user=user,
+        )
         return super().destroy(request, *args, **kwargs)
 
 
@@ -676,6 +748,13 @@ class ReviewerPublicRegistrationView(generics.CreateAPIView):
             serializer: Validated ReviewerRegistrationSerializer
         """
         user = serializer.save()
+        _audit_user_event(
+            self.request,
+            action_type='REVIEWER_SELF_REGISTERED',
+            actor=user,
+            target_user=user,
+            details={'role': _get_primary_role(user)},
+        )
 
 
 class PendingReviewersView(generics.ListAPIView):
@@ -877,6 +956,12 @@ class ApproveReviewerView(APIView):
         # STEP 6: Return success response
         # ====================================================================
         serializer = UserSerializer(user)
+        _audit_user_event(
+            request,
+            action_type='REVIEWER_APPROVED',
+            actor=request.user,
+            target_user=user,
+        )
         return Response({
             'message': 'Reviewer approved successfully.',
             'user': serializer.data
@@ -988,6 +1073,13 @@ class RejectReviewerView(APIView):
         # ====================================================================
         # STEP 4: DELETE user account (DESTRUCTIVE - Cannot be undone!)
         # ====================================================================
+        _audit_user_event(
+            request,
+            action_type='REVIEWER_REJECTED',
+            actor=request.user,
+            target_user=user,
+        )
+
         # Django's cascade deletion will also delete:
         # - ReviewerProfile (ForeignKey to User)
         # - Any other related objects

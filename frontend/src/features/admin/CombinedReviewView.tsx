@@ -93,6 +93,22 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
         }
     };
 
+    const handleDownloadProposalFile = async (fileType: string, filename: string, errorMessage: string) => {
+        try {
+            const response = await proposalApi.downloadFile(proposal.id, fileType);
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            alert(errorMessage);
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -140,6 +156,48 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                                 <div className="bg-gray-50 rounded-lg p-4">
                                     <h3 className="text-sm font-semibold text-gray-700 mb-2">Abstract</h3>
                                     <p className="text-sm text-gray-600 whitespace-pre-wrap">{proposal.abstract}</p>
+                                </div>
+                            )}
+
+                            {(proposal.revised_proposal_file || proposal.response_to_reviewers_file) && (
+                                <div className="rounded-xl border border-gray-200 p-4">
+                                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Revision Materials</h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        <button
+                                            onClick={() => handleDownloadProposalFile(
+                                                'proposal',
+                                                `proposal_${proposal.proposal_code}.pdf`,
+                                                'Failed to download original proposal.'
+                                            )}
+                                            className="flex items-center rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700"
+                                        >
+                                            <Download size={14} className="mr-1" /> Original Proposal
+                                        </button>
+                                        {proposal.revised_proposal_file && (
+                                            <button
+                                                onClick={() => handleDownloadProposalFile(
+                                                    'revised_proposal',
+                                                    `revised_${proposal.proposal_code}.pdf`,
+                                                    'Failed to download revised proposal.'
+                                                )}
+                                                className="flex items-center rounded-lg bg-purple-600 px-3 py-2 text-sm text-white hover:bg-purple-700"
+                                            >
+                                                <Download size={14} className="mr-1" /> Revised Proposal
+                                            </button>
+                                        )}
+                                        {proposal.response_to_reviewers_file && (
+                                            <button
+                                                onClick={() => handleDownloadProposalFile(
+                                                    'response_to_reviewers',
+                                                    `response_${proposal.proposal_code}.pdf`,
+                                                    'Failed to download response to reviewers.'
+                                                )}
+                                                className="flex items-center rounded-lg bg-amber-600 px-3 py-2 text-sm text-white hover:bg-amber-700"
+                                            >
+                                                <Download size={14} className="mr-1" /> PI Response
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 

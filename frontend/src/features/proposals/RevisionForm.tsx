@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, FileText, AlertCircle, X, Send, Clock, CheckCircle } from 'lucide-react';
-import { proposalApi, type Proposal, type ReviewAssignment } from '../../services/api';
+import { proposalApi, type Proposal } from '../../services/api';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -18,7 +18,13 @@ const RevisionForm: React.FC = () => {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [proposal, setProposal] = useState<Proposal | null>(null);
-    const [stage1Reviews, setStage1Reviews] = useState<ReviewAssignment[]>([]);
+    const [combinedComments, setCombinedComments] = useState<Array<{
+        reviewer: string;
+        recommendation: string;
+        narrative_comments: string;
+        detailed_recommendation: string;
+        is_excluded: boolean;
+    }>>([]);
     const [currentTime, setCurrentTime] = useState(() => Date.now());
 
     const [revisedProposal, setRevisedProposal] = useState<File | null>(null);
@@ -28,21 +34,17 @@ const RevisionForm: React.FC = () => {
     const loadProposal = useCallback(async () => {
         try {
             setLoading(true);
-            const [proposalResponse, reviewsResponse] = await Promise.all([
+            const [proposalResponse, commentsResponse] = await Promise.all([
                 proposalApi.getById(Number(id)),
-                proposalApi.getReviews(Number(id)),
+                proposalApi.getCombinedComments(Number(id)),
             ]);
 
             setProposal(proposalResponse.data);
-            setStage1Reviews(
-                (reviewsResponse.data.assignments || []).filter(
-                    (review) => review.stage === 1 && review.status === 'COMPLETED' && review.stage1_score
-                )
-            );
+            setCombinedComments(commentsResponse.data.comments || []);
         } catch {
             setError('Failed to load proposal. Please try again.');
             setProposal(null);
-            setStage1Reviews([]);
+            setCombinedComments([]);
         } finally {
             setLoading(false);
         }
@@ -87,10 +89,6 @@ const RevisionForm: React.FC = () => {
             setError('Please upload the revised proposal document');
             return;
         }
-        if (!responseToReviewers) {
-            setError('Please upload the response to reviewers document');
-            return;
-        }
 
         if (!window.confirm('Are you sure you want to submit this revision? This action cannot be undone.')) {
             return;
@@ -102,7 +100,9 @@ const RevisionForm: React.FC = () => {
 
             const data = new FormData();
             data.append('revised_proposal_file', revisedProposal);
-            data.append('response_to_reviewers_file', responseToReviewers);
+            if (responseToReviewers) {
+                data.append('response_to_reviewers_file', responseToReviewers);
+            }
 
             await proposalApi.submitRevision(Number(id), data);
 
@@ -186,30 +186,33 @@ const RevisionForm: React.FC = () => {
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h2 className="font-semibold text-gray-900 mb-3">Combined Reviewer Comments</h2>
-                {stage1Reviews.length === 0 ? (
+                {combinedComments.length === 0 ? (
                     <p className="text-sm text-gray-500">No Stage 1 reviewer comments are available yet.</p>
                 ) : (
                     <div className="space-y-4">
-                        {stage1Reviews.map((review, index) => (
-                            <div key={review.id} className="rounded-lg border border-gray-200 p-4">
+                        {combinedComments.map((comment, index) => (
+                            <div key={`${comment.reviewer}-${index}`} className="rounded-lg border border-gray-200 p-4">
                                 <div className="flex items-center justify-between gap-3">
                                     <p className="font-medium text-gray-900">Reviewer {index + 1}</p>
-                                    <span className="text-sm text-gray-500">
-                                        Score: {review.stage1_score?.total_score ?? 0}/100
-                                    </span>
+                                    <span className="text-sm text-gray-500">{comment.reviewer}</span>
                                 </div>
-                                {review.stage1_score?.recommendation && (
+                                {comment.recommendation && (
                                     <p className="mt-2 text-sm text-gray-600">
-                                        Recommendation: {review.stage1_score.recommendation.replace(/_/g, ' ')}
+                                        Recommendation: {comment.recommendation.replace(/_/g, ' ')}
                                     </p>
                                 )}
                                 <p className="mt-3 text-sm leading-6 text-gray-700">
-                                    {review.stage1_score?.narrative_comments || 'No narrative comments provided.'}
+                                    {comment.narrative_comments || 'No narrative comments provided.'}
                                 </p>
-                                {review.stage1_score?.detailed_recommendation && (
+                                {comment.detailed_recommendation && (
                                     <div className="mt-3 rounded-md bg-gray-50 p-3 text-sm text-gray-700">
-                                        {review.stage1_score.detailed_recommendation}
+                                        {comment.detailed_recommendation}
                                     </div>
+                                )}
+                                {comment.is_excluded && (
+                                    <p className="mt-3 text-xs font-medium uppercase tracking-[0.12em] text-amber-700">
+                                        Excluded from chair decision
+                                    </p>
                                 )}
                             </div>
                         ))}
@@ -263,7 +266,7 @@ const RevisionForm: React.FC = () => {
                 {/* Response to Reviewers */}
                 <div>
                     <label className="block font-medium text-gray-900 mb-2">
-                        Response to Reviewers <span className="text-red-500">*</span>
+                        Response to Reviewers <span className="text-sm font-normal text-gray-400">(optional)</span>
                     </label>
                     <p className="text-sm text-gray-500 mb-3">
                         Provide a point-by-point response addressing each reviewer's comments (PDF or Word, max 50MB)
@@ -326,7 +329,7 @@ const RevisionForm: React.FC = () => {
                 </button>
                 <button
                     onClick={handleSubmit}
-                    disabled={submitting || !revisedProposal || !responseToReviewers}
+                    disabled={submitting || !revisedProposal}
                     className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Send size={18} className="mr-2" />

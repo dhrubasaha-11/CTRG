@@ -18,8 +18,6 @@ const STATUS_COLORS: Record<string, string> = {
     UNDER_STAGE_2_REVIEW: '#06B6D4',
     FINAL_ACCEPTED: '#10B981',
     FINAL_REJECTED: '#DC2626',
-    REVISION_DEADLINE_MISSED: '#DC2626',
-    DRAFT: '#9CA3AF',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -33,17 +31,36 @@ const STATUS_LABELS: Record<string, string> = {
     UNDER_STAGE_2_REVIEW: 'Stage 2 Review',
     FINAL_ACCEPTED: 'Final Accepted',
     FINAL_REJECTED: 'Final Rejected',
-    REVISION_DEADLINE_MISSED: 'Deadline Missed',
-    DRAFT: 'Draft',
 };
 
+const CANONICAL_STATUS_ORDER = [
+    'SUBMITTED',
+    'UNDER_STAGE_1_REVIEW',
+    'STAGE_1_REJECTED',
+    'ACCEPTED_NO_CORRECTIONS',
+    'TENTATIVELY_ACCEPTED',
+    'REVISION_REQUESTED',
+    'REVISED_PROPOSAL_SUBMITTED',
+    'UNDER_STAGE_2_REVIEW',
+    'FINAL_ACCEPTED',
+    'FINAL_REJECTED',
+];
+
 export function StatusChart({ data }: StatusChartProps) {
-    const entries = Object.entries(data).filter(([_, value]) => value > 0);
+    const entries = CANONICAL_STATUS_ORDER
+        .map((status) => [status, data[status] || 0] as const)
+        .filter(([_, value]) => value > 0);
     const total = entries.reduce((sum, [_, value]) => sum + value, 0);
 
     // Calculate summary stats
     const accepted = (data.FINAL_ACCEPTED || 0) + (data.ACCEPTED_NO_CORRECTIONS || 0);
-    const pending = (data.SUBMITTED || 0) + (data.UNDER_STAGE_1_REVIEW || 0) + (data.UNDER_STAGE_2_REVIEW || 0);
+    const pending =
+        (data.SUBMITTED || 0) +
+        (data.UNDER_STAGE_1_REVIEW || 0) +
+        (data.TENTATIVELY_ACCEPTED || 0) +
+        (data.REVISION_REQUESTED || 0) +
+        (data.REVISED_PROPOSAL_SUBMITTED || 0) +
+        (data.UNDER_STAGE_2_REVIEW || 0);
     const acceptanceRate = total > 0 ? Math.round((accepted / total) * 100) : 0;
 
     if (total === 0) {

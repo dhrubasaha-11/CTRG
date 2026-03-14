@@ -73,6 +73,34 @@ const ReportsPage: React.FC = () => {
         }
     };
 
+    const handleDownloadReviewTemplate = async (proposal: Proposal) => {
+        try {
+            setDownloading(200000 + proposal.id);
+            const response = await proposalApi.downloadReviewTemplate(proposal.id);
+            downloadBlob(response.data, 'application/pdf', `review_template_${proposal.proposal_code}.pdf`);
+        } catch {
+            alert('Failed to download review template. Please try again.');
+        } finally {
+            setDownloading(null);
+        }
+    };
+
+    const handleDownloadReviewTemplateDocx = async (proposal: Proposal) => {
+        try {
+            setDownloading(300000 + proposal.id);
+            const response = await proposalApi.downloadReviewTemplateDocx(proposal.id);
+            downloadBlob(
+                response.data,
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                `review_template_${proposal.proposal_code}.docx`
+            );
+        } catch {
+            alert('Failed to download DOCX review template. Please try again.');
+        } finally {
+            setDownloading(null);
+        }
+    };
+
     const handleDownloadCycleSummary = async (cycle: GrantCycle) => {
         try {
             setDownloading(-cycle.id);
@@ -194,7 +222,8 @@ const ReportsPage: React.FC = () => {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">PI</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Report</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Template</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Combined Report</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
@@ -207,6 +236,26 @@ const ReportsPage: React.FC = () => {
                                             <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(proposal.status)}`}>
                                                 {proposal.status_display || proposal.status.replace(/_/g, ' ')}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="inline-flex gap-2">
+                                                <button
+                                                    onClick={() => handleDownloadReviewTemplate(proposal)}
+                                                    disabled={downloading === 200000 + proposal.id}
+                                                    className="inline-flex items-center px-3 py-1.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 text-sm"
+                                                >
+                                                    <Download size={14} className="mr-1" />
+                                                    {downloading === 200000 + proposal.id ? '...' : 'PDF'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDownloadReviewTemplateDocx(proposal)}
+                                                    disabled={downloading === 300000 + proposal.id}
+                                                    className="inline-flex items-center px-3 py-1.5 bg-slate-900 text-white rounded-lg hover:bg-black disabled:opacity-50 text-sm"
+                                                >
+                                                    <Download size={14} className="mr-1" />
+                                                    {downloading === 300000 + proposal.id ? '...' : 'DOCX'}
+                                                </button>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="inline-flex gap-2">

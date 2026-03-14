@@ -104,6 +104,10 @@ export interface RegisterData {
     first_name: string;
     last_name: string;
     role: 'PI' | 'Reviewer' | 'SRC_Chair';
+    department?: string;
+    area_of_expertise?: string;
+    max_review_load?: number;
+    is_active_reviewer?: boolean;
 }
 
 export interface ReviewerImportResult {
