@@ -204,14 +204,7 @@ const Login: React.FC = () => {
                                 </button>
 
                                 <div className="border-t border-[#e7edf5] pt-5 text-center text-sm text-[#5f6e8b]">
-                                    <p className="mb-2">Do not have an account?</p>
-                                    <button
-                                        type="button"
-                                        onClick={() => navigate('/register-reviewer')}
-                                        className="font-semibold text-[#1e2a4a] underline decoration-[#d4a017] decoration-2 underline-offset-4 transition-colors hover:text-[#b8850c]"
-                                    >
-                                        Register as Reviewer
-                                    </button>
+                                    <p>Reviewer registration is by invitation only. Contact the SRC Chair for access.</p>
                                 </div>
 
                                 <p className="text-center text-sm text-[#5f6e8b]">

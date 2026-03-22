@@ -33,6 +33,10 @@ from proposals.services import get_client_ip
 class LoginRateThrottle(AnonRateThrottle):
     rate = '5/minute'
 
+
+class RegistrationRateThrottle(AnonRateThrottle):
+    rate = '10/hour'
+
 from .serializers import (
     UserSerializer,
     LoginSerializer,
@@ -702,60 +706,6 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         return super().destroy(request, *args, **kwargs)
 
 
-class ReviewerPublicRegistrationView(generics.CreateAPIView):
-    """
-    Public reviewer self-registration endpoint.
-
-    POST /api/auth/register-reviewer/
-
-    Allows reviewers to register themselves without admin approval.
-    Automatically assigns the 'Reviewer' role to the registered user.
-
-    Request Body:
-        {
-            "username": "jane.reviewer",
-            "email": "jane.reviewer@nsu.edu",
-            "password": "SecurePass123!",
-            "first_name": "Jane",
-            "last_name": "Reviewer"
-        }
-
-    Success Response (201 Created):
-        {
-            "id": 5,
-            "username": "jane.reviewer",
-            "email": "jane.reviewer@nsu.edu",
-            "first_name": "Jane",
-            "last_name": "Reviewer",
-            "role": "Reviewer",
-            "is_active": true
-        }
-
-    Error Responses:
-        - 400 Bad Request: Invalid data, duplicate email/username, weak password
-
-    Authentication: Not required (public endpoint)
-    """
-
-    serializer_class = ReviewerRegistrationSerializer
-    permission_classes = [permissions.AllowAny]
-
-    def perform_create(self, serializer):
-        """
-        Create reviewer user and log the registration action.
-
-        Args:
-            serializer: Validated ReviewerRegistrationSerializer
-        """
-        user = serializer.save()
-        _audit_user_event(
-            self.request,
-            action_type='REVIEWER_SELF_REGISTERED',
-            actor=user,
-            target_user=user,
-            details={'role': _get_primary_role(user)},
-        )
-
 
 class PendingReviewersView(generics.ListAPIView):
     """
@@ -1092,3 +1042,184 @@ class RejectReviewerView(APIView):
             {'message': 'Reviewer registration rejected.'},
             status=status.HTTP_200_OK
         )
+
+
+class InviteReviewerView(APIView):
+    """
+    SRC Chair invites a reviewer by email. Sends an invitation link with a unique token.
+
+    POST /api/auth/invite-reviewer/
+    """
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+
+    def post(self, request):
+        from .serializers import ReviewerInvitationSerializer
+        from .models import ReviewerInvitation
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.core.mail import send_mail
+        from django.conf import settings
+
+        serializer = ReviewerInvitationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email']
+        expires_in_days = serializer.validated_data.get('expires_in_days', 7)
+
+        # Cancel any previous unused invitations for this email (not "used", just cancelled)
+        ReviewerInvitation.objects.filter(email=email, is_used=False).delete()
+
+        invitation = ReviewerInvitation.objects.create(
+            email=email,
+            invited_by=request.user,
+            expires_at=timezone.now() + timedelta(days=expires_in_days),
+        )
+
+        # Build the registration URL using FRONTEND_URL setting
+        frontend_origin = getattr(settings, 'FRONTEND_URL', '').rstrip('/')
+        if not frontend_origin:
+            frontend_origin = request.META.get('HTTP_ORIGIN', 'http://localhost:5173')
+
+        registration_url = f"{frontend_origin}/register-reviewer?token={invitation.token}"
+
+        # Send invitation email
+        subject = "CTRG - Invitation to Register as Reviewer"
+        message = (
+            f"Dear Colleague,\n\n"
+            f"You have been invited by the SRC Chair to register as a reviewer "
+            f"for the CTRG Grant Review System at NSU.\n\n"
+            f"Please use the following link to complete your registration:\n"
+            f"{registration_url}\n\n"
+            f"This invitation will expire in {expires_in_days} day(s).\n\n"
+            f"If you did not expect this invitation, please disregard this email.\n\n"
+            f"Best regards,\n"
+            f"CTRG Grant Review System"
+        )
+
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+            )
+            email_sent = True
+        except Exception:
+            email_sent = False
+
+        _audit_user_event(
+            request,
+            action_type='REVIEWER_INVITED',
+            actor=request.user,
+            details={'invited_email': email, 'invitation_id': invitation.id, 'email_sent': email_sent},
+        )
+
+        # Do NOT return the registration_url (which contains the raw token) in
+        # the API response body.  The token is transmitted only via the email
+        # sent to the invitee.  Returning it here would let anyone with network
+        # access to the API (or API logs) obtain a valid registration token.
+        response_data = {
+            'message': f'Invitation sent to {email}.',
+            'email_sent': email_sent,
+            'expires_at': invitation.expires_at.isoformat(),
+        }
+        # In development / DEBUG mode only, include the URL so developers can
+        # test without a working mail server.
+        from django.conf import settings as django_settings
+        if django_settings.DEBUG:
+            response_data['registration_url'] = registration_url
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
+
+class ValidateInvitationTokenView(APIView):
+    """
+    Validate an invitation token and return the invited email.
+
+    GET /api/auth/validate-invitation/<token>/
+    """
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [RegistrationRateThrottle]
+
+    def get(self, request, token):
+        from .models import ReviewerInvitation
+
+        try:
+            invitation = ReviewerInvitation.objects.get(token=token)
+        except (ReviewerInvitation.DoesNotExist, ValueError):
+            return Response(
+                {'valid': False, 'error': 'Invalid invitation token.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if invitation.is_used:
+            return Response(
+                {'valid': False, 'error': 'This invitation has already been used.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if invitation.is_expired:
+            return Response(
+                {'valid': False, 'error': 'This invitation has expired.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response({
+            'valid': True,
+            'email': invitation.email,
+            'expires_at': invitation.expires_at.isoformat(),
+        })
+
+
+class InvitedReviewerRegistrationView(generics.CreateAPIView):
+    """
+    Register a reviewer using a valid invitation token.
+
+    POST /api/auth/register-reviewer/
+    Replaces the old public self-registration. Requires invitation token.
+    """
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [RegistrationRateThrottle]
+
+    def get_serializer_class(self):
+        from .serializers import InvitedReviewerRegistrationSerializer
+        return InvitedReviewerRegistrationSerializer
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        _audit_user_event(
+            self.request,
+            action_type='REVIEWER_REGISTERED_VIA_INVITATION',
+            actor=user,
+            target_user=user,
+            details={'role': _get_primary_role(user)},
+        )
+
+
+class ListInvitationsView(generics.ListAPIView):
+    """
+    List all reviewer invitations (Admin only).
+
+    GET /api/auth/invitations/
+    """
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+
+    def get(self, request):
+        from .models import ReviewerInvitation
+        invitations = ReviewerInvitation.objects.all().order_by('-created_at')
+        data = []
+        for inv in invitations:
+            data.append({
+                'id': inv.id,
+                'email': inv.email,
+                # Raw token is omitted to prevent anyone with read access to
+                # the admin API (or its logs) from obtaining a usable token.
+                'invited_by': inv.invited_by.get_full_name() if inv.invited_by else None,
+                'created_at': inv.created_at.isoformat(),
+                'expires_at': inv.expires_at.isoformat(),
+                'is_used': inv.is_used,
+                'is_expired': inv.is_expired,
+                'is_valid': inv.is_valid,
+            })
+        return Response(data)

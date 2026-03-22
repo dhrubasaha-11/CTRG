@@ -287,3 +287,263 @@ class HealthEndpointTests(TestCase):
         self.assertEqual(payload['checks']['database']['status'], 'ok')
         self.assertEqual(payload['checks']['cache']['status'], 'ok')
         self.assertEqual(payload['checks']['media_root']['status'], 'ok')
+
+
+# ==========================================================================
+# INVITATION SYSTEM TESTS
+# ==========================================================================
+
+class InviteReviewerEndpointTests(TestCase):
+    """Tests for POST /api/auth/invite-reviewer/"""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.client = APIClient()
+        self.admin = User.objects.create_user(
+            username='invite.admin',
+            email='invite.admin@nsu.edu',
+            password='StrongPass123!',
+            is_staff=True,
+        )
+
+    def test_admin_can_invite_reviewer(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post('/api/auth/invite-reviewer/', {
+            'email': 'invitee@nsu.edu',
+            'expires_in_days': 7,
+        }, format='json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('registration_url', response.data)
+        self.assertIn('invitee@nsu.edu', response.data['message'])
+
+        from users.models import ReviewerInvitation
+        invitation = ReviewerInvitation.objects.get(email='invitee@nsu.edu')
+        self.assertFalse(invitation.is_used)
+        self.assertTrue(invitation.is_valid)
+
+    def test_non_admin_cannot_invite(self):
+        regular_user = User.objects.create_user(
+            username='regular', email='regular@nsu.edu', password='StrongPass123!',
+        )
+        self.client.force_authenticate(user=regular_user)
+        response = self.client.post('/api/auth/invite-reviewer/', {
+            'email': 'test@nsu.edu',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_unauthenticated_cannot_invite(self):
+        response = self.client.post('/api/auth/invite-reviewer/', {
+            'email': 'test@nsu.edu',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_invite_existing_active_user_fails(self):
+        User.objects.create_user(
+            username='active.user', email='active@nsu.edu', password='StrongPass123!',
+            is_active=True,
+        )
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post('/api/auth/invite-reviewer/', {
+            'email': 'active@nsu.edu',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_re_invite_cancels_old_invitation(self):
+        from users.models import ReviewerInvitation
+        self.client.force_authenticate(user=self.admin)
+
+        # First invite
+        self.client.post('/api/auth/invite-reviewer/', {'email': 'dup@nsu.edu'}, format='json')
+        self.assertEqual(ReviewerInvitation.objects.filter(email='dup@nsu.edu').count(), 1)
+
+        # Second invite — old one should be deleted
+        self.client.post('/api/auth/invite-reviewer/', {'email': 'dup@nsu.edu'}, format='json')
+        self.assertEqual(ReviewerInvitation.objects.filter(email='dup@nsu.edu').count(), 1)
+
+
+class ValidateInvitationTokenEndpointTests(TestCase):
+    """Tests for GET /api/auth/validate-invitation/<token>/"""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.client = APIClient()
+        self.admin = User.objects.create_user(
+            username='val.admin', email='val.admin@nsu.edu', password='StrongPass123!', is_staff=True,
+        )
+        from users.models import ReviewerInvitation
+        from django.utils import timezone
+        from datetime import timedelta
+        self.invitation = ReviewerInvitation.objects.create(
+            email='validate.test@nsu.edu',
+            invited_by=self.admin,
+            expires_at=timezone.now() + timedelta(days=7),
+        )
+
+    def test_valid_token_returns_email(self):
+        response = self.client.get(f'/api/auth/validate-invitation/{self.invitation.token}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data['valid'])
+        self.assertEqual(response.data['email'], 'validate.test@nsu.edu')
+
+    def test_invalid_token_returns_404(self):
+        import uuid
+        response = self.client.get(f'/api/auth/validate-invitation/{uuid.uuid4()}/')
+
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(response.data['valid'])
+
+    def test_expired_token_returns_400(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        self.invitation.expires_at = timezone.now() - timedelta(days=1)
+        self.invitation.save()
+
+        response = self.client.get(f'/api/auth/validate-invitation/{self.invitation.token}/')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.data['valid'])
+
+    def test_used_token_returns_400(self):
+        self.invitation.is_used = True
+        self.invitation.save()
+
+        response = self.client.get(f'/api/auth/validate-invitation/{self.invitation.token}/')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.data['valid'])
+
+
+class InvitedReviewerRegistrationEndpointTests(TestCase):
+    """Tests for POST /api/auth/register-reviewer/ (invitation-based)"""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.media_dir = TemporaryDirectory()
+        self.override_media = override_settings(MEDIA_ROOT=self.media_dir.name)
+        self.override_media.enable()
+        self.client = APIClient()
+        self.admin = User.objects.create_user(
+            username='reg.admin', email='reg.admin@nsu.edu', password='StrongPass123!', is_staff=True,
+        )
+        from users.models import ReviewerInvitation
+        from django.utils import timezone
+        from datetime import timedelta
+        self.invitation = ReviewerInvitation.objects.create(
+            email='invited.reviewer@nsu.edu',
+            invited_by=self.admin,
+            expires_at=timezone.now() + timedelta(days=7),
+        )
+
+    def tearDown(self):
+        self.override_media.disable()
+        self.media_dir.cleanup()
+
+    def test_register_with_valid_token_creates_inactive_user(self):
+        response = self.client.post('/api/auth/register-reviewer/', {
+            'token': str(self.invitation.token),
+            'username': 'invited.reviewer',
+            'password': 'StrongPass123!',
+            'first_name': 'Invited',
+            'last_name': 'Reviewer',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 201, response.data)
+
+        user = User.objects.get(email='invited.reviewer@nsu.edu')
+        self.assertFalse(user.is_active)
+        self.assertTrue(user.groups.filter(name='Reviewer').exists())
+        self.assertTrue(ReviewerProfile.objects.filter(user=user).exists())
+
+        # Invitation should be marked as used
+        self.invitation.refresh_from_db()
+        self.assertTrue(self.invitation.is_used)
+        self.assertIsNotNone(self.invitation.used_at)
+
+    def test_register_without_token_fails(self):
+        response = self.client.post('/api/auth/register-reviewer/', {
+            'username': 'no.token',
+            'password': 'StrongPass123!',
+            'first_name': 'No',
+            'last_name': 'Token',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_register_with_expired_token_fails(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        self.invitation.expires_at = timezone.now() - timedelta(days=1)
+        self.invitation.save()
+
+        response = self.client.post('/api/auth/register-reviewer/', {
+            'token': str(self.invitation.token),
+            'username': 'expired.token',
+            'password': 'StrongPass123!',
+            'first_name': 'Expired',
+            'last_name': 'Token',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_register_with_used_token_fails(self):
+        self.invitation.is_used = True
+        self.invitation.save()
+
+        response = self.client.post('/api/auth/register-reviewer/', {
+            'token': str(self.invitation.token),
+            'username': 'used.token',
+            'password': 'StrongPass123!',
+            'first_name': 'Used',
+            'last_name': 'Token',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_register_with_invalid_token_fails(self):
+        import uuid
+        response = self.client.post('/api/auth/register-reviewer/', {
+            'token': str(uuid.uuid4()),
+            'username': 'bad.token',
+            'password': 'StrongPass123!',
+            'first_name': 'Bad',
+            'last_name': 'Token',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_register_duplicate_email_fails(self):
+        User.objects.create_user(
+            username='existing', email='invited.reviewer@nsu.edu', password='StrongPass123!',
+        )
+
+        response = self.client.post('/api/auth/register-reviewer/', {
+            'token': str(self.invitation.token),
+            'username': 'dup.email',
+            'password': 'StrongPass123!',
+            'first_name': 'Dup',
+            'last_name': 'Email',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_email_comes_from_invitation_not_request(self):
+        """Even if no email is sent, user gets the invitation's email."""
+        response = self.client.post('/api/auth/register-reviewer/', {
+            'token': str(self.invitation.token),
+            'username': 'email.from.invite',
+            'password': 'StrongPass123!',
+            'first_name': 'Email',
+            'last_name': 'FromInvite',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 201)
+        user = User.objects.get(username='email.from.invite')
+        self.assertEqual(user.email, 'invited.reviewer@nsu.edu')

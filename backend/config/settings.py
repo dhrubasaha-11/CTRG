@@ -63,6 +63,14 @@ if os.path.exists(env_file):
 # In production, generate a new key: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 SECRET_KEY = env('SECRET_KEY')
 
+# Reject startup with the insecure placeholder key when not in DEBUG mode.
+_INSECURE_KEY_PREFIX = 'django-insecure-'
+if not env('DEBUG') and SECRET_KEY.startswith(_INSECURE_KEY_PREFIX):
+    raise ImproperlyConfigured(
+        "SECRET_KEY must be changed from the insecure default before running in production. "
+        "Generate one with: python -c \"from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())\""
+    )
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
@@ -308,6 +316,7 @@ REST_FRAMEWORK = {
         'user': '1000/hour',     # Authenticated users: 1000 requests per hour
         'login': '5/minute',     # Login endpoint: 5 attempts per minute (brute force protection)
         'upload': '20/hour',     # File uploads: 20 per hour
+        'registration': '10/hour',  # Registration/invitation validation: 10 per hour per IP
     },
 }
 
@@ -330,12 +339,23 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     'http://192.168.0.101:5173',
 ])
 
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^http://localhost:\d+$",
-    r"^http://127\.0\.0\.1:\d+$",
-    r"^http://192\.168\.\d{1,3}\.\d{1,3}:\d+$",
-]
+# In production the regex list must be empty or replaced with explicit origins.
+# The LAN subnet regex is only safe for local development; it would allow any
+# host on a 192.168.x.x/16 network to bypass CORS in a production deployment.
+if DEBUG:
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^http://localhost:\d+$",
+        r"^http://127\.0\.0\.1:\d+$",
+        r"^http://192\.168\.\d{1,3}\.\d{1,3}:\d+$",
+    ]
+else:
+    # In production, rely solely on CORS_ALLOWED_ORIGINS (explicit list).
+    CORS_ALLOWED_ORIGIN_REGEXES = []
+
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+
+# Frontend URL for building invitation links, email links, etc.
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5173')
 
 # Allow credentials (cookies, authorization headers)
 CORS_ALLOW_CREDENTIALS = env('CORS_ALLOW_CREDENTIALS')

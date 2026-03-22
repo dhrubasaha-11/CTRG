@@ -29,11 +29,14 @@ from .views import (
     UserListView,
     UserDetailView,
     ImportReviewersFromExcelView,
-    ReviewerPublicRegistrationView,
+    InvitedReviewerRegistrationView,
     PendingReviewersView,
     ReviewerCVDownloadView,
     ApproveReviewerView,
-    RejectReviewerView
+    RejectReviewerView,
+    InviteReviewerView,
+    ValidateInvitationTokenView,
+    ListInvitationsView,
 )
 
 # App name for namespacing (optional but recommended)
@@ -60,8 +63,17 @@ urlpatterns = [
     path('import-reviewers/', ImportReviewersFromExcelView.as_view(), name='import-reviewers'),
     # Bulk import reviewer accounts from Excel (.xlsx) (admin only)
 
-    path('register-reviewer/', ReviewerPublicRegistrationView.as_view(), name='register-reviewer'),
-    # Public reviewer self-registration (no authentication required)
+    path('register-reviewer/', InvitedReviewerRegistrationView.as_view(), name='register-reviewer'),
+    # Reviewer registration via invitation token (replaces public self-registration)
+
+    path('invite-reviewer/', InviteReviewerView.as_view(), name='invite-reviewer'),
+    # SRC Chair sends invitation email to a reviewer (admin only)
+
+    path('validate-invitation/<uuid:token>/', ValidateInvitationTokenView.as_view(), name='validate-invitation'),
+    # Validate invitation token and return invited email (public)
+
+    path('invitations/', ListInvitationsView.as_view(), name='list-invitations'),
+    # List all invitations (admin only)
 
     path('change-password/', ChangePasswordView.as_view(), name='change-password'),
     # Change current user's password

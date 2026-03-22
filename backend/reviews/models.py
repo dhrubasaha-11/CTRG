@@ -1,7 +1,15 @@
 from django.db import models
 from django.conf import settings
 from django.core.validators import FileExtensionValidator
+from django.core.exceptions import ValidationError
 from proposals.models import Proposal
+
+
+def _validate_cv_size(value):
+    """Reject CV files larger than 5 MB."""
+    max_bytes = 5 * 1024 * 1024
+    if hasattr(value, 'size') and value.size > max_bytes:
+        raise ValidationError("CV file must be 5 MB or smaller.")
 
 
 class ReviewerProfile(models.Model):
@@ -15,8 +23,11 @@ class ReviewerProfile(models.Model):
         upload_to='reviewer_cvs/',
         blank=True,
         null=True,
-        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'doc', 'docx'])],
-        help_text="Optional reviewer CV for SRC Chair review"
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf', 'doc', 'docx']),
+            _validate_cv_size,
+        ],
+        help_text="Optional reviewer CV for SRC Chair review (PDF/DOC/DOCX, max 5 MB)"
     )
     max_review_load = models.IntegerField(default=5, help_text="Maximum number of concurrent reviews")
     is_active_reviewer = models.BooleanField(default=True, help_text="Whether this reviewer is currently active")

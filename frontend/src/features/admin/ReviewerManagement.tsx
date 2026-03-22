@@ -3,8 +3,9 @@
  * View and manage reviewer profiles and workloads.
  */
 import React, { useState, useEffect } from 'react';
-import { Users, Mail, BarChart3, CheckCircle, XCircle, AlertCircle, Edit2, ToggleLeft, ToggleRight, Plus, Upload, Send, Download } from 'lucide-react';
+import { Users, Mail, BarChart3, CheckCircle, XCircle, AlertCircle, Edit2, ToggleLeft, ToggleRight, Plus, Upload, Send, Download, UserPlus } from 'lucide-react';
 import { reviewerApi, type Reviewer } from '../../services/api';
+import api from '../../services/api';
 import { register, importReviewersFromExcel } from '../../services/authService';
 import EmailReviewersModal from './EmailReviewersModal';
 
@@ -20,6 +21,11 @@ const ReviewerManagement: React.FC = () => {
     const [importingExcel, setImportingExcel] = useState(false);
     const [selectedForEmail, setSelectedForEmail] = useState<Set<number>>(new Set());
     const [showEmailModal, setShowEmailModal] = useState(false);
+    const [showInviteModal, setShowInviteModal] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteExpiry, setInviteExpiry] = useState(7);
+    const [inviting, setInviting] = useState(false);
+    const [inviteResult, setInviteResult] = useState<{ message: string; registration_url: string; email_sent: boolean } | null>(null);
     const [addFormData, setAddFormData] = useState({
         first_name: '',
         last_name: '',
@@ -45,6 +51,33 @@ const ReviewerManagement: React.FC = () => {
             setReviewers([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleInviteReviewer = async () => {
+        const trimmed = inviteEmail.trim();
+        if (!trimmed) return;
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+            alert('Please enter a valid email address.');
+            return;
+        }
+        setInviting(true);
+        setInviteResult(null);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.post('/auth/invite-reviewer/', {
+                email: inviteEmail.trim(),
+                expires_in_days: inviteExpiry,
+            }, {
+                headers: { Authorization: `Token ${token}` },
+            });
+            setInviteResult(response.data);
+            setInviteEmail('');
+        } catch (err: any) {
+            const msg = err.response?.data?.email?.[0] || err.response?.data?.detail || 'Failed to send invitation.';
+            alert(msg);
+        } finally {
+            setInviting(false);
         }
     };
 
@@ -276,6 +309,18 @@ const ReviewerManagement: React.FC = () => {
                     >
                         <Plus size={18} className="mr-2" />
                         Add Reviewer
+                    </button>
+                    <button
+                        onClick={() => {
+                            setInviteEmail('');
+                            setInviteExpiry(7);
+                            setInviteResult(null);
+                            setShowInviteModal(true);
+                        }}
+                        className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-sm transition-colors"
+                    >
+                        <UserPlus size={18} className="mr-2" />
+                        Invite Reviewer
                     </button>
                 </div>
             </div>
@@ -757,6 +802,109 @@ const ReviewerManagement: React.FC = () => {
                     </div>
                 </div>
             )}
+            {/* Invite Reviewer Modal */}
+            {showInviteModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                    <div className="w-[min(520px,calc(100vw-2rem))] rounded-2xl bg-white shadow-2xl">
+                        <div className="p-6 border-b border-gray-200">
+                            <h2 className="text-xl font-semibold text-gray-900">Invite Reviewer</h2>
+                            <p className="text-sm text-gray-500 mt-1">Send an invitation email with a registration link</p>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            {inviteResult ? (
+                                <div className="space-y-3">
+                                    <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+                                        <p className="text-sm font-medium text-green-800">{inviteResult.message}</p>
+                                        {!inviteResult.email_sent && (
+                                            <p className="mt-2 text-xs text-amber-700">Email could not be sent. Share the registration link manually:</p>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Registration Link</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                readOnly
+                                                value={inviteResult.registration_url}
+                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(inviteResult.registration_url)
+                                                        .then(() => alert('Link copied to clipboard!'))
+                                                        .catch(() => alert('Failed to copy. Please select and copy the link manually.'));
+                                                }}
+                                                className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm whitespace-nowrap"
+                                            >
+                                                Copy
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="pt-2 flex justify-between">
+                                        <button
+                                            type="button"
+                                            onClick={() => setInviteResult(null)}
+                                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm"
+                                        >
+                                            Invite Another
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowInviteModal(false)}
+                                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Reviewer Email</label>
+                                        <input
+                                            type="email"
+                                            value={inviteEmail}
+                                            onChange={(e) => setInviteEmail(e.target.value)}
+                                            placeholder="reviewer@nsu.edu"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Invitation Expires In (days)</label>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            max={30}
+                                            value={inviteExpiry}
+                                            onChange={(e) => setInviteExpiry(Number(e.target.value))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                                        />
+                                    </div>
+                                    <div className="pt-4 flex justify-end space-x-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowInviteModal(false)}
+                                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleInviteReviewer}
+                                            disabled={inviting || !inviteEmail.trim()}
+                                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                                        >
+                                            {inviting ? 'Sending...' : 'Send Invitation'}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Email Reviewers Modal */}
             {showEmailModal && (
                 <EmailReviewersModal

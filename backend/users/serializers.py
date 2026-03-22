@@ -117,31 +117,36 @@ class LoginSerializer(serializers.Serializer):
         email = attrs.get('email')
         password = attrs.get('password')
 
-        # Check if user exists with this email
+        # Look up the user by email.  Use a generic error message when the
+        # account is not found to avoid disclosing which email addresses are
+        # registered (user-enumeration / account oracle vulnerability).
         try:
             matched_user = User.objects.get(email=email)
         except User.DoesNotExist:
             raise serializers.ValidationError({
-                'email': 'No user found with this email address.'
+                'non_field_errors': 'Invalid email or password.'
             })
 
-        # Django authenticate() returns None for inactive users, so check first
-        # to return an accurate business message for pending reviewer accounts.
+        # Inactive accounts should not reveal *why* login is blocked, but we
+        # do need to distinguish "pending approval" from a wrong password so
+        # the user knows to wait rather than repeatedly retry.  This message
+        # does not confirm the password, only the account state.
         if not matched_user.is_active:
             raise serializers.ValidationError({
-                'non_field_errors': 'This user account has been disabled.'
+                'non_field_errors': 'This account is pending approval or has been disabled.'
             })
 
-        # Authenticate with username (since Django uses username for auth)
+        # Authenticate with username (Django's ModelBackend uses username)
         user = authenticate(
             request=self.context.get('request'),
-            username=matched_user.username,  # Use username for authentication
+            username=matched_user.username,
             password=password
         )
 
         if not user:
+            # Generic message — do not reveal whether the email exists
             raise serializers.ValidationError({
-                'password': 'Incorrect password.'
+                'non_field_errors': 'Invalid email or password.'
             })
 
         # Add authenticated user to validated data
@@ -625,5 +630,122 @@ class ReviewerRegistrationSerializer(serializers.ModelSerializer):
             cv=cv,
             is_active_reviewer=False  # Also starts inactive
         )
+
+        return user
+
+
+class ReviewerInvitationSerializer(serializers.Serializer):
+    """
+    Serializer for SRC Chair to invite a reviewer by email.
+    """
+    email = serializers.EmailField(required=True)
+    expires_in_days = serializers.IntegerField(required=False, default=7, min_value=1, max_value=30)
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value, is_active=True).exists():
+            raise serializers.ValidationError("A user with this email already exists and is active.")
+        return value
+
+
+class InvitedReviewerRegistrationSerializer(serializers.ModelSerializer):
+    """
+    Registration serializer that requires a valid invitation token.
+    Reviewers can only register if they have been invited by the SRC Chair.
+    """
+    password = serializers.CharField(
+        write_only=True, required=True,
+        validators=[validate_password],
+        style={'input_type': 'password'}
+    )
+    token = serializers.UUIDField(write_only=True, required=True)
+    cv = serializers.FileField(write_only=True, required=False, allow_null=True)
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'token', 'cv']
+        extra_kwargs = {
+            'first_name': {'required': True},
+            'last_name': {'required': True},
+            'email': {'read_only': True},  # Email comes from invitation, not user input
+        }
+
+    def validate_token(self, value):
+        from .models import ReviewerInvitation
+        try:
+            invitation = ReviewerInvitation.objects.get(token=value)
+        except ReviewerInvitation.DoesNotExist:
+            raise serializers.ValidationError("Invalid invitation token.")
+        if invitation.is_used:
+            raise serializers.ValidationError("This invitation has already been used.")
+        if invitation.is_expired:
+            raise serializers.ValidationError("This invitation has expired.")
+        return value
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("A user with this username already exists.")
+        return value
+
+    def validate_cv(self, value):
+        if not value:
+            return value
+        allowed_extensions = ('.pdf', '.doc', '.docx')
+        filename = value.name.lower()
+        if not filename.endswith(allowed_extensions):
+            raise serializers.ValidationError("CV must be a PDF, DOC, or DOCX file.")
+        max_size = 5 * 1024 * 1024
+        if value.size > max_size:
+            raise serializers.ValidationError("CV must be 5 MB or smaller.")
+        return value
+
+    def create(self, validated_data):
+        from .models import ReviewerInvitation
+        from django.utils import timezone
+        from django.db import transaction
+
+        token = validated_data.pop('token')
+        cv = validated_data.pop('cv', None)
+
+        with transaction.atomic():
+            # Lock the invitation row to prevent race conditions
+            try:
+                invitation = ReviewerInvitation.objects.select_for_update().get(token=token)
+            except ReviewerInvitation.DoesNotExist:
+                raise serializers.ValidationError({"token": "Invalid invitation token."})
+
+            # Re-validate inside the transaction (guards against concurrent use)
+            if invitation.is_used:
+                raise serializers.ValidationError({"token": "This invitation has already been used."})
+            if invitation.is_expired:
+                raise serializers.ValidationError({"token": "This invitation has expired."})
+
+            # Check email uniqueness (invitation email may collide with existing user)
+            if User.objects.filter(email=invitation.email).exists():
+                raise serializers.ValidationError(
+                    {"email": "A user with this email already exists."}
+                )
+
+            # Use email from invitation
+            validated_data['email'] = invitation.email
+
+            user = User.objects.create_user(**validated_data)
+            user.is_active = False  # Requires SRC Chair approval
+            user.save()
+
+            group, _ = Group.objects.get_or_create(name='Reviewer')
+            user.groups.add(group)
+
+            from reviews.models import ReviewerProfile
+            ReviewerProfile.objects.create(
+                user=user,
+                area_of_expertise='',
+                cv=cv,
+                is_active_reviewer=False
+            )
+
+            # Mark invitation as used
+            invitation.is_used = True
+            invitation.used_at = timezone.now()
+            invitation.save()
 
         return user
