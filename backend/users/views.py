@@ -121,7 +121,7 @@ class LoginView(ObtainAuthToken):
     Request Body:
         {
             "email": "user@nsu.edu",
-            "password": "password123"
+            "password": "<your_password>"
         }
 
     Success Response (200 OK):
