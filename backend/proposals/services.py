@@ -230,7 +230,15 @@ class ProposalService:
         
         if should_save_proposal:
             proposal.save()
-        
+
+        # Notify PI of Stage 1 outcome (rejection or direct acceptance).
+        # Tentative acceptance already triggers a revision-request email via start_revision_window.
+        if decision in (Stage1Decision.Decision.REJECT, Stage1Decision.Decision.ACCEPT):
+            try:
+                EmailService.send_stage1_decision_email(proposal, decision)
+            except Exception:
+                logger.warning("Failed to send Stage 1 decision email for proposal %s", proposal.proposal_code)
+
         # Audit log
         AuditLog.objects.create(
             user=user,
@@ -381,7 +389,13 @@ class ProposalService:
 
         proposal.is_locked = True
         proposal.save()
-        
+
+        # Notify PI of final outcome
+        try:
+            EmailService.send_final_decision_email(proposal)
+        except Exception:
+            logger.warning("Failed to send final decision email for proposal %s", proposal.proposal_code)
+
         # Audit log
         AuditLog.objects.create(
             user=user,
@@ -838,6 +852,46 @@ CTRG Grant Review System
         return False
     
     @staticmethod
+    def send_stage1_decision_email(proposal, decision):
+        """Send email to PI notifying them of the Stage 1 outcome (reject or direct accept)."""
+        from .models import Stage1Decision
+        if decision == Stage1Decision.Decision.REJECT:
+            outcome = "NOT ACCEPTED at Stage 1"
+            body_detail = (
+                "After careful review by our panel, your proposal has not been accepted at this stage.\n\n"
+                "Please contact the SRC Chair if you require further information."
+            )
+        else:
+            outcome = "ACCEPTED (No Corrections Required)"
+            body_detail = (
+                "Congratulations! Your proposal has been accepted without any required corrections.\n\n"
+                "The SRC Chair will be in touch regarding next steps and grant allocation."
+            )
+
+        subject = f"Stage 1 Decision: {proposal.proposal_code} — {outcome}"
+        message = f"""Dear {proposal.pi_name},
+
+We are writing to inform you of the Stage 1 review decision for your research grant proposal.
+
+Proposal Title : {proposal.title}
+Proposal Code  : {proposal.proposal_code}
+Decision       : {outcome}
+
+{body_detail}
+
+Please log in to the CTRG Grant Review System to view the full decision details and reviewer comments.
+
+Best regards,
+CTRG Grant Review System
+North South University"""
+
+        return EmailService._send_email(
+            subject=subject,
+            message=message,
+            recipient_list=[proposal.pi_email]
+        )
+
+    @staticmethod
     def send_revision_request_email(proposal):
         """Send email to PI about revision request."""
         subject = f"Revision Requested: {proposal.proposal_code}"
@@ -887,24 +941,44 @@ CTRG Grant Review System
 
     @staticmethod
     def send_final_decision_email(proposal):
-        """Send email to PI about final decision."""
-        decision_text = "ACCEPTED" if proposal.status == Proposal.Status.FINAL_ACCEPTED else "NOT ACCEPTED"
-        
-        subject = f"Final Decision: {proposal.proposal_code} - {decision_text}"
-        message = f"""
-Dear {proposal.pi_name},
+        """Send email to PI about the final grant decision, including approved amount if accepted."""
+        accepted = proposal.status == Proposal.Status.FINAL_ACCEPTED
+        decision_text = "FINAL ACCEPTED" if accepted else "FINAL REJECTED"
 
-The final decision for your proposal has been made.
+        # Try to pull approved amount and remarks from the decision record
+        amount_line = ""
+        remarks_line = ""
+        try:
+            fd = proposal.final_decision
+            if accepted and fd.approved_grant_amount:
+                amount_line = f"Approved Grant Amount : BDT {fd.approved_grant_amount:,.2f}\n"
+            if fd.final_remarks:
+                remarks_line = f"Remarks               : {fd.final_remarks}\n"
+        except Exception:
+            pass
 
-Proposal: {proposal.title}
-Code: {proposal.proposal_code}
-Decision: {decision_text}
+        congratulations = (
+            "Congratulations! Your proposal has been approved for funding.\n\n"
+            "Please log in to the CTRG system to view the full decision and coordinate next steps with the SRC Chair."
+            if accepted else
+            "After thorough review of all stages, your proposal has not been approved for funding at this time.\n\n"
+            "Please log in to the CTRG system to view detailed feedback. You are welcome to contact the SRC Chair for further guidance."
+        )
 
-Please log in to the system for more details.
+        subject = f"Final Grant Decision: {proposal.proposal_code} — {decision_text}"
+        message = f"""Dear {proposal.pi_name},
+
+We wish to inform you of the final decision regarding your CTRG research grant proposal.
+
+Proposal Title        : {proposal.title}
+Proposal Code         : {proposal.proposal_code}
+Final Decision        : {decision_text}
+{amount_line}{remarks_line}
+{congratulations}
 
 Best regards,
 CTRG Grant Review System
-        """
+North South University"""
 
         return EmailService._send_email(
             subject=subject,

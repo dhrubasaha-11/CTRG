@@ -30,6 +30,7 @@ const ProposalList = lazy(() => import('./features/admin/ProposalList'));
 const ReportsPage = lazy(() => import('./features/admin/ReportsPage'));
 const AuditLogViewer = lazy(() => import('./features/admin/AuditLogViewer'));
 const PIManagement = lazy(() => import('./features/admin/PIManagement'));
+const EmailSettingsPage = lazy(() => import('./features/admin/EmailSettingsPage'));
 
 // Shared Features
 const ChangePassword = lazy(() => import('./features/auth/ChangePassword'));
@@ -125,6 +126,7 @@ function App() {
               <Route path="/admin/reports" element={<Suspense fallback={<LoadingFallback />}><ReportsPage /></Suspense>} />
               <Route path="/admin/audit-logs" element={<Suspense fallback={<LoadingFallback />}><AuditLogViewer /></Suspense>} />
               <Route path="/admin/pis" element={<Suspense fallback={<LoadingFallback />}><PIManagement /></Suspense>} />
+              <Route path="/admin/email-settings" element={<Suspense fallback={<LoadingFallback />}><EmailSettingsPage /></Suspense>} />
               <Route path="/admin/profile" element={<Suspense fallback={<LoadingFallback />}><ProfilePage /></Suspense>} />
               <Route path="/admin/change-password" element={<Suspense fallback={<LoadingFallback />}><ChangePassword /></Suspense>} />
             </Route>

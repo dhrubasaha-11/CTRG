@@ -481,6 +481,10 @@ export const assignmentApi = {
 export const authApi = {
     changePassword: (old_password: string, new_password: string) =>
         api.post('/auth/change-password/', { old_password, new_password }),
+    getEmailConfig: () =>
+        api.get('/auth/email-config/'),
+    sendTestEmail: (recipient: string) =>
+        api.post('/auth/email-config/', { recipient }),
 };
 
 // ===== User Management APIs =====

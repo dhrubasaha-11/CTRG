@@ -1220,3 +1220,59 @@ class ListInvitationsView(generics.ListAPIView):
                 'is_valid': inv.is_valid,
             })
         return Response(data)
+
+
+class TestEmailView(APIView):
+    """
+    Send a test email to verify SMTP configuration.
+    Admin only. POST with optional {"recipient": "email@example.com"}.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        """Return current email backend configuration (no secrets)."""
+        from django.conf import settings
+        backend = getattr(settings, 'EMAIL_BACKEND', '')
+        is_console = 'console' in backend.lower()
+        return Response({
+            'backend': backend,
+            'is_smtp': not is_console,
+            'host': getattr(settings, 'EMAIL_HOST', ''),
+            'port': getattr(settings, 'EMAIL_PORT', 587),
+            'use_tls': getattr(settings, 'EMAIL_USE_TLS', True),
+            'from_email': getattr(settings, 'DEFAULT_FROM_EMAIL', ''),
+            'user_configured': bool(getattr(settings, 'EMAIL_HOST_USER', '')),
+        })
+
+    def post(self, request):
+        """Send a test email."""
+        from django.core.mail import send_mail
+        from django.conf import settings
+
+        recipient = request.data.get('recipient') or request.user.email
+        if not recipient:
+            return Response({'error': 'No recipient email provided.'}, status=400)
+
+        backend = getattr(settings, 'EMAIL_BACKEND', '')
+        is_console = 'console' in backend.lower()
+
+        try:
+            sent = send_mail(
+                subject='CTRG System — Test Email',
+                message=(
+                    'This is a test email from the CTRG Grant Review Management System.\n\n'
+                    'If you received this, your email configuration is working correctly.\n\n'
+                    'Best regards,\nCTRG Grant Review System\nNorth South University'
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[recipient],
+                fail_silently=False,
+            )
+            return Response({
+                'success': True,
+                'sent_to': recipient,
+                'backend': backend,
+                'note': 'Email printed to server console (no SMTP configured).' if is_console else 'Email sent via SMTP.',
+            })
+        except Exception as exc:
+            return Response({'success': False, 'error': str(exc)}, status=500)

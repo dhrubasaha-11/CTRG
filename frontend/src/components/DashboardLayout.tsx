@@ -19,6 +19,7 @@ import {
     User,
     X,
     Zap,
+    Mail,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -52,6 +53,7 @@ const adminNavItems: NavItem[] = [
     { to: '/admin/pending-reviewers',  icon: UserCheck,       label: 'Pending' },
     { to: '/admin/reports',            icon: BarChart3,       label: 'Reports' },
     { to: '/admin/audit-logs',         icon: Shield,          label: 'Audit Logs' },
+    { to: '/admin/email-settings',     icon: Mail,            label: 'Email' },
     { to: '/admin/change-password',    icon: Key,             label: 'Change Password' },
 ];
 
@@ -64,6 +66,7 @@ const getPageTitle = (role: string | null, pathname: string): string => {
         if (pathname.startsWith('/admin/pending-reviewers')) return 'Pending Reviewers';
         if (pathname.startsWith('/admin/reports'))           return 'Reports';
         if (pathname.startsWith('/admin/audit-logs'))        return 'Audit Logs';
+        if (pathname.startsWith('/admin/email-settings'))   return 'Email Settings';
         if (pathname.startsWith('/admin/change-password'))   return 'Change Password';
         return 'Overview';
     }

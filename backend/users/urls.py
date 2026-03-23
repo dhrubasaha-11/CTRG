@@ -20,6 +20,7 @@ Authentication: All endpoints except /login/ require token authentication
 
 from django.urls import path
 from .views import (
+    TestEmailView,
     LoginView,
     LogoutView,
     CurrentUserView,
@@ -95,4 +96,6 @@ urlpatterns = [
 
     path('reject-reviewer/<int:pk>/', RejectReviewerView.as_view(), name='reject-reviewer'),
     # Reject a pending reviewer registration (admin only)
+
+    path('email-config/', TestEmailView.as_view(), name='email-config'),
 ]
