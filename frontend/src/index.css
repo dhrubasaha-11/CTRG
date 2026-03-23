@@ -856,3 +856,249 @@ textarea.input {
         overflow-y: auto;
     }
 }
+
+/* =========================================
+   DASHBOARD LIGHT THEME — Industry Grade
+   White & clean, professional palette
+   ========================================= */
+
+.dashboard-theme {
+    --bg:              #f1f5f9;
+    --bg-2:            #e8eef6;
+    --surface:         #ffffff;
+    --surface-2:       #f8fafc;
+    --surface-3:       #f1f5f9;
+    --border:          rgba(15, 23, 42, 0.08);
+    --border-2:        rgba(15, 23, 42, 0.12);
+    --border-brand:    rgba(99, 102, 241, 0.3);
+
+    --text-1:          #0f172a;
+    --text-2:          #475569;
+    --text-3:          #94a3b8;
+    --text-brand:      #6366f1;
+
+    --shadow-card:     0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+    --shadow-hover:    0 4px 24px rgba(0,0,0,0.1), 0 0 0 1px rgba(99,102,241,0.2);
+    --shadow-modal:    0 24px 64px rgba(0,0,0,0.18);
+
+    background-color: var(--bg);
+    color: var(--text-1);
+}
+
+/* Sidebar — white with left border accent */
+.dashboard-theme .sidebar {
+    background: #ffffff;
+    border-right: 1px solid rgba(15,23,42,0.08);
+    box-shadow: 2px 0 12px rgba(0,0,0,0.04);
+}
+
+.dashboard-theme .nav-item {
+    color: #64748b;
+}
+
+.dashboard-theme .nav-item:hover {
+    background: rgba(99,102,241,0.06);
+    color: #334155;
+}
+
+.dashboard-theme .nav-item-active {
+    background: rgba(99,102,241,0.09);
+    color: #6366f1;
+    font-weight: 600;
+}
+
+.dashboard-theme .nav-item-active::before {
+    background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%);
+}
+
+/* Topbar — white with bottom border */
+.dashboard-theme .topbar {
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+/* App background */
+.dashboard-theme .app-inner {
+    background-color: #f1f5f9;
+}
+
+/* Cards */
+.dashboard-theme .card,
+.dashboard-theme .card-flat {
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.08);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+}
+
+.dashboard-theme .card:hover {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.1), 0 0 0 1px rgba(99,102,241,0.18);
+    border-color: rgba(99,102,241,0.25);
+}
+
+.dashboard-theme .metric-card {
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.08);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+}
+
+.dashboard-theme .metric-card::after {
+    background: linear-gradient(135deg, rgba(99,102,241,0.03) 0%, transparent 60%);
+}
+
+.dashboard-theme .metric-card:hover {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.1), 0 0 0 1px rgba(99,102,241,0.18);
+    border-color: rgba(99,102,241,0.25);
+}
+
+/* Inputs */
+.dashboard-theme .input {
+    background: #f8fafc;
+    border: 1px solid rgba(15,23,42,0.14);
+    color: #0f172a;
+}
+
+.dashboard-theme .input::placeholder { color: #94a3b8; }
+
+.dashboard-theme .input:focus {
+    border-color: #6366f1;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
+
+/* Tables */
+.dashboard-theme .table-wrap {
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.08);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.dashboard-theme .table th {
+    background: #f8fafc;
+    color: #64748b;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+}
+
+.dashboard-theme .table td {
+    color: #334155;
+    border-bottom: 1px solid rgba(15,23,42,0.06);
+}
+
+.dashboard-theme .table tbody tr:hover td {
+    background: rgba(99,102,241,0.03);
+}
+
+/* Modals */
+.dashboard-theme .modal {
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.1);
+}
+
+.dashboard-theme .modal-header {
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+}
+
+.dashboard-theme .modal-footer {
+    border-top: 1px solid rgba(15,23,42,0.08);
+}
+
+.dashboard-theme .modal-overlay {
+    background: rgba(15,23,42,0.5);
+}
+
+/* Buttons — secondary / ghost adapt to light bg */
+.dashboard-theme .btn-secondary {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid rgba(15,23,42,0.14);
+}
+
+.dashboard-theme .btn-secondary:hover:not(:disabled) {
+    background: #e2e8f0;
+    border-color: rgba(15,23,42,0.2);
+}
+
+.dashboard-theme .btn-ghost {
+    color: #64748b;
+}
+
+.dashboard-theme .btn-ghost:hover:not(:disabled) {
+    background: rgba(15,23,42,0.05);
+    color: #334155;
+}
+
+/* Badges adapt */
+.dashboard-theme .badge-slate {
+    background: rgba(100,116,139,0.1);
+    color: #475569;
+    border: 1px solid rgba(100,116,139,0.2);
+}
+
+/* Section label */
+.dashboard-theme .section-label {
+    color: #94a3b8;
+}
+
+/* Progress */
+.dashboard-theme .progress-track {
+    background: rgba(15,23,42,0.08);
+}
+
+/* Divider */
+.dashboard-theme .divider {
+    background: linear-gradient(90deg, transparent, rgba(15,23,42,0.1), transparent);
+}
+
+/* Scrollbar */
+.dashboard-theme ::-webkit-scrollbar-thumb {
+    background: rgba(15,23,42,0.12);
+}
+.dashboard-theme ::-webkit-scrollbar-thumb:hover {
+    background: rgba(15,23,42,0.2);
+}
+
+/* Glass overrides */
+.dashboard-theme .glass {
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(15,23,42,0.1);
+}
+
+.dashboard-theme .glass-light {
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(15,23,42,0.08);
+}
+
+/* ── Tailwind text-color overrides for light background ── */
+.dashboard-theme .text-slate-100 { color: #1e293b; }
+.dashboard-theme .text-slate-200 { color: #334155; }
+.dashboard-theme .text-slate-300 { color: #475569; }
+.dashboard-theme .hover\:text-slate-200:hover { color: #334155; }
+
+/* Heading text that was designed for dark BG */
+.dashboard-theme h1.text-slate-100,
+.dashboard-theme h2.text-slate-200,
+.dashboard-theme h3.text-slate-200 {
+    color: #0f172a;
+}
+
+/* Reviewer Home / SRC Chair heading area */
+.dashboard-theme [class*="text-slate-100"] { color: #1e293b; }
+
+/* Inline dark surface overrides for panels that embed their own dark BG */
+.dashboard-theme .bg-\[\#0d1529\],
+.dashboard-theme .bg-surface,
+.dashboard-theme [style*="background: rgba(13"],
+.dashboard-theme [style*="background:rgba(13"] {
+    background: #ffffff !important;
+}
+
+/* Card inner text fixes */
+.dashboard-theme .section-label { color: #94a3b8; }
+
+/* Status chart center text (sits on a colored circle — keep white) */
+.dashboard-theme .text-white { color: #ffffff; }
+
+/* But for regular prose text that got text-white incorrectly */
+.dashboard-theme p.text-white { color: #0f172a; }

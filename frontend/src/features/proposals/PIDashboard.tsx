@@ -83,11 +83,11 @@ const PIDashboard: React.FC = () => {
     if (loading) return <div className="flex h-64 items-center justify-center"><div className="spinner" /></div>;
 
     const statCards = [
-        { label: 'Submitted',       value: stats.submitted_proposals, icon: FileText,      color: '#818cf8', bg: 'rgba(99,102,241,0.15)',   border: 'rgba(99,102,241,0.25)',   glow: 'rgba(99,102,241,0.2)' },
-        { label: 'Under Review',    value: stats.under_review,        icon: Clock,          color: '#67e8f9', bg: 'rgba(6,182,212,0.15)',    border: 'rgba(6,182,212,0.25)',    glow: 'rgba(6,182,212,0.2)' },
-        { label: 'Action Needed',   value: stats.pending_action,      icon: AlertTriangle,  color: '#fcd34d', bg: 'rgba(245,158,11,0.15)',   border: 'rgba(245,158,11,0.25)',   glow: 'rgba(245,158,11,0.2)' },
-        { label: 'Rev. Deadlines',  value: stats.revision_deadlines,  icon: RefreshCw,      color: '#fdba74', bg: 'rgba(249,115,22,0.15)',   border: 'rgba(249,115,22,0.25)',   glow: 'rgba(249,115,22,0.2)' },
-        { label: 'Final Decisions', value: stats.final_decisions,     icon: CheckCircle,    color: '#6ee7b7', bg: 'rgba(16,185,129,0.15)',   border: 'rgba(16,185,129,0.25)',   glow: 'rgba(16,185,129,0.2)' },
+        { label: 'Submitted',       value: stats.submitted_proposals, icon: FileText,      color: '#6366f1', bg: 'rgba(99,102,241,0.1)',    border: 'rgba(99,102,241,0.2)',    glow: 'rgba(99,102,241,0.12)', accent: '#6366f1' },
+        { label: 'Under Review',    value: stats.under_review,        icon: Clock,          color: '#0891b2', bg: 'rgba(6,182,212,0.1)',     border: 'rgba(6,182,212,0.2)',     glow: 'rgba(6,182,212,0.12)',  accent: '#06b6d4' },
+        { label: 'Action Needed',   value: stats.pending_action,      icon: AlertTriangle,  color: '#d97706', bg: 'rgba(245,158,11,0.1)',    border: 'rgba(245,158,11,0.2)',    glow: 'rgba(245,158,11,0.12)', accent: '#f59e0b' },
+        { label: 'Rev. Deadlines',  value: stats.revision_deadlines,  icon: RefreshCw,      color: '#ea580c', bg: 'rgba(249,115,22,0.1)',    border: 'rgba(249,115,22,0.2)',    glow: 'rgba(249,115,22,0.12)', accent: '#f97316' },
+        { label: 'Final Decisions', value: stats.final_decisions,     icon: CheckCircle,    color: '#059669', bg: 'rgba(16,185,129,0.1)',    border: 'rgba(16,185,129,0.2)',    glow: 'rgba(16,185,129,0.12)', accent: '#10b981' },
     ];
 
     return (
@@ -96,7 +96,7 @@ const PIDashboard: React.FC = () => {
             {/* Header */}
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-100" style={{ letterSpacing: '-0.02em' }}>My Proposals</h1>
+                    <h1 className="text-2xl font-bold text-slate-900" style={{ letterSpacing: '-0.02em' }}>My Proposals</h1>
                     <p className="mt-1 text-sm text-slate-500">Track and manage your research grant proposals</p>
                 </div>
                 <Link to="/pi/submit" className="btn btn-primary flex items-center gap-2">
@@ -106,7 +106,7 @@ const PIDashboard: React.FC = () => {
             </div>
 
             {error && (
-                <div className="rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>
+                <div className="rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626' }}>
                     {error}
                 </div>
             )}
@@ -114,14 +114,14 @@ const PIDashboard: React.FC = () => {
             {/* Stat Cards */}
             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
                 {statCards.map((c) => (
-                    <div key={c.label} className="metric-card">
+                    <div key={c.label} className="metric-card" style={{ borderTop: `3px solid ${c.accent}` }}>
                         <div style={{ position: 'absolute', top: 0, right: 0, width: '70px', height: '70px', background: `radial-gradient(circle, ${c.glow} 0%, transparent 70%)`, borderRadius: '50%', pointerEvents: 'none' }} />
                         <div className="relative z-10">
                             <div className="flex h-9 w-9 items-center justify-center rounded-xl mb-3"
                                  style={{ background: c.bg, border: `1px solid ${c.border}` }}>
                                 <c.icon className="h-4 w-4" style={{ color: c.color }} />
                             </div>
-                            <p className="text-3xl font-extrabold text-white" style={{ letterSpacing: '-0.04em' }}>{c.value}</p>
+                            <p className="text-3xl font-extrabold text-slate-900" style={{ letterSpacing: '-0.04em' }}>{c.value}</p>
                             <p className="section-label mt-1">{c.label}</p>
                         </div>
                     </div>
@@ -132,19 +132,19 @@ const PIDashboard: React.FC = () => {
             {proposals.filter(p => needsAction(p.status)).length > 0 && (
                 <div className="rounded-2xl p-5" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
                     <div className="mb-3 flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-amber-400" />
-                        <h2 className="text-sm font-bold text-amber-300 uppercase tracking-wider">Action Required</h2>
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <h2 className="text-sm font-bold text-amber-700 uppercase tracking-wider">Action Required</h2>
                     </div>
                     <div className="space-y-2">
                         {proposals.filter(p => needsAction(p.status)).map(p => {
                             const cd = p.revision_deadline ? getCountdown(p.revision_deadline) : null;
                             return (
                                 <div key={p.id} className="flex items-center justify-between gap-4 rounded-xl px-4 py-3"
-                                     style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                     style={{ background: 'rgba(254,243,199,0.6)', border: '1px solid rgba(245,158,11,0.25)' }}>
                                     <div className="min-w-0">
-                                        <span className="text-sm font-semibold text-slate-200 truncate block">{p.title}</span>
+                                        <span className="text-sm font-semibold text-slate-800 truncate block">{p.title}</span>
                                         {cd && (
-                                            <span className={`mt-0.5 flex items-center gap-1 text-xs ${cd.urgent ? 'text-red-400 font-semibold' : 'text-amber-400'}`}>
+                                            <span className={`mt-0.5 flex items-center gap-1 text-xs ${cd.urgent ? 'text-red-600 font-semibold' : 'text-amber-600'}`}>
                                                 <Clock size={11} /> {cd.text}
                                             </span>
                                         )}
@@ -173,14 +173,14 @@ const PIDashboard: React.FC = () => {
                                             {proposal.status_display || bm.label}
                                         </span>
                                     </div>
-                                    <h3 className="text-base font-semibold text-slate-200 truncate">{proposal.title}</h3>
+                                    <h3 className="text-base font-semibold text-slate-800 truncate">{proposal.title}</h3>
                                     <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-500">
                                         {proposal.cycle_name && <span>{proposal.cycle_name}</span>}
                                         {proposal.fund_requested && (
-                                            <span>Requested: <strong className="text-slate-300">${proposal.fund_requested.toLocaleString()}</strong></span>
+                                            <span>Requested: <strong className="text-slate-700">${proposal.fund_requested.toLocaleString()}</strong></span>
                                         )}
                                         {proposal.approved_amount && (
-                                            <span className="text-emerald-400 font-semibold">
+                                            <span className="text-emerald-700 font-semibold">
                                                 Approved: ${proposal.approved_amount.toLocaleString()}
                                             </span>
                                         )}
@@ -191,7 +191,7 @@ const PIDashboard: React.FC = () => {
                                 </div>
                             </div>
                             {proposal.status !== 'DRAFT' && (
-                                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+                                <div style={{ borderTop: '1px solid rgba(15,23,42,0.08)', paddingTop: '14px' }}>
                                     <StatusTracker status={proposal.status} />
                                 </div>
                             )}
@@ -205,7 +205,7 @@ const PIDashboard: React.FC = () => {
                              style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
                             <FileText className="h-7 w-7 text-brand-400 opacity-70" />
                         </div>
-                        <h3 className="text-base font-semibold text-slate-300 mb-1">No proposals yet</h3>
+                        <h3 className="text-base font-semibold text-slate-700 mb-1">No proposals yet</h3>
                         <p className="text-sm text-slate-500 mb-5">Start by creating your first research grant proposal</p>
                         <Link to="/pi/submit" className="btn btn-primary flex items-center gap-2">
                             <Plus size={16} />Create Proposal

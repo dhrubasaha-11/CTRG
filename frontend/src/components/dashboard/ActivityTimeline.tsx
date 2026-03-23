@@ -35,7 +35,7 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
                 return (
                     <div key={activity.id} className="relative flex gap-3">
                         {!isLast && (
-                            <div style={{ position: 'absolute', left: '15px', top: '32px', bottom: '0', width: '1px', background: 'rgba(255,255,255,0.06)' }} />
+                            <div style={{ position: 'absolute', left: '15px', top: '32px', bottom: '0', width: '1px', background: 'rgba(15,23,42,0.09)' }} />
                         )}
 
                         <div className="flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-xl"

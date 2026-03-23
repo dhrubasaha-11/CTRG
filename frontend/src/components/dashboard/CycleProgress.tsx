@@ -42,7 +42,7 @@ export function CycleProgress({ currentStage, stage1Complete, stage2Complete, st
 
             <div className="relative">
                 {/* Track */}
-                <div className="absolute left-5 right-5 top-5 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+                <div className="absolute left-5 right-5 top-5 h-px" style={{ background: 'rgba(15,23,42,0.09)' }} />
                 {/* Fill */}
                 <div className="absolute left-5 top-5 h-px transition-all duration-700"
                      style={{ width: `${overallPct}%`, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)' }} />
@@ -58,9 +58,9 @@ export function CycleProgress({ currentStage, stage1Complete, stage2Complete, st
                                 {/* Icon */}
                                 <div className="flex h-10 w-10 items-center justify-center rounded-full transition-all"
                                      style={{
-                                         background: isDone ? 'rgba(16,185,129,0.2)' : isActive ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)',
-                                         border: isDone ? '2px solid rgba(16,185,129,0.5)' : isActive ? '2px solid rgba(99,102,241,0.6)' : '2px solid rgba(255,255,255,0.08)',
-                                         boxShadow: isActive ? '0 0 14px rgba(99,102,241,0.3)' : 'none',
+                                         background: isDone ? 'rgba(16,185,129,0.12)' : isActive ? 'rgba(99,102,241,0.12)' : 'rgba(15,23,42,0.04)',
+                                         border: isDone ? '2px solid rgba(16,185,129,0.4)' : isActive ? '2px solid rgba(99,102,241,0.5)' : '2px solid rgba(15,23,42,0.12)',
+                                         boxShadow: isActive ? '0 0 14px rgba(99,102,241,0.2)' : 'none',
                                      }}>
                                     {isDone
                                         ? <CheckCircle2 className="h-5 w-5 text-emerald-400" />

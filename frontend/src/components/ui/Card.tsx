@@ -35,7 +35,7 @@ interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function CardHeader({ className, title, subtitle, action, children, ...props }: CardHeaderProps) {
     return (
-        <div className={cn('px-5 py-4', className)} style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }} {...props}>
+        <div className={cn('px-5 py-4', className)} style={{ borderBottom: '1px solid rgba(15,23,42,0.08)' }} {...props}>
             {(title || subtitle || action) ? (
                 <div className="flex items-center justify-between gap-3">
                     <div>
@@ -55,7 +55,7 @@ export function CardContent({ className, children, ...props }: React.HTMLAttribu
 
 export function CardFooter({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
     return (
-        <div className={cn('px-5 py-4', className)} style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }} {...props}>
+        <div className={cn('px-5 py-4', className)} style={{ borderTop: '1px solid rgba(15,23,42,0.08)' }} {...props}>
             {children}
         </div>
     );

@@ -38,7 +38,7 @@ const ReviewerHome: React.FC = () => {
 
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-slate-100" style={{ letterSpacing: '-0.02em' }}>Reviewer Dashboard</h1>
+                <h1 className="text-2xl font-bold text-slate-900" style={{ letterSpacing: '-0.02em' }}>Reviewer Dashboard</h1>
                 <p className="mt-1 text-sm text-slate-500">Overview of your review workload and next actions</p>
             </div>
 
@@ -49,36 +49,39 @@ const ReviewerHome: React.FC = () => {
                         label: 'Total Assigned',
                         value: data.total_assigned,
                         icon: FileText,
-                        color: '#818cf8',
-                        bg: 'rgba(99,102,241,0.15)',
-                        border: 'rgba(99,102,241,0.25)',
-                        glow: 'rgba(99,102,241,0.2)',
+                        color: '#6366f1',
+                        bg: 'rgba(99,102,241,0.1)',
+                        border: 'rgba(99,102,241,0.2)',
+                        glow: 'rgba(99,102,241,0.12)',
+                        accent: '#6366f1',
                     },
                     {
                         label: 'Pending Reviews',
                         value: data.pending,
                         icon: Clock3,
-                        color: '#fcd34d',
-                        bg: 'rgba(245,158,11,0.15)',
-                        border: 'rgba(245,158,11,0.25)',
-                        glow: 'rgba(245,158,11,0.2)',
+                        color: '#d97706',
+                        bg: 'rgba(245,158,11,0.1)',
+                        border: 'rgba(245,158,11,0.2)',
+                        glow: 'rgba(245,158,11,0.12)',
+                        accent: '#f59e0b',
                     },
                     {
                         label: 'Completed',
                         value: data.completed,
                         icon: CheckCircle2,
-                        color: '#6ee7b7',
-                        bg: 'rgba(16,185,129,0.15)',
-                        border: 'rgba(16,185,129,0.25)',
-                        glow: 'rgba(16,185,129,0.2)',
+                        color: '#059669',
+                        bg: 'rgba(16,185,129,0.1)',
+                        border: 'rgba(16,185,129,0.2)',
+                        glow: 'rgba(16,185,129,0.12)',
+                        accent: '#10b981',
                     },
                 ].map((card) => (
-                    <div key={card.label} className="metric-card">
+                    <div key={card.label} className="metric-card" style={{ borderTop: `3px solid ${card.accent}` }}>
                         <div style={{ position: 'absolute', top: 0, right: 0, width: '80px', height: '80px', background: `radial-gradient(circle, ${card.glow} 0%, transparent 70%)`, borderRadius: '50%', pointerEvents: 'none' }} />
                         <div className="relative z-10 flex items-start justify-between gap-3">
                             <div>
                                 <p className="section-label mb-2">{card.label}</p>
-                                <p className="text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.04em' }}>{card.value}</p>
+                                <p className="text-4xl font-extrabold text-slate-900" style={{ letterSpacing: '-0.04em' }}>{card.value}</p>
                             </div>
                             <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl"
                                  style={{ background: card.bg, border: `1px solid ${card.border}` }}>
@@ -94,9 +97,9 @@ const ReviewerHome: React.FC = () => {
                 <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Star className="h-4 w-4 text-brand-400" />
-                        <span className="text-sm font-semibold text-slate-300">Completion Rate</span>
+                        <span className="text-sm font-semibold text-slate-700">Completion Rate</span>
                     </div>
-                    <span className="text-sm font-bold text-brand-300">{completionRate}%</span>
+                    <span className="text-sm font-bold text-brand-600">{completionRate}%</span>
                 </div>
                 <div className="progress-track">
                     <div className="progress-bar" style={{ width: `${completionRate}%` }} />
@@ -109,7 +112,7 @@ const ReviewerHome: React.FC = () => {
                 <div className="card p-6">
                     <div className="mb-5 flex items-center justify-between">
                         <div>
-                            <h2 className="text-base font-semibold text-slate-200">Pending Reviews</h2>
+                            <h2 className="text-base font-semibold text-slate-800">Pending Reviews</h2>
                             <p className="mt-0.5 text-xs text-slate-500">Proposals waiting for your evaluation</p>
                         </div>
                         <span className="badge badge-amber">{data.pending} pending</span>
@@ -117,8 +120,8 @@ const ReviewerHome: React.FC = () => {
                     <div className="space-y-2">
                         {data.pending_assignments.map((assignment) => (
                             <div key={assignment.id} className="flex items-center gap-4 rounded-xl px-4 py-3 transition-all"
-                                 style={{ border: '1px solid rgba(255,255,255,0.05)' }}
-                                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                                 style={{ border: '1px solid rgba(15,23,42,0.07)' }}
+                                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(99,102,241,0.04)')}
                                  onMouseLeave={e => (e.currentTarget.style.background = '')}>
                                 <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
                                      style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.2)' }}>
@@ -126,7 +129,7 @@ const ReviewerHome: React.FC = () => {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-semibold text-slate-200 truncate">{assignment.proposal_code}</span>
+                                        <span className="text-sm font-semibold text-slate-800 truncate">{assignment.proposal_code}</span>
                                         <span className="badge badge-brand">{stageLabel(assignment.stage)}</span>
                                     </div>
                                     <p className="text-xs text-slate-500 truncate mt-0.5">{assignment.proposal_title}</p>
@@ -150,7 +153,7 @@ const ReviewerHome: React.FC = () => {
             ) : (
                 <div className="card p-10 flex flex-col items-center justify-center text-center">
                     <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-3 opacity-60" />
-                    <h3 className="text-base font-semibold text-slate-300">All caught up!</h3>
+                    <h3 className="text-base font-semibold text-slate-700">All caught up!</h3>
                     <p className="mt-1 text-sm text-slate-500">You have no pending reviews at this time.</p>
                 </div>
             )}

@@ -113,13 +113,13 @@ const DashboardLayout: React.FC = () => {
     useEffect(() => { setMobileNavOpen(false); }, [location.pathname]);
 
     return (
-        <div className="app-bg relative flex min-h-screen">
+        <div className="dashboard-theme relative flex min-h-screen">
             {/* Mobile overlay */}
             {mobileNavOpen && (
                 <button
                     aria-label="Close navigation"
                     className="fixed inset-0 z-30 lg:hidden"
-                    style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+                    style={{ background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(4px)' }}
                     onClick={() => setMobileNavOpen(false)}
                 />
             )}
@@ -134,27 +134,30 @@ const DashboardLayout: React.FC = () => {
                 )}
             >
                 {/* Logo row */}
-                <div className={cn('flex h-16 items-center border-b px-4', 'border-white/[0.07]',
-                    collapsed ? 'justify-center' : 'gap-3 justify-between')}>
+                <div className={cn(
+                    'flex h-16 items-center border-b px-4',
+                    'border-slate-100',
+                    collapsed ? 'justify-center' : 'gap-3 justify-between'
+                )}>
                     {!collapsed && (
                         <div className="flex items-center gap-3 min-w-0">
-                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-violet-500 shadow-glow-brand">
+                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-md">
                                 <GraduationCap className="h-4 w-4 text-white" />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-brand-300">CTRG</p>
-                                <p className="text-[13px] font-semibold text-white truncate leading-tight">Grant Portal</p>
+                                <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-indigo-600">CTRG</p>
+                                <p className="text-[13px] font-semibold text-slate-800 truncate leading-tight">Grant Portal</p>
                             </div>
                         </div>
                     )}
                     {collapsed && (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-violet-500">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-md">
                             <GraduationCap className="h-4 w-4 text-white" />
                         </div>
                     )}
                     <button
                         onClick={() => isMobile ? setMobileNavOpen(false) : setCollapsed(p => !p)}
-                        className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-white/[0.06] hover:text-slate-300"
+                        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                         aria-label={collapsed ? 'Expand' : 'Collapse'}
                     >
                         {isMobile ? <X className="h-4.5 w-4.5" /> : collapsed ? <Menu className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -163,15 +166,15 @@ const DashboardLayout: React.FC = () => {
 
                 {/* Role badge */}
                 {!collapsed && (
-                    <div className="mx-3 mt-3 rounded-lg px-3 py-1.5" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                        <p className="text-[11px] font-semibold text-brand-300 uppercase tracking-widest">{roleMeta.label}</p>
+                    <div className="mx-3 mt-3 rounded-lg px-3 py-1.5" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)' }}>
+                        <p className="text-[11px] font-semibold text-indigo-500 uppercase tracking-widest">{roleMeta.label}</p>
                     </div>
                 )}
 
                 {/* Nav */}
                 <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-0.5 scrollbar-thin">
                     {!collapsed && (
-                        <p className="section-label px-3 pb-2">Navigation</p>
+                        <p className="section-label px-3 pb-2 text-slate-400">Navigation</p>
                     )}
                     {navItems.map((item) => {
                         const isDashboard = item.to.endsWith('/dashboard');
@@ -189,7 +192,10 @@ const DashboardLayout: React.FC = () => {
                                     collapsed && 'justify-center',
                                 )}
                             >
-                                <item.icon className={cn('h-[18px] w-[18px] flex-shrink-0', isActive ? 'text-brand-400' : 'text-slate-600')} />
+                                <item.icon className={cn(
+                                    'h-[18px] w-[18px] flex-shrink-0',
+                                    isActive ? 'text-indigo-500' : 'text-slate-400'
+                                )} />
                                 {!collapsed && <span className="text-sm">{item.label}</span>}
                                 {!collapsed && item.badge && (
                                     <span className="ml-auto badge badge-brand text-[10px] px-1.5 py-0.5">{item.badge}</span>
@@ -200,23 +206,23 @@ const DashboardLayout: React.FC = () => {
                 </nav>
 
                 {/* User row */}
-                <div className="border-t p-3" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                <div className="border-t border-slate-100 p-3">
                     <div className={cn('flex items-center gap-3 rounded-xl px-2 py-2', collapsed && 'justify-center')}
-                         style={{ background: 'rgba(255,255,255,0.04)' }}>
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-violet-500 text-xs font-bold text-white">
+                         style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.1)' }}>
+                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-bold text-white shadow-sm">
                             {initials}
                         </div>
                         {!collapsed && (
                             <>
                                 <div className="min-w-0 flex-1">
-                                    <p className="truncate text-[13px] font-semibold text-slate-200">
+                                    <p className="truncate text-[13px] font-semibold text-slate-800">
                                         {user?.first_name ? `${user.first_name} ${user.last_name ?? ''}`.trim() : user?.username}
                                     </p>
-                                    <p className="truncate text-[11px] text-slate-500">{role}</p>
+                                    <p className="truncate text-[11px] text-slate-400">{role}</p>
                                 </div>
                                 <button
                                     onClick={handleLogout}
-                                    className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-white/[0.06] hover:text-red-400"
+                                    className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
                                     title="Sign out"
                                 >
                                     <LogOut className="h-4 w-4" />
@@ -234,26 +240,26 @@ const DashboardLayout: React.FC = () => {
                 <header className="topbar sticky top-0 z-20 flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
                     <div className="flex items-center gap-3 min-w-0">
                         <button
-                            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-white/[0.06] hover:text-slate-300 lg:hidden"
+                            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 lg:hidden"
                             onClick={() => setMobileNavOpen(true)}
                             aria-label="Open navigation"
                         >
                             <Menu className="h-5 w-5" />
                         </button>
                         <div className="min-w-0">
-                            <p className="section-label">{roleMeta.label}</p>
-                            <h1 className="text-base font-semibold text-slate-100 truncate leading-tight">{pageTitle}</h1>
+                            <p className="section-label text-slate-400">{roleMeta.label}</p>
+                            <h1 className="text-base font-semibold text-slate-800 truncate leading-tight">{pageTitle}</h1>
                         </div>
                     </div>
 
                     <div className="hidden items-center gap-2.5 sm:flex">
-                        <div className="flex items-center gap-1.5 rounded-full px-3 py-1" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                        <div className="flex items-center gap-1.5 rounded-full px-3 py-1" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
                             <span className="dot-glow" style={{ width: 6, height: 6 }} />
-                            <span className="text-[12px] font-semibold text-emerald-400">Live</span>
+                            <span className="text-[12px] font-semibold text-emerald-600">Live</span>
                         </div>
-                        <div className="flex items-center gap-1.5 rounded-full px-3 py-1" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                            <Zap className="h-3 w-3 text-brand-400" />
-                            <span className="text-[12px] font-semibold text-brand-300">CTRG System</span>
+                        <div className="flex items-center gap-1.5 rounded-full px-3 py-1" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)' }}>
+                            <Zap className="h-3 w-3 text-indigo-500" />
+                            <span className="text-[12px] font-semibold text-indigo-600">CTRG System</span>
                         </div>
                     </div>
                 </header>
