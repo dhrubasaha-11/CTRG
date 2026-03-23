@@ -1,22 +1,44 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, Shield, BarChart3, Users } from 'lucide-react';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, Beaker, BookOpen, FlaskConical, Atom, BrainCircuit, Microscope } from 'lucide-react';
 
-const features = [
-    { icon: Shield,   title: 'Secure Role-Based Access',  desc: 'Isolated, auditable workflows for SRC Chair, Reviewers, and PIs.' },
-    { icon: BarChart3, title: 'Decision Intelligence',    desc: 'Stage-wise scoring with full comment history through final decisions.' },
-    { icon: Users,    title: 'Collaborative Review Ops',  desc: 'Assignments, reminders, revisions, and reports in one lifecycle.' },
+const floatingEquations = [
+    { text: 'H-index = f(citations)', x: '8%', y: '12%', delay: '0s', duration: '18s', size: '0.85rem', opacity: 0.12 },
+    { text: '∂R/∂t = αP − βD', x: '72%', y: '8%', delay: '3s', duration: '22s', size: '0.95rem', opacity: 0.10 },
+    { text: 'IF = C(y) / A(y−1) + A(y−2)', x: '15%', y: '78%', delay: '5s', duration: '20s', size: '0.8rem', opacity: 0.09 },
+    { text: 'p < 0.05', x: '82%', y: '72%', delay: '2s', duration: '16s', size: '1.1rem', opacity: 0.14 },
+    { text: 'R² = 1 − SS_res/SS_tot', x: '60%', y: '85%', delay: '7s', duration: '24s', size: '0.75rem', opacity: 0.08 },
+    { text: 'σ = √(Σ(x−μ)²/N)', x: '5%', y: '45%', delay: '4s', duration: '19s', size: '0.9rem', opacity: 0.11 },
+    { text: 'Σ grants × impact', x: '88%', y: '38%', delay: '6s', duration: '21s', size: '0.85rem', opacity: 0.10 },
+    { text: 'n = z²pq/e²', x: '35%', y: '5%', delay: '1s', duration: '17s', size: '0.8rem', opacity: 0.09 },
+    { text: 'χ² = Σ(O−E)²/E', x: '50%', y: '92%', delay: '8s', duration: '23s', size: '0.9rem', opacity: 0.07 },
+    { text: '∇²ψ + V(r)ψ = Eψ', x: '25%', y: '60%', delay: '2.5s', duration: '20s', size: '0.75rem', opacity: 0.08 },
+];
+
+const floatingLabels = [
+    { text: 'Peer Review', x: '10%', y: '22%', delay: '0s', color: '#818cf8' },
+    { text: 'Grant Cycle', x: '78%', y: '18%', delay: '2s', color: '#a78bfa' },
+    { text: 'Impact Factor', x: '65%', y: '75%', delay: '4s', color: '#22d3ee' },
+    { text: 'NSU', x: '20%', y: '68%', delay: '1s', color: '#6366f1' },
+    { text: 'SRC', x: '85%', y: '55%', delay: '3s', color: '#8b5cf6' },
+    { text: 'CTRG', x: '42%', y: '10%', delay: '5s', color: '#06b6d4' },
+];
+
+const researchTracks = [
+    { icon: FlaskConical, label: 'Stage 1', title: 'Initial Screening', desc: 'Eligibility and merit-based pre-review by domain experts' },
+    { icon: Microscope, label: 'Stage 2', title: 'Deep Evaluation', desc: 'Comprehensive scoring with detailed rubrics and peer consensus' },
+    { icon: BrainCircuit, label: 'Decision', title: 'Final Adjudication', desc: 'SRC Chair decision with full audit trail and revision support' },
 ];
 
 const Login: React.FC = () => {
-    const [email, setEmail]         = useState('');
-    const [password, setPassword]   = useState('');
-    const [showPw, setShowPw]       = useState(false);
-    const [error, setError]         = useState('');
-    const [loading, setLoading]     = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPw, setShowPw] = useState(false);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const { login } = useAuth();
-    const navigate  = useNavigate();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,9 +48,9 @@ const Login: React.FC = () => {
             const res = await login(email, password);
             if (res.redirect_to) { navigate(res.redirect_to); return; }
             const r = res.role?.toLowerCase();
-            if      (r === 'src_chair' || res.user?.is_staff) navigate('/admin/dashboard');
+            if (r === 'src_chair' || res.user?.is_staff) navigate('/admin/dashboard');
             else if (r === 'reviewer') navigate('/reviewer/dashboard');
-            else                       navigate('/pi/dashboard');
+            else navigate('/pi/dashboard');
         } catch (err: any) {
             setError(
                 err?.response?.data?.non_field_errors?.[0] ||
@@ -42,89 +64,149 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div className="app-bg relative min-h-screen flex" style={{ position: 'relative', overflow: 'hidden' }}>
-            {/* Ambient blobs */}
-            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-                <div style={{ position: 'absolute', left: '-120px', top: '-80px', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 65%)', borderRadius: '50%' }} />
-                <div style={{ position: 'absolute', right: '-60px', top: '40%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(139,92,246,0.14) 0%, transparent 65%)', borderRadius: '50%' }} />
-                <div style={{ position: 'absolute', bottom: '-100px', left: '35%', width: '380px', height: '380px', background: 'radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 65%)', borderRadius: '50%' }} />
+        <div className="login-research-bg relative min-h-screen flex">
+
+            <div className="login-decorative-layer" aria-hidden="true">
+                {floatingEquations.map((eq, i) => (
+                    <span
+                        key={`eq-${i}`}
+                        className="login-float-equation"
+                        style={{
+                            left: eq.x,
+                            top: eq.y,
+                            fontSize: eq.size,
+                            opacity: eq.opacity,
+                            animationDelay: eq.delay,
+                            animationDuration: eq.duration,
+                        }}
+                    >
+                        {eq.text}
+                    </span>
+                ))}
+
+                {floatingLabels.map((lb, i) => (
+                    <span
+                        key={`lb-${i}`}
+                        className="login-float-label"
+                        style={{
+                            left: lb.x,
+                            top: lb.y,
+                            animationDelay: lb.delay,
+                            color: lb.color,
+                            borderColor: lb.color,
+                        }}
+                    >
+                        {lb.text}
+                    </span>
+                ))}
+
+                <div className="login-orb login-orb-1" />
+                <div className="login-orb login-orb-2" />
+                <div className="login-orb login-orb-3" />
+                <div className="login-orb login-orb-4" />
+                <div className="login-grid-overlay" />
             </div>
 
             <div className="relative z-10 flex flex-1 min-h-screen">
 
-                {/* ── Left Panel (branding) ── */}
-                <div className="hidden xl:flex xl:flex-col xl:w-[52%] relative overflow-hidden"
-                     style={{ background: 'linear-gradient(145deg, #060c1c 0%, #0c1428 50%, #111b38 100%)' }}>
-                    {/* Grid texture */}
-                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)', backgroundSize: '32px 32px', pointerEvents: 'none' }} />
-                    {/* Glow accents */}
-                    <div style={{ position: 'absolute', right: '-80px', top: '0', width: '360px', height: '360px', background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 65%)', borderRadius: '50%' }} />
-                    <div style={{ position: 'absolute', left: '20%', bottom: '10%', width: '240px', height: '240px', background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 65%)', borderRadius: '50%' }} />
+                {/* ━━ Left Panel ━━ */}
+                <div className="hidden xl:flex xl:flex-col xl:w-[54%] relative overflow-hidden"
+                     style={{ background: 'linear-gradient(155deg, #020817 0%, #0a1128 40%, #0f172a 100%)' }}>
+
+                    <svg className="login-network-svg" viewBox="0 0 600 800" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <circle cx="120" cy="150" r="3" fill="rgba(99,102,241,0.4)" />
+                        <circle cx="350" cy="100" r="2.5" fill="rgba(139,92,246,0.35)" />
+                        <circle cx="480" cy="220" r="2" fill="rgba(6,182,212,0.3)" />
+                        <circle cx="200" cy="350" r="3" fill="rgba(99,102,241,0.3)" />
+                        <circle cx="450" cy="400" r="2.5" fill="rgba(139,92,246,0.25)" />
+                        <circle cx="100" cy="550" r="2" fill="rgba(6,182,212,0.3)" />
+                        <circle cx="380" cy="600" r="3" fill="rgba(99,102,241,0.25)" />
+                        <circle cx="530" cy="500" r="2" fill="rgba(139,92,246,0.2)" />
+                        <line x1="120" y1="150" x2="350" y2="100" stroke="rgba(99,102,241,0.12)" strokeWidth="1" />
+                        <line x1="350" y1="100" x2="480" y2="220" stroke="rgba(139,92,246,0.10)" strokeWidth="1" />
+                        <line x1="120" y1="150" x2="200" y2="350" stroke="rgba(6,182,212,0.10)" strokeWidth="1" />
+                        <line x1="200" y1="350" x2="450" y2="400" stroke="rgba(99,102,241,0.08)" strokeWidth="1" />
+                        <line x1="480" y1="220" x2="450" y2="400" stroke="rgba(139,92,246,0.08)" strokeWidth="1" />
+                        <line x1="100" y1="550" x2="200" y2="350" stroke="rgba(6,182,212,0.08)" strokeWidth="1" />
+                        <line x1="100" y1="550" x2="380" y2="600" stroke="rgba(99,102,241,0.06)" strokeWidth="1" />
+                        <line x1="450" y1="400" x2="530" y2="500" stroke="rgba(139,92,246,0.06)" strokeWidth="1" />
+                        <line x1="530" y1="500" x2="380" y2="600" stroke="rgba(6,182,212,0.06)" strokeWidth="1" />
+                    </svg>
 
                     <div className="relative z-10 flex flex-col h-full p-12 justify-between">
-                        {/* Logo */}
+
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl"
-                                 style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', boxShadow: '0 0 24px rgba(99,102,241,0.5)' }}>
+                            <div className="login-logo-icon">
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
                             <div>
-                                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-400">North South University</p>
-                                <p className="text-sm font-semibold text-white">CTRG Grant Portal</p>
+                                <p className="text-[10.5px] font-bold uppercase tracking-[0.2em] text-brand-400">North South University</p>
+                                <p className="text-sm font-semibold text-white/90">CTRG Grant Portal</p>
                             </div>
                         </div>
 
-                        {/* Hero text */}
-                        <div className="max-w-md">
-                            <div className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5"
-                                 style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}>
-                                <Sparkles className="h-3.5 w-3.5 text-brand-400" />
-                                <span className="text-xs font-semibold text-brand-300 uppercase tracking-widest">Two-Stage Review System</span>
+                        <div className="max-w-lg">
+                            <div className="mb-6 inline-flex items-center gap-2 rounded-full px-4 py-2"
+                                 style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)' }}>
+                                <Atom className="h-4 w-4 text-cyan-400 login-spin-slow" />
+                                <span className="text-xs font-bold text-brand-300 uppercase tracking-[0.15em]">Two-Stage Review System</span>
                             </div>
 
-                            <h1 className="text-5xl font-extrabold leading-tight mb-4"
-                                style={{ color: '#f1f5f9', letterSpacing: '-0.03em' }}>
-                                Research Grant{' '}
-                                <span className="text-gradient">Management</span>
+                            <h1 className="login-hero-heading">
+                                Scientific{' '}
+                                <span className="login-hero-gradient">Research</span>
+                                <br />
+                                Grant Review
                             </h1>
-                            <p className="text-base leading-relaxed" style={{ color: 'rgba(148,163,184,0.9)' }}>
-                                Track submissions, peer reviews, revisions, and final approvals across the complete grant lifecycle — in one controlled workflow.
+                            <p className="mt-4 text-base leading-relaxed text-slate-500 max-w-md">
+                                Where rigorous peer evaluation meets streamlined grant lifecycle management — powering research excellence at NSU.
                             </p>
 
-                            {/* Feature cards */}
-                            <div className="mt-8 space-y-3">
-                                {features.map((f) => (
-                                    <div key={f.title} className="flex items-start gap-4 rounded-2xl p-4"
-                                         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
-                                             style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)' }}>
-                                            <f.icon className="h-4.5 w-4.5 text-brand-400" size={18} />
+                            <div className="mt-10 space-y-3">
+                                {researchTracks.map((t) => (
+                                    <div key={t.title} className="login-track-card">
+                                        <div className="login-track-icon">
+                                            <t.icon className="h-[18px] w-[18px]" />
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-slate-200 mb-0.5">{f.title}</p>
-                                            <p className="text-xs leading-relaxed" style={{ color: 'rgba(148,163,184,0.75)' }}>{f.desc}</p>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <span className="login-track-label">{t.label}</span>
+                                                <span className="text-[13px] font-semibold text-slate-200">{t.title}</span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 leading-relaxed">{t.desc}</p>
                                         </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-10 flex gap-8">
+                                {[
+                                    { value: '2-Stage', label: 'Review Process' },
+                                    { value: '3 Roles', label: 'PI · Reviewer · SRC' },
+                                    { value: '100%', label: 'Audit Trail' },
+                                ].map(s => (
+                                    <div key={s.label}>
+                                        <p className="text-lg font-bold text-gradient">{s.value}</p>
+                                        <p className="text-[11px] text-slate-600 mt-0.5">{s.label}</p>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Footer */}
-                        <p className="text-xs" style={{ color: 'rgba(100,116,139,0.7)' }}>
+                        <p className="text-xs text-slate-700">
                             © {new Date().getFullYear()} North South University · CTRG · SEPS
                         </p>
                     </div>
                 </div>
 
-                {/* ── Right Panel (form) ── */}
-                <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-10">
+                {/* ━━ Right Panel (Form) ━━ */}
+                <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-10 overflow-y-auto"
+                     style={{ background: 'linear-gradient(180deg, rgba(2,8,23,0.95) 0%, rgba(15,23,42,0.98) 100%)' }}>
                     <div className="w-full max-w-[420px] animate-slide-up">
 
-                        {/* Mobile logo */}
-                        <div className="mb-6 flex items-center gap-3 xl:hidden">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl"
-                                 style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 0 16px rgba(99,102,241,0.45)' }}>
-                                <GraduationCap className="h-5 w-5 text-white" />
+                        <div className="mb-7 flex items-center gap-3 xl:hidden">
+                            <div className="login-logo-icon" style={{ height: '36px', width: '36px' }}>
+                                <GraduationCap className="h-4.5 w-4.5 text-white" />
                             </div>
                             <div>
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-brand-400">NSU · CTRG</p>
@@ -132,106 +214,122 @@ const Login: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Card */}
-                        <div className="rounded-3xl p-7 sm:p-8"
-                             style={{ background: 'rgba(13,21,41,0.8)', border: '1px solid rgba(255,255,255,0.09)', backdropFilter: 'blur(24px)', boxShadow: '0 24px 60px rgba(0,0,0,0.55)' }}>
+                        <div className="text-center mb-4" aria-hidden="true">
+                            <span className="text-[11px] font-mono text-slate-700 tracking-wider">
+                                ∂(Research)/∂t = Σ(Review) + ε
+                            </span>
+                        </div>
 
-                            <div className="mb-7">
-                                <p className="section-label mb-1.5">Welcome back</p>
-                                <h2 className="text-2xl font-bold text-slate-100" style={{ letterSpacing: '-0.025em' }}>
-                                    Sign in to continue
-                                </h2>
-                                <p className="mt-1.5 text-sm" style={{ color: 'rgba(100,116,139,0.9)' }}>
-                                    Use your institutional account credentials.
-                                </p>
-                            </div>
+                        <div className="login-form-card">
+                            <div className="login-form-glow" />
 
-                            <form onSubmit={handleSubmit} className="space-y-5">
-                                {error && (
-                                    <div className="rounded-xl px-4 py-3 text-sm font-medium"
-                                         style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>
-                                        {error}
+                            <div className="relative z-10">
+                                <div className="mb-7">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <BookOpen className="h-4 w-4 text-brand-400" />
+                                        <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-brand-400">Welcome Back</p>
                                     </div>
-                                )}
-
-                                {/* Email */}
-                                <div>
-                                    <label className="mb-2 block text-sm font-semibold text-slate-400">Email</label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600" />
-                                        <input
-                                            type="email"
-                                            autoComplete="email"
-                                            placeholder="your.email@nsu.edu"
-                                            className="input has-icon-left"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            required
-                                        />
-                                    </div>
+                                    <h2 className="text-[22px] font-bold text-slate-100" style={{ letterSpacing: '-0.025em' }}>
+                                        Sign in to continue
+                                    </h2>
+                                    <p className="mt-1.5 text-[13px] text-slate-500">
+                                        Access the research grant review portal with your institutional credentials.
+                                    </p>
                                 </div>
 
-                                {/* Password */}
-                                <div>
-                                    <label className="mb-2 block text-sm font-semibold text-slate-400">Password</label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600" />
-                                        <input
-                                            type={showPw ? 'text' : 'password'}
-                                            autoComplete="current-password"
-                                            placeholder="Enter your password"
-                                            className="input has-icon-left has-icon-right"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPw(!showPw)}
-                                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 transition-colors hover:text-slate-300"
-                                        >
-                                            {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <p className="text-right text-sm" style={{ color: 'rgba(100,116,139,0.8)' }}>
-                                    Forgot password? Contact your administrator.
-                                </p>
-
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="btn btn-primary w-full btn-lg"
-                                >
-                                    {loading ? (
-                                        <span className="flex items-center gap-2">
-                                            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                                                <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                                                <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                            </svg>
-                                            Signing in...
-                                        </span>
-                                    ) : (
-                                        <span className="flex items-center gap-2">
-                                            Sign In
-                                            <ArrowRight className="h-4 w-4" />
-                                        </span>
+                                <form onSubmit={handleSubmit} className="space-y-5">
+                                    {error && (
+                                        <div role="alert" aria-live="assertive" className="rounded-xl px-4 py-3 text-sm font-medium"
+                                             style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>
+                                            {error}
+                                        </div>
                                     )}
-                                </button>
 
-                                <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '16px' }}>
-                                    <p className="text-center text-sm" style={{ color: 'rgba(100,116,139,0.75)' }}>
-                                        Reviewer registration is by invitation only. Contact the SRC Chair for access.
+                                    <div>
+                                        <label htmlFor="login-email" className="mb-2 block text-[13px] font-semibold text-slate-400">Email</label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600" aria-hidden="true" />
+                                            <input
+                                                id="login-email"
+                                                type="email"
+                                                autoComplete="email"
+                                                placeholder="researcher@nsu.edu"
+                                                className="input has-icon-left"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="login-password" className="mb-2 block text-[13px] font-semibold text-slate-400">Password</label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600" aria-hidden="true" />
+                                            <input
+                                                id="login-password"
+                                                type={showPw ? 'text' : 'password'}
+                                                autoComplete="current-password"
+                                                placeholder="Enter your password"
+                                                className="input has-icon-left has-icon-right"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPw(!showPw)}
+                                                aria-label={showPw ? 'Hide password' : 'Show password'}
+                                                aria-pressed={showPw}
+                                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 transition-colors hover:text-slate-300"
+                                            >
+                                                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <p className="text-right text-[12.5px] text-slate-600">
+                                        Forgot password? Contact your administrator.
                                     </p>
-                                    <p className="mt-2 text-center text-sm" style={{ color: 'rgba(100,116,139,0.75)' }}>
-                                        Need help?{' '}
-                                        <a href="mailto:src@nsu.edu" className="font-semibold text-brand-400 hover:text-brand-300 transition-colors">
-                                            src@nsu.edu
-                                        </a>
-                                    </p>
-                                </div>
-                            </form>
+
+                                    <button type="submit" disabled={loading} className="login-submit-btn">
+                                        {loading ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                                                    <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                                </svg>
+                                                Authenticating...
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <Beaker className="h-4 w-4" aria-hidden="true" />
+                                                Enter Research Portal
+                                                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
+                                        <p className="text-center text-[12.5px] text-slate-600">
+                                            Reviewer registration is by invitation only.
+                                            <br />Contact the SRC Chair for access.
+                                        </p>
+                                        <p className="mt-2.5 text-center text-[12.5px] text-slate-600">
+                                            Need help?{' '}
+                                            <a href="mailto:src@nsu.edu" className="font-semibold text-brand-400 hover:text-brand-300 transition-colors">
+                                                src@nsu.edu
+                                            </a>
+                                        </p>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div className="mt-5 flex items-center justify-center gap-3" aria-hidden="true">
+                            <span className="h-px w-10" style={{ background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.3))' }} />
+                            <span className="text-[10px] font-mono text-slate-700 tracking-wider">CTRG · SEPS · NSU</span>
+                            <span className="h-px w-10" style={{ background: 'linear-gradient(90deg, rgba(99,102,241,0.3), transparent)' }} />
                         </div>
                     </div>
                 </div>
