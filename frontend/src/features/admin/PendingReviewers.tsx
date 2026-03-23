@@ -245,7 +245,7 @@ const PendingReviewers: React.FC = () => {
                         <p className="text-sm font-medium text-slate-500">Awaiting Approval</p>
                         <p className="text-3xl font-bold text-amber-400 mt-1">{pendingReviewers.length}</p>
                     </div>
-                    <div className="p-4 rounded-lg" style={{background:"rgba(245,158,11,0.15)"}}">
+                    <div className="p-4 rounded-lg" style={{background:"rgba(245,158,11,0.15)"}}>
                         <Clock size={32} className="text-amber-400" />
                     </div>
                 </div>

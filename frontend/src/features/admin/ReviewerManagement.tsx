@@ -333,7 +333,7 @@ const ReviewerManagement: React.FC = () => {
                             <p className="text-sm font-medium text-slate-500">Total Reviewers</p>
                             <p className="text-2xl font-bold text-slate-100 mt-1">{reviewers.length}</p>
                         </div>
-                        <div className="p-3 rounded-lg" style={{background:"rgba(99,102,241,0.15)"}}">
+                        <div className="p-3 rounded-lg" style={{background:"rgba(99,102,241,0.15)"}}>
                             <Users size={24} className="text-brand-400" />
                         </div>
                     </div>
@@ -346,7 +346,7 @@ const ReviewerManagement: React.FC = () => {
                                 {reviewers.filter(r => r.is_active_reviewer).length}
                             </p>
                         </div>
-                        <div className="p-3 rounded-lg" style={{background:"rgba(16,185,129,0.15)"}}">
+                        <div className="p-3 rounded-lg" style={{background:"rgba(16,185,129,0.15)"}}>
                             <CheckCircle size={24} className="text-emerald-400" />
                         </div>
                     </div>
@@ -359,7 +359,7 @@ const ReviewerManagement: React.FC = () => {
                                 {reviewers.reduce((sum, reviewer) => sum + (reviewer.pending || 0), 0)}
                             </p>
                         </div>
-                        <div className="p-3 rounded-lg" style={{background:"rgba(99,102,241,0.15)"}}">
+                        <div className="p-3 rounded-lg" style={{background:"rgba(99,102,241,0.15)"}}>
                             <BarChart3 size={24} className="text-brand-400" />
                         </div>
                     </div>
@@ -372,7 +372,7 @@ const ReviewerManagement: React.FC = () => {
                                 {reviewers.reduce((sum, reviewer) => sum + (reviewer.completed || 0), 0)}
                             </p>
                         </div>
-                        <div className="p-3 rounded-lg" style={{background:"rgba(245,158,11,0.15)"}}">
+                        <div className="p-3 rounded-lg" style={{background:"rgba(245,158,11,0.15)"}}>
                             <AlertCircle size={24} className="text-amber-400" />
                         </div>
                     </div>
