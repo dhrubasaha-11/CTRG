@@ -10,7 +10,7 @@ HTTP response without writing temp files to disk.
 """
 import io
 import logging
-from xml.sax.saxutils import escape
+from html import escape
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, Q
