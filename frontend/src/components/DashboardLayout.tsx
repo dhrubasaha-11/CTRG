@@ -47,6 +47,7 @@ const adminNavItems: NavItem[] = [
     { to: '/admin/dashboard',          icon: LayoutDashboard, label: 'Overview' },
     { to: '/admin/cycles',             icon: Calendar,        label: 'Grant Cycles' },
     { to: '/admin/proposals',          icon: FileText,        label: 'Proposals' },
+    { to: '/admin/pis',                icon: GraduationCap,   label: 'PIs' },
     { to: '/admin/reviewers',          icon: Users,           label: 'Reviewers' },
     { to: '/admin/pending-reviewers',  icon: UserCheck,       label: 'Pending' },
     { to: '/admin/reports',            icon: BarChart3,       label: 'Reports' },
@@ -58,6 +59,7 @@ const getPageTitle = (role: string | null, pathname: string): string => {
     if (role === 'SRC_Chair') {
         if (pathname.startsWith('/admin/proposals'))         return 'Proposals';
         if (pathname.startsWith('/admin/cycles'))            return 'Grant Cycles';
+        if (pathname.startsWith('/admin/pis'))               return 'PI Management';
         if (pathname.startsWith('/admin/reviewers'))         return 'Reviewers';
         if (pathname.startsWith('/admin/pending-reviewers')) return 'Pending Reviewers';
         if (pathname.startsWith('/admin/reports'))           return 'Reports';

@@ -483,6 +483,46 @@ export const authApi = {
         api.post('/auth/change-password/', { old_password, new_password }),
 };
 
+// ===== User Management APIs =====
+export interface PIUser {
+    id: number;
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    full_name: string;
+    role: string;
+    is_active: boolean;
+    date_joined: string;
+}
+
+export interface CreatePIData {
+    username: string;
+    email: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+    role: 'PI';
+}
+
+export interface PaginatedResponse<T> {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: T[];
+}
+
+export const userApi = {
+    listByRole: (role: string) =>
+        api.get<PaginatedResponse<PIUser>>('/auth/users/', { params: { role, page_size: 200 } }),
+    create: (data: CreatePIData) =>
+        api.post<PIUser>('/auth/register/', data),
+    toggleActive: (id: number, is_active: boolean) =>
+        api.patch<PIUser>(`/auth/users/${id}/`, { is_active }),
+    delete: (id: number) =>
+        api.delete(`/auth/users/${id}/`),
+};
+
 // ===== Audit Log APIs =====
 export interface AuditLogEntry {
     id: number;
