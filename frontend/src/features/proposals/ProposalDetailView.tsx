@@ -75,7 +75,7 @@ const ProposalDetailView: React.FC = () => {
 
     if (error || !proposal) {
         return (
-            <div className="rounded-xl" style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)"}} rounded-xl p-6 text-center">
+            <div className="rounded-xl" style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)"}}>
                 <p className="text-red-400">{error || 'Proposal not found'}</p>
                 <Link to="/pi/dashboard" className="mt-4 inline-flex items-center text-brand-400 hover:text-blue-700">
                     <ArrowLeft size={16} className="mr-1" /> Back to Dashboard
@@ -202,7 +202,7 @@ const ProposalDetailView: React.FC = () => {
                         </div>
                     )}
                     {(proposal.status === 'STAGE_1_REJECTED' || proposal.status === 'FINAL_REJECTED') && (
-                        <div className="rounded-xl" style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)"}} rounded-xl p-6">
+                        <div className="rounded-xl" style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)"}}>
                             <div className="flex items-center gap-2">
                                 <XCircle size={20} className="text-red-400" />
                                 <h2 className="text-lg font-semibold text-red-400">Proposal Not Accepted</h2>

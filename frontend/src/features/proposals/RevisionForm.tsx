@@ -155,7 +155,7 @@ const RevisionForm: React.FC = () => {
             </div>
 
             {error && (
-                <div className="p-4 rounded-xl" style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)"}} rounded-lg flex items-center text-red-400">
+                <div className="p-4 rounded-xl" style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)"}}>
                     <AlertCircle size={20} className="mr-2 flex-shrink-0" />
                     {error}
                 </div>
