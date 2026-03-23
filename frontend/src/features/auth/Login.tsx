@@ -100,10 +100,12 @@ const Login: React.FC = () => {
                     </span>
                 ))}
 
+                <div className="login-aurora" />
                 <div className="login-orb login-orb-1" />
                 <div className="login-orb login-orb-2" />
                 <div className="login-orb login-orb-3" />
                 <div className="login-orb login-orb-4" />
+                <div className="login-orb login-orb-5" />
                 <div className="login-grid-overlay" />
             </div>
 
@@ -111,26 +113,32 @@ const Login: React.FC = () => {
 
                 {/* ━━ Left Panel ━━ */}
                 <div className="hidden xl:flex xl:flex-col xl:w-[54%] relative overflow-hidden"
-                     style={{ background: 'linear-gradient(155deg, #020817 0%, #0a1128 40%, #0f172a 100%)' }}>
+                     style={{ background: 'linear-gradient(155deg, #010510 0%, #050b20 30%, #08102a 60%, #0a1433 100%)' }}>
 
                     <svg className="login-network-svg" viewBox="0 0 600 800" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <circle cx="120" cy="150" r="3" fill="rgba(99,102,241,0.4)" />
-                        <circle cx="350" cy="100" r="2.5" fill="rgba(139,92,246,0.35)" />
-                        <circle cx="480" cy="220" r="2" fill="rgba(6,182,212,0.3)" />
-                        <circle cx="200" cy="350" r="3" fill="rgba(99,102,241,0.3)" />
-                        <circle cx="450" cy="400" r="2.5" fill="rgba(139,92,246,0.25)" />
-                        <circle cx="100" cy="550" r="2" fill="rgba(6,182,212,0.3)" />
-                        <circle cx="380" cy="600" r="3" fill="rgba(99,102,241,0.25)" />
-                        <circle cx="530" cy="500" r="2" fill="rgba(139,92,246,0.2)" />
-                        <line x1="120" y1="150" x2="350" y2="100" stroke="rgba(99,102,241,0.12)" strokeWidth="1" />
-                        <line x1="350" y1="100" x2="480" y2="220" stroke="rgba(139,92,246,0.10)" strokeWidth="1" />
-                        <line x1="120" y1="150" x2="200" y2="350" stroke="rgba(6,182,212,0.10)" strokeWidth="1" />
-                        <line x1="200" y1="350" x2="450" y2="400" stroke="rgba(99,102,241,0.08)" strokeWidth="1" />
-                        <line x1="480" y1="220" x2="450" y2="400" stroke="rgba(139,92,246,0.08)" strokeWidth="1" />
-                        <line x1="100" y1="550" x2="200" y2="350" stroke="rgba(6,182,212,0.08)" strokeWidth="1" />
-                        <line x1="100" y1="550" x2="380" y2="600" stroke="rgba(99,102,241,0.06)" strokeWidth="1" />
-                        <line x1="450" y1="400" x2="530" y2="500" stroke="rgba(139,92,246,0.06)" strokeWidth="1" />
-                        <line x1="530" y1="500" x2="380" y2="600" stroke="rgba(6,182,212,0.06)" strokeWidth="1" />
+                        <circle cx="120" cy="150" r="4" fill="rgba(99,102,241,0.55)" />
+                        <circle cx="350" cy="100" r="3.5" fill="rgba(139,92,246,0.5)" />
+                        <circle cx="480" cy="220" r="3" fill="rgba(6,182,212,0.45)" />
+                        <circle cx="200" cy="350" r="4" fill="rgba(99,102,241,0.45)" />
+                        <circle cx="450" cy="400" r="3.5" fill="rgba(139,92,246,0.4)" />
+                        <circle cx="100" cy="550" r="3" fill="rgba(6,182,212,0.4)" />
+                        <circle cx="380" cy="600" r="4" fill="rgba(99,102,241,0.35)" />
+                        <circle cx="530" cy="500" r="3" fill="rgba(139,92,246,0.35)" />
+                        <circle cx="260" cy="480" r="2.5" fill="rgba(168,85,247,0.35)" />
+                        <circle cx="560" cy="320" r="2" fill="rgba(6,182,212,0.3)" />
+                        <circle cx="60" cy="700" r="2.5" fill="rgba(99,102,241,0.3)" />
+                        <line x1="120" y1="150" x2="350" y2="100" stroke="rgba(99,102,241,0.2)" strokeWidth="1" />
+                        <line x1="350" y1="100" x2="480" y2="220" stroke="rgba(139,92,246,0.18)" strokeWidth="1" />
+                        <line x1="120" y1="150" x2="200" y2="350" stroke="rgba(6,182,212,0.16)" strokeWidth="1" />
+                        <line x1="200" y1="350" x2="450" y2="400" stroke="rgba(99,102,241,0.15)" strokeWidth="1" />
+                        <line x1="480" y1="220" x2="450" y2="400" stroke="rgba(139,92,246,0.14)" strokeWidth="1" />
+                        <line x1="100" y1="550" x2="200" y2="350" stroke="rgba(6,182,212,0.14)" strokeWidth="1" />
+                        <line x1="100" y1="550" x2="380" y2="600" stroke="rgba(99,102,241,0.12)" strokeWidth="1" />
+                        <line x1="450" y1="400" x2="530" y2="500" stroke="rgba(139,92,246,0.12)" strokeWidth="1" />
+                        <line x1="530" y1="500" x2="380" y2="600" stroke="rgba(6,182,212,0.1)" strokeWidth="1" />
+                        <line x1="200" y1="350" x2="260" y2="480" stroke="rgba(168,85,247,0.12)" strokeWidth="1" />
+                        <line x1="480" y1="220" x2="560" y2="320" stroke="rgba(6,182,212,0.1)" strokeWidth="1" />
+                        <line x1="100" y1="550" x2="60" y2="700" stroke="rgba(99,102,241,0.1)" strokeWidth="1" />
                     </svg>
 
                     <div className="relative z-10 flex flex-col h-full p-12 justify-between">
@@ -201,7 +209,7 @@ const Login: React.FC = () => {
 
                 {/* ━━ Right Panel (Form) ━━ */}
                 <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-10 overflow-y-auto"
-                     style={{ background: 'linear-gradient(180deg, rgba(2,8,23,0.95) 0%, rgba(15,23,42,0.98) 100%)' }}>
+                     style={{ background: 'linear-gradient(160deg, rgba(3,6,20,0.97) 0%, rgba(6,9,26,0.98) 40%, rgba(8,12,32,1) 100%)' }}>
                     <div className="w-full max-w-[420px] animate-slide-up">
 
                         <div className="mb-7 flex items-center gap-3 xl:hidden">
