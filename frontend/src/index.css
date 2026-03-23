@@ -855,56 +855,126 @@ textarea.input {
     50%       { opacity: 1;   width: 290px; }
 }
 
+/* ── Submit button wrapper (handles outer glow halo) ── */
+.login-submit-wrap {
+    position: relative;
+}
+
+.login-submit-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(139,92,246,0.25), rgba(6,182,212,0.2));
+    filter: blur(14px);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.login-submit-wrap:hover::before {
+    opacity: 1;
+}
+
+/* ── Main button ── */
 .login-submit-btn {
+    position: relative;
+    z-index: 1;
     width: 100%;
-    padding: 13px 24px;
-    border-radius: 14px;
+    height: 54px;
+    padding: 0;
+    border-radius: 16px;
     font-size: 14px;
     font-weight: 600;
     color: white;
     cursor: pointer;
-    border: 1px solid rgba(255,255,255,0.12);
-    position: relative;
+    border: none;
     overflow: hidden;
-    background: linear-gradient(135deg, #5b5fef 0%, #7c3aed 45%, #9b59f5 75%, #06b6d4 100%);
+    display: flex;
+    align-items: center;
+    background: linear-gradient(120deg, #4f52e8 0%, #6d28d9 40%, #7c3aed 65%, #0e7490 100%);
     box-shadow:
-        0 0 0 1px rgba(255,255,255,0.08) inset,
-        0 0 28px rgba(99,102,241,0.45),
-        0 0 10px rgba(139,92,246,0.25),
-        0 4px 16px rgba(0,0,0,0.35);
-    transition: all 0.3s ease;
+        0 0 0 1px rgba(255,255,255,0.1) inset,
+        0 1px 0 rgba(255,255,255,0.15) inset,
+        0 8px 32px rgba(99,102,241,0.4),
+        0 2px 8px rgba(0,0,0,0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* shimmer sweep */
 .login-submit-btn::after {
     content: '';
     position: absolute;
-    top: 0; left: 0; bottom: 0;
-    width: 40%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
-    transform: translateX(-150%) skewX(-12deg);
-    animation: loginBtnShimmer 3.5s ease-in-out infinite 1.5s;
+    inset: 0;
+    width: 35%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent);
+    transform: translateX(-120%) skewX(-15deg);
+    animation: loginBtnShimmer 3.8s ease-in-out infinite 2s;
 }
 
 @keyframes loginBtnShimmer {
-    0%   { transform: translateX(-150%) skewX(-12deg); }
-    100% { transform: translateX(380%) skewX(-12deg); }
+    0%   { transform: translateX(-120%) skewX(-15deg); }
+    100% { transform: translateX(400%) skewX(-15deg); }
+}
+
+/* icon badge — left section */
+.login-submit-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.18);
+    border-right: 1px solid rgba(255,255,255,0.1);
+    transition: background 0.3s ease;
+}
+
+.login-submit-btn:hover .login-submit-icon {
+    background: rgba(0,0,0,0.28);
+}
+
+/* label */
+.login-submit-label {
+    flex: 1;
+    text-align: center;
+    letter-spacing: 0.025em;
+    padding-right: 4px;
+}
+
+/* animated arrow — right section */
+.login-submit-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.75;
+}
+
+.login-submit-btn:hover .login-submit-arrow {
+    transform: translateX(5px);
+    opacity: 1;
 }
 
 .login-submit-btn:hover:not(:disabled) {
     transform: translateY(-2px);
+    background: linear-gradient(120deg, #5558f0 0%, #7030e0 40%, #8040f5 65%, #0e86ab 100%);
     box-shadow:
-        0 0 0 1px rgba(255,255,255,0.12) inset,
-        0 0 40px rgba(99,102,241,0.6),
-        0 0 16px rgba(139,92,246,0.35),
-        0 10px 28px rgba(0,0,0,0.45);
+        0 0 0 1px rgba(255,255,255,0.14) inset,
+        0 1px 0 rgba(255,255,255,0.18) inset,
+        0 16px 48px rgba(99,102,241,0.55),
+        0 4px 12px rgba(0,0,0,0.4);
 }
 
 .login-submit-btn:active:not(:disabled) {
-    transform: translateY(0);
+    transform: translateY(0px);
 }
 
 .login-submit-btn:disabled {
-    opacity: 0.55;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 

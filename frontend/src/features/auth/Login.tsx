@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, Beaker, BookOpen, FlaskConical, Atom, BrainCircuit, Microscope } from 'lucide-react';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, BookOpen, FlaskConical, Atom, BrainCircuit, Microscope } from 'lucide-react';
 
 const floatingEquations = [
     { text: 'H-index = f(citations)', x: '8%', y: '12%', delay: '0s', duration: '18s', size: '0.85rem', opacity: 0.12 },
@@ -303,23 +303,34 @@ const Login: React.FC = () => {
                                         Forgot password? Contact your administrator.
                                     </p>
 
-                                    <button type="submit" disabled={loading} className="login-submit-btn">
-                                        {loading ? (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                    <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                                                    <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                                </svg>
-                                                Authenticating...
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <Beaker className="h-4 w-4" aria-hidden="true" />
-                                                Enter Research Portal
-                                                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                                            </span>
-                                        )}
-                                    </button>
+                                    <div className="login-submit-wrap">
+                                        <button type="submit" disabled={loading} className="login-submit-btn">
+                                            {loading ? (
+                                                <>
+                                                    <span className="login-submit-icon">
+                                                        <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                                                            <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                                        </svg>
+                                                    </span>
+                                                    <span className="login-submit-label">Authenticating...</span>
+                                                    <span className="login-submit-arrow" style={{ opacity: 0.3 }}>
+                                                        <ArrowRight className="h-4 w-4" />
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="login-submit-icon">
+                                                        <FlaskConical className="h-[18px] w-[18px]" aria-hidden="true" />
+                                                    </span>
+                                                    <span className="login-submit-label">Enter Research Portal</span>
+                                                    <span className="login-submit-arrow">
+                                                        <ArrowRight className="h-[18px] w-[18px]" aria-hidden="true" />
+                                                    </span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
 
                                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
                                         <p className="text-center text-[12.5px] text-slate-600">
