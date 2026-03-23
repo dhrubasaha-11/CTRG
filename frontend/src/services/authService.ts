@@ -15,40 +15,19 @@
 
 import axios from 'axios';
 
-const getDefaultApiOrigin = () => {
-    if (typeof window === 'undefined') {
-        return 'http://localhost:8000';
-    }
-
-    const { protocol, hostname } = window.location;
-    const isLocalAlias = hostname === 'localhost' || hostname === '127.0.0.1';
-    if (isLocalAlias) {
-        return `${protocol}//localhost:8000`;
-    }
-
-    return `${protocol}//${hostname}:8000`;
-};
-
 const resolveApiUrl = () => {
-    const configured = import.meta.env.VITE_API_URL;
-    if (!configured) {
-        return `${getDefaultApiOrigin()}/api/auth`;
+    if (typeof window === 'undefined') {
+        return 'http://localhost:8000/api/auth';
     }
 
-    try {
-        const parsed = new URL(configured, window.location.origin);
-        const currentHost = typeof window !== 'undefined' ? window.location.hostname : parsed.hostname;
-        const configuredIsLocal = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
-        const currentIsLocal = currentHost === 'localhost' || currentHost === '127.0.0.1';
+    const { hostname } = window.location;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
 
-        if (configuredIsLocal && !currentIsLocal) {
-            parsed.hostname = currentHost;
-        }
-
-        return `${parsed.origin}/api/auth`;
-    } catch {
-        return `${getDefaultApiOrigin()}/api/auth`;
+    if (isLocal) {
+        return 'http://localhost:8000/api/auth';
     }
+
+    return '/api/auth';
 };
 
 // Base URL for authentication endpoints (use environment variable)

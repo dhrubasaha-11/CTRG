@@ -5,45 +5,30 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { getToken, clearAuthData } from './authService';
 
-const getDefaultApiBaseUrl = () => {
+const resolveApiBaseUrl = () => {
     if (typeof window === 'undefined') {
         return 'http://localhost:8000/api';
     }
 
-    const { protocol, hostname } = window.location;
-    const isLocalAlias = hostname === 'localhost' || hostname === '127.0.0.1';
-    if (isLocalAlias) {
-        return `${protocol}//localhost:8000/api`;
+    const { hostname } = window.location;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+
+    if (isLocal) {
+        return 'http://localhost:8000/api';
     }
 
-    return `${protocol}//${hostname}:8000/api`;
-};
-
-const resolveApiBaseUrl = () => {
-    const configured = import.meta.env.VITE_API_URL;
-    if (!configured) {
-        return getDefaultApiBaseUrl();
-    }
-
-    try {
-        const parsed = new URL(configured, window.location.origin);
-        const currentHost = typeof window !== 'undefined' ? window.location.hostname : parsed.hostname;
-        const configuredIsLocal = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
-        const currentIsLocal = currentHost === 'localhost' || currentHost === '127.0.0.1';
-
-        if (configuredIsLocal && !currentIsLocal) {
-            parsed.hostname = currentHost;
-        }
-
-        return `${parsed.origin}${parsed.pathname.replace(/\/$/, '')}`;
-    } catch {
-        return getDefaultApiBaseUrl();
-    }
+    return '/api';
 };
 
 // Use environment variable for API URL (fallback to detected host for development)
 const API_BASE_URL = resolveApiBaseUrl();
-const API_ORIGIN = new URL(API_BASE_URL).origin;
+const API_ORIGIN = (() => {
+    try {
+        return new URL(API_BASE_URL).origin;
+    } catch {
+        return typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8000';
+    }
+})();
 
 export const resolveBackendFileUrl = (fileUrl?: string | null): string => {
     if (!fileUrl) return '';
