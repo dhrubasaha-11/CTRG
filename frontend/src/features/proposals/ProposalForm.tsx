@@ -287,7 +287,7 @@ const ProposalForm: React.FC = () => {
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="spinner"></div>
             </div>
         );
     }
@@ -298,31 +298,31 @@ const ProposalForm: React.FC = () => {
             <div>
                 <button
                     onClick={() => navigate(returnPath)}
-                    className="flex items-center text-gray-600 hover:text-gray-900 mb-2"
+                    className="flex items-center text-slate-500 hover:text-slate-200 mb-2"
                 >
                     <ArrowLeft size={16} className="mr-1" />
                     {returnLabel}
                 </button>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-2xl font-bold text-slate-100">
                     {isEditing ? 'Edit Proposal' : 'New Proposal'}
                 </h1>
-                <p className="text-gray-500">
+                <p className="text-slate-500">
                     {isEditing ? 'Continue working on your draft proposal' : 'Submit a new research grant proposal'}
                 </p>
             </div>
 
             {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
+                <div className="p-4 rounded-xl" style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)"}} rounded-lg flex items-center text-red-400">
                     <AlertCircle size={20} className="mr-2 flex-shrink-0" />
                     {error}
                 </div>
             )}
 
             {/* Form */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+            <div className="card p-6 space-y-6">
                 {/* Grant Cycle */}
                 <div>
-                    <label className="block font-medium text-gray-900 mb-2">
+                    <label className="block font-medium text-slate-200 mb-2">
                         Grant Cycle <span className="text-red-500">*</span>
                     </label>
                     <select
@@ -343,7 +343,7 @@ const ProposalForm: React.FC = () => {
                 {/* PI Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block font-medium text-gray-900 mb-2">
+                        <label className="block font-medium text-slate-200 mb-2">
                             PI Name <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -356,7 +356,7 @@ const ProposalForm: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label className="block font-medium text-gray-900 mb-2">
+                        <label className="block font-medium text-slate-200 mb-2">
                             Department <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -372,7 +372,7 @@ const ProposalForm: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block font-medium text-gray-900 mb-2">
+                        <label className="block font-medium text-slate-200 mb-2">
                             PI Email <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -385,7 +385,7 @@ const ProposalForm: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label className="block font-medium text-gray-900 mb-2">
+                        <label className="block font-medium text-slate-200 mb-2">
                             Co-Investigators
                         </label>
                         <input
@@ -401,7 +401,7 @@ const ProposalForm: React.FC = () => {
 
                 {/* Title */}
                 <div>
-                    <label className="block font-medium text-gray-900 mb-2">
+                    <label className="block font-medium text-slate-200 mb-2">
                         Proposal Title <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -416,10 +416,10 @@ const ProposalForm: React.FC = () => {
 
                 {/* Abstract */}
                 <div>
-                    <label className="block font-medium text-gray-900 mb-2">
+                    <label className="block font-medium text-slate-200 mb-2">
                         Abstract <span className="text-red-500">*</span>
                     </label>
-                    <p className="text-sm text-gray-500 mb-2">
+                    <p className="text-sm text-slate-500 mb-2">
                         Provide a brief summary of your research proposal (300-500 words recommended)
                     </p>
                     <textarea
@@ -434,11 +434,11 @@ const ProposalForm: React.FC = () => {
 
                 {/* Funding Amount */}
                 <div>
-                    <label className="block font-medium text-gray-900 mb-2">
+                    <label className="block font-medium text-slate-200 mb-2">
                         Requested Funding (USD) <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                        <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                        <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500">$</span>
                         <input
                             type="number"
                             name="fund_requested"
@@ -454,10 +454,10 @@ const ProposalForm: React.FC = () => {
 
                 {/* Keywords */}
                 <div>
-                    <label className="block font-medium text-gray-900 mb-2">
+                    <label className="block font-medium text-slate-200 mb-2">
                         Research Keywords <span className="text-red-500">*</span>
                     </label>
-                    <p className="text-sm text-gray-500 mb-2">
+                    <p className="text-sm text-slate-500 mb-2">
                         Enter 3-10 keywords separated by commas. Example: machine learning, computer vision, optimization
                     </p>
                     <input
@@ -472,18 +472,18 @@ const ProposalForm: React.FC = () => {
 
                 {/* File Upload */}
                 <div>
-                    <label className="block font-medium text-gray-900 mb-2">
+                    <label className="block font-medium text-slate-200 mb-2">
                         Proposal Document <span className="text-red-500">*</span>
                     </label>
-                    <p className="text-sm text-gray-500 mb-3">
+                    <p className="text-sm text-slate-500 mb-3">
                         Upload your full proposal document (PDF or Word, max 50MB)
                     </p>
 
                     {existingFile && !formData.file && (
-                        <div className="mb-3 p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                        <div className="mb-3 p-3 rounded-lg flex items-center justify-between">
                             <div className="flex items-center">
-                                <FileText size={20} className="text-gray-500 mr-2" />
-                                <span className="text-sm text-gray-700">Current file: {existingFile}</span>
+                                <FileText size={20} className="text-slate-500 mr-2" />
+                                <span className="text-sm text-slate-400">Current file: {existingFile}</span>
                             </div>
                         </div>
                     )}
@@ -491,24 +491,24 @@ const ProposalForm: React.FC = () => {
                     {formData.file ? (
                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
                             <div className="flex items-center">
-                                <FileText size={24} className="text-blue-600 mr-3" />
+                                <FileText size={24} className="text-brand-400 mr-3" />
                                 <div>
-                                    <p className="font-medium text-gray-900">{formData.file.name}</p>
-                                    <p className="text-sm text-gray-500">
+                                    <p className="font-medium text-slate-200">{formData.file.name}</p>
+                                    <p className="text-sm text-slate-500">
                                         {(formData.file.size / (1024 * 1024)).toFixed(2)} MB
                                     </p>
                                 </div>
                             </div>
-                            <button onClick={removeFile} className="text-gray-400 hover:text-red-600">
+                            <button onClick={removeFile} className="text-slate-600 hover:text-red-400">
                                 <X size={20} />
                             </button>
                         </div>
                     ) : (
                         <label className="block cursor-pointer">
                             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                                <Upload size={40} className="mx-auto text-gray-400 mb-3" />
-                                <p className="font-medium text-gray-700">Click to upload or drag and drop</p>
-                                <p className="text-sm text-gray-500">PDF or Word document (max 50MB)</p>
+                                <Upload size={40} className="mx-auto text-slate-600 mb-3" />
+                                <p className="font-medium text-slate-400">Click to upload or drag and drop</p>
+                                <p className="text-sm text-slate-500">PDF or Word document (max 50MB)</p>
                             </div>
                             <input
                                 type="file"
@@ -522,18 +522,18 @@ const ProposalForm: React.FC = () => {
 
                 {/* Application Template Upload */}
                 <div>
-                    <label className="block font-medium text-gray-900 mb-2">
+                    <label className="block font-medium text-slate-200 mb-2">
                         Application Template
                     </label>
-                    <p className="text-sm text-gray-500 mb-3">
+                    <p className="text-sm text-slate-500 mb-3">
                         Upload the Research Grant Application Template (PDF or Word, max 50MB)
                     </p>
 
                     {existingTemplate && !formData.templateFile && (
-                        <div className="mb-3 p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                        <div className="mb-3 p-3 rounded-lg flex items-center justify-between">
                             <div className="flex items-center">
-                                <FileText size={20} className="text-gray-500 mr-2" />
-                                <span className="text-sm text-gray-700">Current template: {existingTemplate}</span>
+                                <FileText size={20} className="text-slate-500 mr-2" />
+                                <span className="text-sm text-slate-400">Current template: {existingTemplate}</span>
                             </div>
                         </div>
                     )}
@@ -541,24 +541,24 @@ const ProposalForm: React.FC = () => {
                     {formData.templateFile ? (
                         <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
                             <div className="flex items-center">
-                                <FileText size={24} className="text-green-600 mr-3" />
+                                <FileText size={24} className="text-emerald-400 mr-3" />
                                 <div>
-                                    <p className="font-medium text-gray-900">{formData.templateFile.name}</p>
-                                    <p className="text-sm text-gray-500">
+                                    <p className="font-medium text-slate-200">{formData.templateFile.name}</p>
+                                    <p className="text-sm text-slate-500">
                                         {(formData.templateFile.size / (1024 * 1024)).toFixed(2)} MB
                                     </p>
                                 </div>
                             </div>
-                            <button onClick={removeTemplateFile} className="text-gray-400 hover:text-red-600">
+                            <button onClick={removeTemplateFile} className="text-slate-600 hover:text-red-400">
                                 <X size={20} />
                             </button>
                         </div>
                     ) : (
                         <label className="block cursor-pointer">
                             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 hover:bg-green-50 transition-colors">
-                                <Upload size={32} className="mx-auto text-gray-400 mb-2" />
-                                <p className="font-medium text-gray-700">Click to upload template</p>
-                                <p className="text-sm text-gray-500">PDF or Word document (max 50MB)</p>
+                                <Upload size={32} className="mx-auto text-slate-600 mb-2" />
+                                <p className="font-medium text-slate-400">Click to upload template</p>
+                                <p className="text-sm text-slate-500">PDF or Word document (max 50MB)</p>
                             </div>
                             <input
                                 type="file"
@@ -575,7 +575,7 @@ const ProposalForm: React.FC = () => {
             <div className="flex justify-between items-center">
                 <button
                     onClick={() => navigate(returnPath)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 text-slate-400 rounded-lg hover:"
                 >
                     Cancel
                 </button>
@@ -583,7 +583,7 @@ const ProposalForm: React.FC = () => {
                     <button
                         onClick={handleSaveDraft}
                         disabled={submitting}
-                        className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                        className="flex items-center px-4 py-2 bg-gray-100 text-slate-400 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                     >
                         <Save size={18} className="mr-2" />
                         Save Draft

@@ -1,7 +1,3 @@
-/**
- * Enhanced PI Dashboard Component.
- * Shows PI's proposals with status tracking, actions, and notifications.
- */
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -19,244 +15,141 @@ interface PIStats {
     pending_action: number;
 }
 
+const statusBadgeMap: Record<string, { cls: string; label: string }> = {
+    DRAFT:                        { cls: 'badge-slate',   label: 'Draft' },
+    SUBMITTED:                    { cls: 'badge-brand',   label: 'Submitted' },
+    UNDER_STAGE_1_REVIEW:         { cls: 'badge-amber',   label: 'Stage 1 Review' },
+    STAGE_1_REJECTED:             { cls: 'badge-red',     label: 'Stage 1 Rejected' },
+    TENTATIVELY_ACCEPTED:         { cls: 'badge-amber',   label: 'Tentatively Accepted' },
+    REVISION_REQUESTED:           { cls: 'badge-orange',  label: 'Revision Requested' },
+    ACCEPTED_NO_CORRECTIONS:      { cls: 'badge-green',   label: 'Accepted' },
+    REVISED_PROPOSAL_SUBMITTED:   { cls: 'badge-violet',  label: 'Revised Submitted' },
+    UNDER_STAGE_2_REVIEW:         { cls: 'badge-cyan',    label: 'Stage 2 Review' },
+    FINAL_ACCEPTED:               { cls: 'badge-green',   label: 'Final Accepted' },
+    FINAL_REJECTED:               { cls: 'badge-red',     label: 'Final Rejected' },
+    REVISION_DEADLINE_MISSED:     { cls: 'badge-red',     label: 'Deadline Missed' },
+};
+
 const PIDashboard: React.FC = () => {
     const [proposals, setProposals] = useState<Proposal[]>([]);
-    const [stats, setStats] = useState<PIStats>({
-        submitted_proposals: 0,
-        revision_deadlines: 0,
-        final_decisions: 0,
-        under_review: 0,
-        pending_action: 0,
-    });
+    const [stats, setStats] = useState<PIStats>({ submitted_proposals: 0, revision_deadlines: 0, final_decisions: 0, under_review: 0, pending_action: 0 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [, setTick] = useState(0);
 
-    useEffect(() => {
-        loadProposals();
-    }, []);
+    useEffect(() => { loadProposals(); }, []);
 
-    // Live countdown timer - updates every minute
     useEffect(() => {
         const hasDeadlines = proposals.some(p => p.revision_deadline && ['REVISION_REQUESTED', 'TENTATIVELY_ACCEPTED'].includes(p.status));
         if (!hasDeadlines) return;
-        const interval = setInterval(() => setTick(t => t + 1), 60000);
-        return () => clearInterval(interval);
+        const t = setInterval(() => setTick(n => n + 1), 60000);
+        return () => clearInterval(t);
     }, [proposals]);
 
     const loadProposals = async () => {
         try {
             setLoading(true);
-            const response = await proposalApi.getMyProposals();
-            setProposals(response.data);
-
-            // Calculate stats
-            const underReview = response.data.filter(p =>
-                ['SUBMITTED', 'UNDER_STAGE_1_REVIEW', 'UNDER_STAGE_2_REVIEW'].includes(p.status)
-            ).length;
-            const pendingAction = response.data.filter(p =>
-                ['REVISION_REQUESTED', 'TENTATIVELY_ACCEPTED'].includes(p.status)
-            ).length;
-            const revisionDeadlines = response.data.filter(p =>
-                Boolean(p.revision_deadline) && ['REVISION_REQUESTED', 'REVISION_DEADLINE_MISSED'].includes(p.status)
-            ).length;
-            const finalDecisions = response.data.filter(p =>
-                ['ACCEPTED_NO_CORRECTIONS', 'STAGE_1_REJECTED', 'FINAL_ACCEPTED', 'FINAL_REJECTED'].includes(p.status)
-            ).length;
-            const submittedProposals = response.data.filter(p => p.status !== 'DRAFT').length;
-
+            const res = await proposalApi.getMyProposals();
+            setProposals(res.data);
             setStats({
-                submitted_proposals: submittedProposals,
-                revision_deadlines: revisionDeadlines,
-                final_decisions: finalDecisions,
-                under_review: underReview,
-                pending_action: pendingAction,
+                submitted_proposals: res.data.filter(p => p.status !== 'DRAFT').length,
+                revision_deadlines:  res.data.filter(p => Boolean(p.revision_deadline) && ['REVISION_REQUESTED', 'REVISION_DEADLINE_MISSED'].includes(p.status)).length,
+                under_review:        res.data.filter(p => ['SUBMITTED', 'UNDER_STAGE_1_REVIEW', 'UNDER_STAGE_2_REVIEW'].includes(p.status)).length,
+                pending_action:      res.data.filter(p => ['REVISION_REQUESTED', 'TENTATIVELY_ACCEPTED'].includes(p.status)).length,
+                final_decisions:     res.data.filter(p => ['ACCEPTED_NO_CORRECTIONS', 'STAGE_1_REJECTED', 'FINAL_ACCEPTED', 'FINAL_REJECTED'].includes(p.status)).length,
             });
-        } catch (err) {
-            console.error("Failed to load proposals:", err);
-            setError("Failed to load proposals. Please try again.");
-            setProposals([]); // Clear proposals on error
-            setStats({
-                submitted_proposals: 0,
-                revision_deadlines: 0,
-                final_decisions: 0,
-                under_review: 0,
-                pending_action: 0,
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const getStatusBadge = (status: string) => {
-        const styles: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-            DRAFT: { bg: 'bg-gray-100', text: 'text-gray-700', icon: <Edit3 size={14} /> },
-            SUBMITTED: { bg: 'bg-blue-100', text: 'text-blue-700', icon: <Clock size={14} /> },
-            UNDER_STAGE_1_REVIEW: { bg: 'bg-indigo-100', text: 'text-indigo-700', icon: <Clock size={14} /> },
-            STAGE_1_REJECTED: { bg: 'bg-red-100', text: 'text-red-700', icon: <XCircle size={14} /> },
-            TENTATIVELY_ACCEPTED: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: <AlertTriangle size={14} /> },
-            REVISION_REQUESTED: { bg: 'bg-orange-100', text: 'text-orange-700', icon: <AlertTriangle size={14} /> },
-            ACCEPTED_NO_CORRECTIONS: { bg: 'bg-green-100', text: 'text-green-700', icon: <CheckCircle size={14} /> },
-            REVISED_PROPOSAL_SUBMITTED: { bg: 'bg-cyan-100', text: 'text-cyan-700', icon: <RefreshCw size={14} /> },
-            UNDER_STAGE_2_REVIEW: { bg: 'bg-purple-100', text: 'text-purple-700', icon: <Clock size={14} /> },
-            FINAL_ACCEPTED: { bg: 'bg-green-100', text: 'text-green-700', icon: <CheckCircle size={14} /> },
-            FINAL_REJECTED: { bg: 'bg-red-100', text: 'text-red-700', icon: <XCircle size={14} /> },
-        };
-        return styles[status] || { bg: 'bg-gray-100', text: 'text-gray-700', icon: null };
+        } catch {
+            setError('Failed to load proposals. Please try again.');
+        } finally { setLoading(false); }
     };
 
     const getCountdown = useCallback((deadline: string) => {
-        const now = new Date();
-        const dl = new Date(deadline);
-        const diff = dl.getTime() - now.getTime();
+        const diff = new Date(deadline).getTime() - Date.now();
         if (diff <= 0) return { text: 'Deadline passed', urgent: true };
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        if (days > 2) return { text: `${days}d ${hours}h remaining`, urgent: false };
-        if (days > 0) return { text: `${days}d ${hours}h remaining`, urgent: true };
-        return { text: `${hours}h ${minutes}m remaining`, urgent: true };
+        const d = Math.floor(diff / 86400000), h = Math.floor((diff % 86400000) / 3600000);
+        return { text: d > 0 ? `${d}d ${h}h remaining` : `${h}h remaining`, urgent: d < 2 };
     }, []);
 
-    const needsAction = (status: string) => {
-        return ['REVISION_REQUESTED', 'TENTATIVELY_ACCEPTED', 'DRAFT'].includes(status);
+    const needsAction = (s: string) => ['REVISION_REQUESTED', 'TENTATIVELY_ACCEPTED', 'DRAFT'].includes(s);
+
+    const ActionBtn = ({ proposal }: { proposal: Proposal }) => {
+        if (proposal.status === 'DRAFT')
+            return <Link to={`/pi/proposals/${proposal.id}`} className="btn btn-primary btn-sm flex items-center gap-1.5"><Edit3 size={14} />Continue Editing</Link>;
+        if (['REVISION_REQUESTED', 'TENTATIVELY_ACCEPTED'].includes(proposal.status))
+            return <Link to={`/pi/proposals/${proposal.id}/revise`} className="btn btn-sm flex items-center gap-1.5" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.3)', color: '#fdba74' }}><Upload size={14} />Submit Revision</Link>;
+        return <Link to={`/pi/proposals/${proposal.id}/view`} className="btn btn-secondary btn-sm flex items-center gap-1.5"><Eye size={14} />View</Link>;
     };
 
-    const getActionButton = (proposal: Proposal) => {
-        switch (proposal.status) {
-            case 'DRAFT':
-                return (
-                    <Link
-                        to={`/pi/proposals/${proposal.id}`}
-                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                        <Edit3 size={16} className="mr-2" />
-                        Continue Editing
-                    </Link>
-                );
-            case 'REVISION_REQUESTED':
-            case 'TENTATIVELY_ACCEPTED':
-                return (
-                    <Link
-                        to={`/pi/proposals/${proposal.id}/revise`}
-                        className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
-                    >
-                        <Upload size={16} className="mr-2" />
-                        Submit Revision
-                    </Link>
-                );
-            default:
-                return (
-                    <Link
-                        to={`/pi/proposals/${proposal.id}/view`}
-                        className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                    >
-                        <Eye size={16} className="mr-2" />
-                        View Details
-                    </Link>
-                );
-        }
-    };
+    if (loading) return <div className="flex h-64 items-center justify-center"><div className="spinner" /></div>;
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
-    }
+    const statCards = [
+        { label: 'Submitted',       value: stats.submitted_proposals, icon: FileText,      color: '#818cf8', bg: 'rgba(99,102,241,0.15)',   border: 'rgba(99,102,241,0.25)',   glow: 'rgba(99,102,241,0.2)' },
+        { label: 'Under Review',    value: stats.under_review,        icon: Clock,          color: '#67e8f9', bg: 'rgba(6,182,212,0.15)',    border: 'rgba(6,182,212,0.25)',    glow: 'rgba(6,182,212,0.2)' },
+        { label: 'Action Needed',   value: stats.pending_action,      icon: AlertTriangle,  color: '#fcd34d', bg: 'rgba(245,158,11,0.15)',   border: 'rgba(245,158,11,0.25)',   glow: 'rgba(245,158,11,0.2)' },
+        { label: 'Rev. Deadlines',  value: stats.revision_deadlines,  icon: RefreshCw,      color: '#fdba74', bg: 'rgba(249,115,22,0.15)',   border: 'rgba(249,115,22,0.25)',   glow: 'rgba(249,115,22,0.2)' },
+        { label: 'Final Decisions', value: stats.final_decisions,     icon: CheckCircle,    color: '#6ee7b7', bg: 'rgba(16,185,129,0.15)',   border: 'rgba(16,185,129,0.25)',   glow: 'rgba(16,185,129,0.2)' },
+    ];
 
     return (
         <div className="space-y-6">
+
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">My Proposals</h1>
-                    <p className="text-gray-500 mt-1">Track and manage your research grant proposals</p>
+                    <h1 className="text-2xl font-bold text-slate-100" style={{ letterSpacing: '-0.02em' }}>My Proposals</h1>
+                    <p className="mt-1 text-sm text-slate-500">Track and manage your research grant proposals</p>
                 </div>
-                <Link
-                    to="/pi/submit"
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm"
-                >
-                    <Plus size={18} className="mr-2" />
+                <Link to="/pi/submit" className="btn btn-primary flex items-center gap-2">
+                    <Plus size={16} />
                     New Proposal
                 </Link>
             </div>
 
             {error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
-                    <p>{error}</p>
+                <div className="rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>
+                    {error}
                 </div>
             )}
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase">Submitted</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats.submitted_proposals}</p>
+            {/* Stat Cards */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                {statCards.map((c) => (
+                    <div key={c.label} className="metric-card">
+                        <div style={{ position: 'absolute', top: 0, right: 0, width: '70px', height: '70px', background: `radial-gradient(circle, ${c.glow} 0%, transparent 70%)`, borderRadius: '50%', pointerEvents: 'none' }} />
+                        <div className="relative z-10">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl mb-3"
+                                 style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+                                <c.icon className="h-4 w-4" style={{ color: c.color }} />
+                            </div>
+                            <p className="text-3xl font-extrabold text-white" style={{ letterSpacing: '-0.04em' }}>{c.value}</p>
+                            <p className="section-label mt-1">{c.label}</p>
                         </div>
-                        <FileText size={24} className="text-gray-400" />
                     </div>
-                </div>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase">Revision Deadlines</p>
-                            <p className="text-2xl font-bold text-orange-600">{stats.revision_deadlines}</p>
-                        </div>
-                        <Clock size={24} className="text-orange-400" />
-                    </div>
-                </div>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase">Under Review</p>
-                            <p className="text-2xl font-bold text-blue-600">{stats.under_review}</p>
-                        </div>
-                        <Clock size={24} className="text-blue-400" />
-                    </div>
-                </div>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase">Action Needed</p>
-                            <p className="text-2xl font-bold text-orange-600">{stats.pending_action}</p>
-                        </div>
-                        <AlertTriangle size={24} className="text-orange-400" />
-                    </div>
-                </div>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase">Final Decisions</p>
-                            <p className="text-2xl font-bold text-green-600">{stats.final_decisions}</p>
-                        </div>
-                        <CheckCircle size={24} className="text-green-400" />
-                    </div>
-                </div>
+                ))}
             </div>
 
-            {/* Proposals requiring action */}
+            {/* Action Required Banner */}
             {proposals.filter(p => needsAction(p.status)).length > 0 && (
-                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                    <h2 className="font-semibold text-orange-800 mb-2">⚠️ Action Required</h2>
+                <div className="rounded-2xl p-5" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                    <div className="mb-3 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-400" />
+                        <h2 className="text-sm font-bold text-amber-300 uppercase tracking-wider">Action Required</h2>
+                    </div>
                     <div className="space-y-2">
                         {proposals.filter(p => needsAction(p.status)).map(p => {
-                            const countdown = p.revision_deadline ? getCountdown(p.revision_deadline) : null;
+                            const cd = p.revision_deadline ? getCountdown(p.revision_deadline) : null;
                             return (
-                                <div key={p.id} className="flex items-center justify-between bg-white rounded-lg p-3">
-                                    <div>
-                                        <span className="font-medium text-gray-900">{p.title}</span>
-                                        {countdown && (
-                                            <span className={`ml-2 text-sm ${countdown.urgent ? 'text-red-600 font-semibold' : 'text-orange-600'}`}>
-                                                <Clock size={14} className="inline mr-1" />
-                                                {countdown.text}
+                                <div key={p.id} className="flex items-center justify-between gap-4 rounded-xl px-4 py-3"
+                                     style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                    <div className="min-w-0">
+                                        <span className="text-sm font-semibold text-slate-200 truncate block">{p.title}</span>
+                                        {cd && (
+                                            <span className={`mt-0.5 flex items-center gap-1 text-xs ${cd.urgent ? 'text-red-400 font-semibold' : 'text-amber-400'}`}>
+                                                <Clock size={11} /> {cd.text}
                                             </span>
                                         )}
                                     </div>
-                                    {getActionButton(p)}
+                                    <ActionBtn proposal={p} />
                                 </div>
                             );
                         })}
@@ -264,66 +157,58 @@ const PIDashboard: React.FC = () => {
                 </div>
             )}
 
-            {/* Proposals List */}
-            <div className="space-y-4">
+            {/* Proposal List */}
+            <div className="space-y-3">
                 {proposals.map((proposal) => {
-                    const statusStyle = getStatusBadge(proposal.status);
+                    const bm = statusBadgeMap[proposal.status] || { cls: 'badge-slate', label: proposal.status };
                     return (
-                        <div
-                            key={proposal.id}
-                            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
-                        >
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex-1">
-                                    <div className="flex items-center space-x-3 mb-2">
+                        <div key={proposal.id} className="card p-5 hover:border-brand-500/30">
+                            <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
                                         {proposal.proposal_code && (
-                                            <span className="text-sm font-mono text-gray-500">{proposal.proposal_code}</span>
+                                            <span className="font-mono text-xs text-slate-500">{proposal.proposal_code}</span>
                                         )}
-                                        <span className={`flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
-                                            {statusStyle.icon}
-                                            <span className="ml-1">{proposal.status_display || proposal.status.replace(/_/g, ' ')}</span>
+                                        <span className={`badge ${bm.cls}`}>
+                                            {proposal.status_display || bm.label}
                                         </span>
                                     </div>
-                                    <h3 className="text-lg font-semibold text-gray-900">{proposal.title}</h3>
-                                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                                        <span>{proposal.cycle_name}</span>
-                                        <span>•</span>
-                                        <span>${proposal.fund_requested?.toLocaleString()}</span>
+                                    <h3 className="text-base font-semibold text-slate-200 truncate">{proposal.title}</h3>
+                                    <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-500">
+                                        {proposal.cycle_name && <span>{proposal.cycle_name}</span>}
+                                        {proposal.fund_requested && (
+                                            <span>Requested: <strong className="text-slate-300">${proposal.fund_requested.toLocaleString()}</strong></span>
+                                        )}
                                         {proposal.approved_amount && (
-                                            <>
-                                                <span>•</span>
-                                                <span className="text-green-600 font-medium">
-                                                    Approved: ${proposal.approved_amount.toLocaleString()}
-                                                </span>
-                                            </>
+                                            <span className="text-emerald-400 font-semibold">
+                                                Approved: ${proposal.approved_amount.toLocaleString()}
+                                            </span>
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                    {getActionButton(proposal)}
-                                    <ChevronRight size={20} className="text-gray-400" />
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <ActionBtn proposal={proposal} />
                                 </div>
                             </div>
-
-                            {/* Status Tracker for non-draft proposals */}
                             {proposal.status !== 'DRAFT' && (
-                                <StatusTracker status={proposal.status} />
+                                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+                                    <StatusTracker status={proposal.status} />
+                                </div>
                             )}
                         </div>
                     );
                 })}
 
                 {proposals.length === 0 && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-                        <FileText size={48} className="mx-auto text-gray-300 mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No proposals yet</h3>
-                        <p className="text-gray-500 mb-4">Start by creating your first research grant proposal</p>
-                        <Link
-                            to="/pi/submit"
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                        >
-                            <Plus size={18} className="mr-2" />
-                            Create Proposal
+                    <div className="card p-14 flex flex-col items-center justify-center text-center">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl mb-5"
+                             style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                            <FileText className="h-7 w-7 text-brand-400 opacity-70" />
+                        </div>
+                        <h3 className="text-base font-semibold text-slate-300 mb-1">No proposals yet</h3>
+                        <p className="text-sm text-slate-500 mb-5">Start by creating your first research grant proposal</p>
+                        <Link to="/pi/submit" className="btn btn-primary flex items-center gap-2">
+                            <Plus size={16} />Create Proposal
                         </Link>
                     </div>
                 )}

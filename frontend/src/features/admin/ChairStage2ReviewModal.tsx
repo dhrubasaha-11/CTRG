@@ -124,15 +124,15 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 px-3 py-4 sm:px-6 sm:py-8">
             <div className="flex min-h-full items-start justify-center">
-                <div className="my-auto w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-                    <div className="border-b border-gray-200 bg-gradient-to-r from-slate-900 via-slate-800 to-teal-700 p-5 text-white">
+                <div className="my-auto w-full max-w-5xl overflow-hidden rounded-2xl  shadow-2xl">
+                    <div className="border-b  bg-gradient-to-r from-slate-900 via-slate-800 to-teal-700 p-5 text-white">
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/60">Stage 2 Review</p>
                                 <h2 className="mt-2 text-2xl font-semibold">SRC Chair Revision Assessment</h2>
                                 <p className="mt-2 text-sm text-white/75">{proposal.proposal_code} · {proposal.title}</p>
                             </div>
-                            <button onClick={onClose} className="rounded-full border border-white/20 p-2 text-white/80 hover:bg-white/10 hover:text-white">
+                            <button onClick={onClose} className="rounded-full border border-white/20 p-2 text-white/80 hover:/10 hover:text-white">
                                 <X size={20} />
                             </button>
                         </div>
@@ -159,24 +159,24 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                         ) : (
                             <div className="space-y-6">
                                 <div className="grid gap-4 lg:grid-cols-3">
-                                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                                        <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Requested Funding</p>
-                                        <p className="mt-2 text-2xl font-semibold text-gray-900">${proposal.fund_requested?.toLocaleString()}</p>
+                                    <div className="rounded-xl border   p-4">
+                                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Requested Funding</p>
+                                        <p className="mt-2 text-2xl font-semibold text-slate-200">${proposal.fund_requested?.toLocaleString()}</p>
                                     </div>
-                                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                                        <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Stage 1 Reviews</p>
-                                        <p className="mt-2 text-2xl font-semibold text-gray-900">{reviews.length}</p>
+                                    <div className="rounded-xl border   p-4">
+                                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Stage 1 Reviews</p>
+                                        <p className="mt-2 text-2xl font-semibold text-slate-200">{reviews.length}</p>
                                     </div>
-                                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                                        <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Average Stage 1 Score</p>
-                                        <p className="mt-2 text-2xl font-semibold text-gray-900">{averageStage1Score}%</p>
+                                    <div className="rounded-xl border   p-4">
+                                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Average Stage 1 Score</p>
+                                        <p className="mt-2 text-2xl font-semibold text-slate-200">{averageStage1Score}%</p>
                                     </div>
                                 </div>
 
-                                <div className="rounded-xl border border-gray-200 p-5">
+                                <div className="rounded-xl border  p-5">
                                     <div className="flex items-center gap-2">
                                         <FileText size={18} className="text-slate-700" />
-                                        <h3 className="text-lg font-semibold text-gray-900">Revision Materials</h3>
+                                        <h3 className="text-base font-semibold text-slate-200">Revision Materials</h3>
                                     </div>
                                     <div className="mt-4 grid gap-3 md:grid-cols-3">
                                         <button
@@ -212,29 +212,29 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                                     </div>
                                 </div>
 
-                                <div className="rounded-xl border border-gray-200 p-5">
-                                    <h3 className="text-lg font-semibold text-gray-900">Stage 1 Reviewer Comments</h3>
+                                <div className="rounded-xl border  p-5">
+                                    <h3 className="text-base font-semibold text-slate-200">Stage 1 Reviewer Comments</h3>
                                     {reviews.length === 0 ? (
-                                        <p className="mt-3 text-sm text-gray-500">No completed Stage 1 reviews are available.</p>
+                                        <p className="mt-3 text-sm text-slate-500">No completed Stage 1 reviews are available.</p>
                                     ) : (
                                         <div className="mt-4 space-y-4">
                                             {reviews.map((review, index) => (
-                                                <div key={review.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                                <div key={review.id} className="rounded-xl border   p-4">
                                                     <div className="flex items-center justify-between gap-3">
                                                         <div>
-                                                            <p className="font-medium text-gray-900">Reviewer {index + 1}</p>
-                                                            <p className="text-sm text-gray-500">{review.reviewer_name}</p>
+                                                            <p className="font-medium text-slate-200">Reviewer {index + 1}</p>
+                                                            <p className="text-sm text-slate-500">{review.reviewer_name}</p>
                                                         </div>
-                                                        <div className="text-right text-sm text-gray-600">
+                                                        <div className="text-right text-sm text-slate-500">
                                                             <p>Score: {review.stage1_score?.total_score ?? 0}/100</p>
                                                             <p>{review.stage1_score?.recommendation?.replace(/_/g, ' ') || 'No recommendation'}</p>
                                                         </div>
                                                     </div>
-                                                    <p className="mt-3 whitespace-pre-wrap text-sm text-gray-700">
+                                                    <p className="mt-3 whitespace-pre-wrap text-sm text-slate-400">
                                                         {review.stage1_score?.narrative_comments || 'No narrative comments provided.'}
                                                     </p>
                                                     {review.stage1_score?.detailed_recommendation && (
-                                                        <div className="mt-3 rounded-lg bg-white p-3 text-sm text-gray-700">
+                                                        <div className="mt-3 rounded-lg  p-3 text-sm text-slate-400">
                                                             {review.stage1_score.detailed_recommendation}
                                                         </div>
                                                     )}
@@ -244,8 +244,8 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                                     )}
                                 </div>
 
-                                <div className="rounded-xl border border-gray-200 p-5">
-                                    <h3 className="text-lg font-semibold text-gray-900">Chair Stage 2 Assessment</h3>
+                                <div className="rounded-xl border  p-5">
+                                    <h3 className="text-base font-semibold text-slate-200">Chair Stage 2 Assessment</h3>
                                     <div className="mt-4 grid gap-4 md:grid-cols-3">
                                         {[
                                             { value: 'YES', label: 'Yes', description: 'All concerns addressed', tone: 'green' },
@@ -263,11 +263,11 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                                                         : option.tone === 'amber'
                                                             ? 'border-amber-500 bg-amber-50'
                                                             : 'border-red-500 bg-red-50'
-                                                    : 'border-gray-200 hover:border-gray-300'
+                                                    : ' hover:border-gray-300'
                                                     } disabled:cursor-not-allowed disabled:opacity-70`}
                                             >
-                                                <p className="font-medium text-gray-900">{option.label}</p>
-                                                <p className="mt-1 text-sm text-gray-600">{option.description}</p>
+                                                <p className="font-medium text-slate-200">{option.label}</p>
+                                                <p className="mt-1 text-sm text-slate-500">{option.description}</p>
                                             </button>
                                         ))}
                                     </div>
@@ -284,19 +284,19 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                                                 disabled={isFinalized}
                                                 className={`rounded-xl border-2 p-4 text-left transition ${revisedRecommendation === option.value
                                                     ? option.activeClass
-                                                    : 'border-gray-200 hover:border-gray-300'
+                                                    : ' hover:border-gray-300'
                                                     } disabled:cursor-not-allowed disabled:opacity-70`}
                                             >
                                                 <option.icon size={20} className="mb-3" />
                                                 <p className="font-medium">{option.label}</p>
-                                                <p className="mt-1 text-sm text-gray-600">{option.description}</p>
+                                                <p className="mt-1 text-sm text-slate-500">{option.description}</p>
                                             </button>
                                         ))}
                                     </div>
 
                                     <div className="mt-4 grid gap-4">
                                         <div>
-                                            <label className="mb-2 block text-sm font-medium text-gray-700">Optional Revised Score</label>
+                                            <label className="mb-2 block text-sm font-medium text-slate-400">Optional Revised Score</label>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -309,7 +309,7 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                                             />
                                         </div>
                                         <div>
-                                            <label className="mb-2 block text-sm font-medium text-gray-700">Technical Comments</label>
+                                            <label className="mb-2 block text-sm font-medium text-slate-400">Technical Comments</label>
                                             <textarea
                                                 value={technicalComments}
                                                 onChange={(event) => setTechnicalComments(event.target.value)}
@@ -320,7 +320,7 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                                             />
                                         </div>
                                         <div>
-                                            <label className="mb-2 block text-sm font-medium text-gray-700">Budget Comments</label>
+                                            <label className="mb-2 block text-sm font-medium text-slate-400">Budget Comments</label>
                                             <textarea
                                                 value={budgetComments}
                                                 onChange={(event) => setBudgetComments(event.target.value)}
@@ -336,11 +336,11 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                         )}
                     </div>
 
-                    <div className="flex flex-wrap justify-end gap-3 border-t border-gray-200 bg-gray-50 p-4 sm:p-6">
+                    <div className="flex flex-wrap justify-end gap-3 border-t   p-4 sm:p-6">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100"
+                            className="rounded-lg border border-gray-300 px-4 py-2 text-slate-400 hover:bg-gray-100"
                         >
                             Close
                         </button>
@@ -348,7 +348,7 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                             type="button"
                             onClick={() => submitReview(true)}
                             disabled={submitting || loading || isFinalized}
-                            className="flex items-center rounded-lg bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="flex items-center rounded-lg bg-gray-100 px-4 py-2 text-slate-400 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <Save size={16} className="mr-2" />
                             Save Draft

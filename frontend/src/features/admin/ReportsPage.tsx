@@ -131,25 +131,25 @@ const ReportsPage: React.FC = () => {
 
     const getStatusColor = (status: string) => {
         const colors: Record<string, string> = {
-            FINAL_ACCEPTED: 'bg-green-100 text-green-800',
-            FINAL_REJECTED: 'bg-red-100 text-red-800',
-            UNDER_STAGE_1_REVIEW: 'bg-blue-100 text-blue-800',
-            UNDER_STAGE_2_REVIEW: 'bg-purple-100 text-purple-800',
-            TENTATIVELY_ACCEPTED: 'bg-yellow-100 text-yellow-800',
+            FINAL_ACCEPTED: 'badge-green',
+            FINAL_REJECTED: 'badge-red',
+            UNDER_STAGE_1_REVIEW: 'badge-brand',
+            UNDER_STAGE_2_REVIEW: 'badge-violet',
+            TENTATIVELY_ACCEPTED: 'badge-amber',
         };
-        return colors[status] || 'bg-gray-100 text-gray-800';
+        return colors[status] || 'bg-gray-100 text-slate-300';
     };
 
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-                    <p className="text-gray-500 mt-1">Generate and download proposal and cycle reports</p>
+                    <h1 className="text-2xl font-bold text-slate-100">Reports</h1>
+                    <p className="text-slate-500 mt-1">Generate and download proposal and cycle reports</p>
                 </div>
                 <button
                     onClick={loadData}
-                    className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    className="flex items-center px-4 py-2 bg-gray-100 text-slate-400 rounded-lg hover:bg-gray-200"
                 >
                     <RefreshCw size={16} className="mr-2" /> Refresh
                 </button>
@@ -157,24 +157,24 @@ const ReportsPage: React.FC = () => {
 
             {/* Cycle Summary Reports */}
             <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <BarChart3 size={20} className="mr-2 text-purple-600" />
+                <h2 className="text-base font-semibold text-slate-200 mb-4 flex items-center">
+                    <BarChart3 size={20} className="mr-2 text-violet-400" />
                     Cycle Summary Reports
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {cycles.map(cycle => (
-                        <div key={cycle.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                        <div key={cycle.id} className="card p-5">
                             <div className="flex justify-between items-start mb-3">
                                 <div>
-                                    <h3 className="font-semibold text-gray-900">{cycle.name}</h3>
-                                    <p className="text-sm text-gray-500">{cycle.year}</p>
+                                    <h3 className="font-semibold text-slate-200">{cycle.name}</h3>
+                                    <p className="text-sm text-slate-500">{cycle.year}</p>
                                 </div>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${cycle.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${cycle.is_active ? 'badge-green' : 'bg-gray-100 text-slate-300'}`}>
                                     {cycle.is_active ? 'Active' : 'Closed'}
                                 </span>
                             </div>
                             {cycle.proposal_count !== undefined && (
-                                <p className="text-sm text-gray-600 mb-3">{cycle.proposal_count} proposals</p>
+                                <p className="text-sm text-slate-500 mb-3">{cycle.proposal_count} proposals</p>
                             )}
                             <div className="grid grid-cols-2 gap-2">
                                 <button
@@ -197,41 +197,41 @@ const ReportsPage: React.FC = () => {
                         </div>
                     ))}
                     {cycles.length === 0 && !loading && (
-                        <p className="text-gray-500 col-span-full">No grant cycles found.</p>
+                        <p className="text-slate-500 col-span-full">No grant cycles found.</p>
                     )}
                 </div>
             </div>
 
             {/* Proposal-wise Reports */}
             <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <FileText size={20} className="mr-2 text-blue-600" />
+                <h2 className="text-base font-semibold text-slate-200 mb-4 flex items-center">
+                    <FileText size={20} className="mr-2 text-brand-400" />
                     Proposal Review Reports
                 </h2>
 
                 {loading ? (
                     <div className="flex justify-center py-12">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <div className="spinner"></div>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                    <div className="card overflow-hidden">
+                        <table className="min-w-full divide-y ">
+                            <thead className="">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">PI</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Template</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Combined Report</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Code</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Title</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">PI</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Template</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Combined Report</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
+                            <tbody className="divide-y ">
                                 {proposals.map(proposal => (
-                                    <tr key={proposal.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{proposal.proposal_code}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">{proposal.title}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">{proposal.pi_name}</td>
+                                    <tr key={proposal.id} className="hover:">
+                                        <td className="px-6 py-4 text-sm font-medium text-slate-200">{proposal.proposal_code}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-200 max-w-xs truncate">{proposal.title}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-500">{proposal.pi_name}</td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(proposal.status)}`}>
                                                 {proposal.status_display || proposal.status.replace(/_/g, ' ')}
@@ -262,7 +262,7 @@ const ReportsPage: React.FC = () => {
                                                 <button
                                                     onClick={() => handleDownloadProposalReport(proposal)}
                                                     disabled={downloading === proposal.id}
-                                                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+                                                    className="inline-flex items-center btn btn-primary btn-sm disabled:opacity-50 text-sm"
                                                 >
                                                     <Download size={14} className="mr-1" />
                                                     {downloading === proposal.id ? '...' : 'PDF'}
@@ -281,7 +281,7 @@ const ReportsPage: React.FC = () => {
                                 ))}
                                 {proposals.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                                        <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
                                             No proposals found.
                                         </td>
                                     </tr>

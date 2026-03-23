@@ -13,18 +13,18 @@ import CombinedReviewView from './CombinedReviewView';
 import ChairStage2ReviewModal from './ChairStage2ReviewModal';
 
 const STATUS_COLORS: Record<string, string> = {
-    DRAFT: 'bg-gray-100 text-gray-800',
-    SUBMITTED: 'bg-blue-100 text-blue-800',
-    UNDER_STAGE_1_REVIEW: 'bg-indigo-100 text-indigo-800',
-    STAGE_1_REJECTED: 'bg-red-100 text-red-800',
-    ACCEPTED_NO_CORRECTIONS: 'bg-green-100 text-green-800',
-    TENTATIVELY_ACCEPTED: 'bg-yellow-100 text-yellow-800',
-    REVISION_REQUESTED: 'bg-orange-100 text-orange-800',
-    REVISED_PROPOSAL_SUBMITTED: 'bg-purple-100 text-purple-800',
-    REVISION_DEADLINE_MISSED: 'bg-red-100 text-red-800',
-    UNDER_STAGE_2_REVIEW: 'bg-cyan-100 text-cyan-800',
-    FINAL_ACCEPTED: 'bg-emerald-100 text-emerald-800',
-    FINAL_REJECTED: 'bg-red-100 text-red-800',
+    DRAFT: 'badge-slate',
+    SUBMITTED: 'badge-brand',
+    UNDER_STAGE_1_REVIEW: 'badge-amber',
+    STAGE_1_REJECTED: 'badge-red',
+    ACCEPTED_NO_CORRECTIONS: 'badge-green',
+    TENTATIVELY_ACCEPTED: 'badge-amber',
+    REVISION_REQUESTED: 'badge-orange',
+    REVISED_PROPOSAL_SUBMITTED: 'badge-violet',
+    REVISION_DEADLINE_MISSED: 'badge-red',
+    UNDER_STAGE_2_REVIEW: 'badge-cyan',
+    FINAL_ACCEPTED: 'badge-green',
+    FINAL_REJECTED: 'badge-red',
 };
 
 const STATUS_OPTIONS = [
@@ -257,12 +257,12 @@ const ProposalList: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">All Proposals</h1>
-                    <p className="text-gray-500 mt-1">{filteredProposals.length} proposals found</p>
+                    <h1 className="text-2xl font-bold text-slate-100">All Proposals</h1>
+                    <p className="text-sm text-slate-500 mt-1">{filteredProposals.length} proposals found</p>
                 </div>
                 <Link
                     to="/admin/proposals/new"
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm"
+                    className="btn btn-primary flex items-center gap-2"
                 >
                     <Plus size={18} className="mr-2" />
                     Create Proposal
@@ -280,7 +280,7 @@ const ProposalList: React.FC = () => {
                                 placeholder="Search by title, PI, or code..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="input has-icon-left"
                             />
                         </div>
                     </div>
@@ -289,7 +289,7 @@ const ProposalList: React.FC = () => {
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="input"
                         >
                             {STATUS_OPTIONS.map((opt) => (
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -298,7 +298,7 @@ const ProposalList: React.FC = () => {
                         <select
                             value={cycleFilter}
                             onChange={(e) => setCycleFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="input"
                         >
                             <option value="">All Cycles</option>
                             {cycles.map((c) => (
@@ -312,26 +312,26 @@ const ProposalList: React.FC = () => {
             {/* Proposals Table */}
             {loading ? (
                 <div className="flex justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <div className="spinner"></div>
                 </div>
             ) : (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                    <table className="table w-full">
+                        <thead className="" style={{background:"rgba(0,0,0,0.2)"}}>
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Proposal
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Principal Investigator
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Funding
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Category / Keywords
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Status
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -339,39 +339,39 @@ const ProposalList: React.FC = () => {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="" style={{}}">
                             {paginatedProposals.map((proposal) => (
-                                <tr key={proposal.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4">
+                                <tr key={proposal.id} className="hover:" style={{background:"rgba(0,0,0,0.2)"}}>
+                                    <td className="px-5 py-3.5">
                                         <div>
                                             <div className="flex items-center">
-                                                <FileText size={16} className="text-gray-400 mr-2" />
-                                                <span className="text-sm font-medium text-gray-900">{proposal.proposal_code}</span>
+                                                <FileText size={16} className="text-slate-600 mr-2" />
+                                                <span className="text-sm font-semibold text-slate-200">{proposal.proposal_code}</span>
                                             </div>
-                                            <div className="text-sm text-gray-500 mt-1 max-w-xs truncate">
+                                            <div className="text-xs text-slate-500 mt-0.5 max-w-xs truncate">
                                                 {proposal.title}
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-medium text-gray-900">{proposal.pi_name}</div>
-                                        <div className="text-sm text-gray-500">{proposal.pi_department}</div>
+                                    <td className="px-5 py-3.5">
+                                        <div className="text-sm font-semibold text-slate-200">{proposal.pi_name}</div>
+                                        <div className="text-xs text-slate-500">{proposal.pi_department}</div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">
+                                    <td className="px-5 py-3.5">
+                                        <div className="text-sm font-semibold text-slate-200">
                                             ${proposal.fund_requested?.toLocaleString()}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-medium text-gray-900">
+                                    <td className="px-5 py-3.5">
+                                        <div className="text-sm font-medium text-slate-300">
                                             {proposal.primary_research_area_name || 'Uncategorized'}
                                         </div>
-                                        <div className="text-xs text-gray-500 mt-1 max-w-xs truncate">
+                                        <div className="text-xs text-slate-600 mt-0.5 max-w-xs truncate">
                                             {(proposal.keywords || []).join(', ') || 'No keywords'}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[proposal.status] || 'bg-gray-100 text-gray-800'}`}>
+                                    <td className="px-5 py-3.5">
+                                        <span className={`badge ${STATUS_COLORS[proposal.status] || 'badge-slate'}`}>
                                             {proposal.status_display || proposal.status}
                                         </span>
                                         {proposal.revision_deadline && (
@@ -381,14 +381,14 @@ const ProposalList: React.FC = () => {
                                             </div>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                    <td className="px-5 py-3.5 whitespace-nowrap text-right">
                                         <div className="flex justify-end space-x-1">
                                             {getAvailableActions(proposal).map((action) => (
                                                 action.key === 'view' ? (
                                                     <Link
                                                         key={action.key}
                                                         to={`/admin/proposals/${proposal.id}`}
-                                                        className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${action.color}`}
+                                                        className={`p-2 rounded-lg transition-colors text-slate-500 hover:bg-white/5 hover:text-slate-200 ${action.color}`}
                                                         title={action.label}
                                                     >
                                                         <action.icon size={16} />
@@ -397,7 +397,7 @@ const ProposalList: React.FC = () => {
                                                     <button
                                                         key={action.key}
                                                         onClick={() => handleAction(action.key, proposal)}
-                                                        className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${action.color}`}
+                                                        className={`p-2 rounded-lg transition-colors text-slate-500 hover:bg-white/5 hover:text-slate-200 ${action.color}`}
                                                         title={action.label}
                                                     >
                                                         <action.icon size={16} />
@@ -423,7 +423,7 @@ const ProposalList: React.FC = () => {
                         <button
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
-                            className="flex items-center px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                            className="btn btn-secondary btn-sm flex items-center gap-1"
                         >
                             <ChevronLeft size={14} className="mr-1" /> Prev
                         </button>
@@ -437,7 +437,7 @@ const ProposalList: React.FC = () => {
                                 <button
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
-                                    className={`px-3 py-1.5 rounded-lg text-sm ${currentPage === pageNum ? 'bg-blue-600 text-white' : 'border border-gray-300 hover:bg-gray-50'}`}
+                                    className={`btn btn-sm ${currentPage === pageNum ? 'btn-primary' : 'btn-secondary'}`}
                                 >
                                     {pageNum}
                                 </button>
@@ -446,7 +446,7 @@ const ProposalList: React.FC = () => {
                         <button
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
-                            className="flex items-center px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                            className="btn btn-secondary btn-sm flex items-center gap-1"
                         >
                             Next <ChevronRight size={14} className="ml-1" />
                         </button>

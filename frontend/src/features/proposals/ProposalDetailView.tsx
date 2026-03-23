@@ -68,16 +68,16 @@ const ProposalDetailView: React.FC = () => {
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+                <div className="spinner" />
             </div>
         );
     }
 
     if (error || !proposal) {
         return (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-                <p className="text-red-700">{error || 'Proposal not found'}</p>
-                <Link to="/pi/dashboard" className="mt-4 inline-flex items-center text-blue-600 hover:text-blue-700">
+            <div className="rounded-xl" style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)"}} rounded-xl p-6 text-center">
+                <p className="text-red-400">{error || 'Proposal not found'}</p>
+                <Link to="/pi/dashboard" className="mt-4 inline-flex items-center text-brand-400 hover:text-blue-700">
                     <ArrowLeft size={16} className="mr-1" /> Back to Dashboard
                 </Link>
             </div>
@@ -93,18 +93,18 @@ const ProposalDetailView: React.FC = () => {
                 </Link>
                 <div className="flex-1">
                     <div className="flex items-center gap-3">
-                        <span className="font-mono text-sm text-gray-500">{proposal.proposal_code}</span>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="font-mono text-sm text-slate-500">{proposal.proposal_code}</span>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-medium badge-brand">
                             {proposal.status_display || proposal.status.replace(/_/g, ' ')}
                         </span>
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900 mt-1">{proposal.title}</h1>
+                    <h1 className="text-2xl font-bold text-slate-100 mt-1">{proposal.title}</h1>
                 </div>
             </div>
 
             {/* Status Tracker */}
             {proposal.status !== 'DRAFT' && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="card p-6">
                     <StatusTracker status={proposal.status} />
                 </div>
             )}
@@ -132,56 +132,56 @@ const ProposalDetailView: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                     {/* PI Information */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="card p-6">
                         <h2 className="text-lg font-semibold mb-4">Proposal Information</h2>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex items-center gap-2 text-sm">
-                                <User size={16} className="text-gray-400" />
-                                <span className="text-gray-600">PI:</span>
+                                <User size={16} className="text-slate-600" />
+                                <span className="text-slate-500">PI:</span>
                                 <span className="font-medium">{proposal.pi_name}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
-                                <Mail size={16} className="text-gray-400" />
-                                <span className="text-gray-600">Email:</span>
+                                <Mail size={16} className="text-slate-600" />
+                                <span className="text-slate-500">Email:</span>
                                 <span className="font-medium">{proposal.pi_email}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
-                                <Building size={16} className="text-gray-400" />
-                                <span className="text-gray-600">Department:</span>
+                                <Building size={16} className="text-slate-600" />
+                                <span className="text-slate-500">Department:</span>
                                 <span className="font-medium">{proposal.pi_department}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
-                                <DollarSign size={16} className="text-gray-400" />
-                                <span className="text-gray-600">Fund Requested:</span>
+                                <DollarSign size={16} className="text-slate-600" />
+                                <span className="text-slate-500">Fund Requested:</span>
                                 <span className="font-medium">${proposal.fund_requested?.toLocaleString()}</span>
                             </div>
                             {proposal.co_investigators && (
                                 <div className="col-span-2 flex items-start gap-2 text-sm">
-                                    <User size={16} className="text-gray-400 mt-0.5" />
-                                    <span className="text-gray-600">Co-Investigators:</span>
+                                    <User size={16} className="text-slate-600 mt-0.5" />
+                                    <span className="text-slate-500">Co-Investigators:</span>
                                     <span className="font-medium">{proposal.co_investigators}</span>
                                 </div>
                             )}
                             <div className="col-span-2 flex items-center gap-2 text-sm">
-                                <Calendar size={16} className="text-gray-400" />
-                                <span className="text-gray-600">Cycle:</span>
+                                <Calendar size={16} className="text-slate-600" />
+                                <span className="text-slate-500">Cycle:</span>
                                 <span className="font-medium">{proposal.cycle_name}</span>
                             </div>
                             <div className="col-span-2 flex items-center gap-2 text-sm">
-                                <Tag size={16} className="text-gray-400" />
-                                <span className="text-gray-600">Primary Research Area:</span>
+                                <Tag size={16} className="text-slate-600" />
+                                <span className="text-slate-500">Primary Research Area:</span>
                                 <span className="font-medium">{proposal.primary_research_area_name || 'Uncategorized'}</span>
                             </div>
                             <div className="col-span-2 flex items-start gap-2 text-sm">
-                                <Tag size={16} className="text-gray-400 mt-0.5" />
-                                <span className="text-gray-600">Keywords:</span>
+                                <Tag size={16} className="text-slate-600 mt-0.5" />
+                                <span className="text-slate-500">Keywords:</span>
                                 <span className="font-medium">{(proposal.keywords || []).join(', ') || 'No keywords'}</span>
                             </div>
                         </div>
                         {proposal.abstract && (
                             <div className="mt-4 pt-4 border-t">
-                                <h3 className="text-sm font-semibold text-gray-700 mb-2">Abstract</h3>
-                                <p className="text-sm text-gray-600 whitespace-pre-wrap">{proposal.abstract}</p>
+                                <h3 className="text-sm font-semibold text-slate-400 mb-2">Abstract</h3>
+                                <p className="text-sm text-slate-500 whitespace-pre-wrap">{proposal.abstract}</p>
                             </div>
                         )}
                     </div>
@@ -190,7 +190,7 @@ const ProposalDetailView: React.FC = () => {
                     {proposal.approved_amount !== undefined && proposal.approved_amount !== null && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-6">
                             <div className="flex items-center gap-2 mb-2">
-                                <CheckCircle size={20} className="text-green-600" />
+                                <CheckCircle size={20} className="text-emerald-400" />
                                 <h2 className="text-lg font-semibold text-green-800">Final Decision</h2>
                             </div>
                             <p className="text-sm text-green-700">
@@ -202,10 +202,10 @@ const ProposalDetailView: React.FC = () => {
                         </div>
                     )}
                     {(proposal.status === 'STAGE_1_REJECTED' || proposal.status === 'FINAL_REJECTED') && (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                        <div className="rounded-xl" style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)"}} rounded-xl p-6">
                             <div className="flex items-center gap-2">
-                                <XCircle size={20} className="text-red-600" />
-                                <h2 className="text-lg font-semibold text-red-800">Proposal Not Accepted</h2>
+                                <XCircle size={20} className="text-red-400" />
+                                <h2 className="text-lg font-semibold text-red-400">Proposal Not Accepted</h2>
                             </div>
                         </div>
                     )}
@@ -213,78 +213,78 @@ const ProposalDetailView: React.FC = () => {
 
                 {/* Sidebar: File Downloads */}
                 <div className="space-y-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-4">Documents</h3>
+                    <div className="card p-6">
+                        <h3 className="text-sm font-semibold text-slate-400 mb-4">Documents</h3>
                         <div className="space-y-2">
                             {proposal.proposal_file && (
                                 <button
                                     onClick={() => handleDownload('proposal', `proposal_${proposal.proposal_code}.pdf`)}
-                                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                                    className="w-full flex items-center gap-3 p-3 rounded-lg hover: transition-colors text-left"
                                 >
                                     <FileText size={18} className="text-blue-500" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900">Research Proposal</p>
-                                        <p className="text-xs text-gray-500">Original submission</p>
+                                        <p className="text-sm font-medium text-slate-200">Research Proposal</p>
+                                        <p className="text-xs text-slate-500">Original submission</p>
                                     </div>
-                                    <Download size={16} className="text-gray-400" />
+                                    <Download size={16} className="text-slate-600" />
                                 </button>
                             )}
                             {(proposal as any).application_template_file && (
                                 <button
                                     onClick={() => handleDownload('application_template', `template_${proposal.proposal_code}.pdf`)}
-                                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                                    className="w-full flex items-center gap-3 p-3 rounded-lg hover: transition-colors text-left"
                                 >
                                     <FileText size={18} className="text-green-500" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900">Application Template</p>
+                                        <p className="text-sm font-medium text-slate-200">Application Template</p>
                                     </div>
-                                    <Download size={16} className="text-gray-400" />
+                                    <Download size={16} className="text-slate-600" />
                                 </button>
                             )}
                             {(proposal as any).revised_proposal_file && (
                                 <button
                                     onClick={() => handleDownload('revised_proposal', `revised_${proposal.proposal_code}.pdf`)}
-                                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                                    className="w-full flex items-center gap-3 p-3 rounded-lg hover: transition-colors text-left"
                                 >
                                     <FileText size={18} className="text-purple-500" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900">Revised Proposal</p>
+                                        <p className="text-sm font-medium text-slate-200">Revised Proposal</p>
                                     </div>
-                                    <Download size={16} className="text-gray-400" />
+                                    <Download size={16} className="text-slate-600" />
                                 </button>
                             )}
                             {(proposal as any).response_to_reviewers_file && (
                                 <button
                                     onClick={() => handleDownload('response_to_reviewers', `response_${proposal.proposal_code}.pdf`)}
-                                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                                    className="w-full flex items-center gap-3 p-3 rounded-lg hover: transition-colors text-left"
                                 >
                                     <FileText size={18} className="text-orange-500" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900">Response to Reviewers</p>
+                                        <p className="text-sm font-medium text-slate-200">Response to Reviewers</p>
                                     </div>
-                                    <Download size={16} className="text-gray-400" />
+                                    <Download size={16} className="text-slate-600" />
                                 </button>
                             )}
                         </div>
                     </div>
 
                     {/* Timeline */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-4">Timeline</h3>
+                    <div className="card p-6">
+                        <h3 className="text-sm font-semibold text-slate-400 mb-4">Timeline</h3>
                         <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Created</span>
+                                <span className="text-slate-500">Created</span>
                                 <span className="font-medium">{new Date(proposal.created_at).toLocaleDateString()}</span>
                             </div>
                             {proposal.submitted_at && (
                                 <div className="flex justify-between">
-                                    <span className="text-gray-500">Submitted</span>
+                                    <span className="text-slate-500">Submitted</span>
                                     <span className="font-medium">{new Date(proposal.submitted_at).toLocaleDateString()}</span>
                                 </div>
                             )}
                             {proposal.revision_deadline && (
                                 <div className="flex justify-between">
-                                    <span className="text-gray-500">Revision Deadline</span>
+                                    <span className="text-slate-500">Revision Deadline</span>
                                     <span className="font-medium">{new Date(proposal.revision_deadline).toLocaleDateString()}</span>
                                 </div>
                             )}
@@ -292,10 +292,10 @@ const ProposalDetailView: React.FC = () => {
                     </div>
 
                     {chairStage2Reviews.length > 0 && (
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                            <h3 className="text-sm font-semibold text-gray-700 mb-4">Chair Stage 2 Review</h3>
+                        <div className="card p-6">
+                            <h3 className="text-sm font-semibold text-slate-400 mb-4">Chair Stage 2 Review</h3>
                             {chairStage2Reviews.map((review) => (
-                                <div key={review.id} className="rounded-lg border border-gray-200 p-4 text-sm text-gray-700">
+                                <div key={review.id} className="rounded-lg border  p-4 text-sm text-slate-400">
                                     <p><span className="font-medium">Recommendation:</span> {review.revised_recommendation}</p>
                                     <p className="mt-2"><span className="font-medium">Concerns Addressed:</span> {review.concerns_addressed}</p>
                                     <p className="mt-2 whitespace-pre-wrap">{review.technical_comments}</p>

@@ -1,7 +1,3 @@
-/**
- * Card Component
- * Versatile card with header, content, footer sections.
- */
 import { cn } from '../../lib/utils';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -12,35 +8,20 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const variantClasses = {
     default: 'card',
-    glass: 'card-glass',
-    gradient: 'card-gradient text-white',
+    glass: 'glass rounded-2xl',
+    gradient: 'card rounded-2xl',
 };
 
 const paddingClasses = {
     none: '',
     sm: 'p-4',
-    md: 'p-6',
-    lg: 'p-8',
+    md: 'p-5',
+    lg: 'p-7',
 };
 
-export function Card({
-    className,
-    variant = 'default',
-    hover = true,
-    padding = 'none',
-    children,
-    ...props
-}: CardProps) {
+export function Card({ className, variant = 'default', hover = true, padding = 'none', children, ...props }: CardProps) {
     return (
-        <div
-            className={cn(
-                variantClasses[variant],
-                paddingClasses[padding],
-                !hover && 'hover:shadow-sm',
-                className
-            )}
-            {...props}
-        >
+        <div className={cn(variantClasses[variant], paddingClasses[padding], !hover && 'hover:shadow-none', className)} {...props}>
             {children}
         </div>
     );
@@ -52,24 +33,14 @@ interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
     action?: React.ReactNode;
 }
 
-export function CardHeader({
-    className,
-    title,
-    subtitle,
-    action,
-    children,
-    ...props
-}: CardHeaderProps) {
+export function CardHeader({ className, title, subtitle, action, children, ...props }: CardHeaderProps) {
     return (
-        <div
-            className={cn('px-6 py-4 border-b border-gray-100', className)}
-            {...props}
-        >
+        <div className={cn('px-5 py-4', className)} style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }} {...props}>
             {(title || subtitle || action) ? (
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                     <div>
-                        {title && <h3 className="text-lg font-semibold text-gray-900">{title}</h3>}
-                        {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
+                        {title    && <h3 className="text-sm font-semibold text-slate-200">{title}</h3>}
+                        {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
                     </div>
                     {action}
                 </div>
@@ -78,28 +49,13 @@ export function CardHeader({
     );
 }
 
-export function CardContent({
-    className,
-    children,
-    ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-    return (
-        <div className={cn('p-6', className)} {...props}>
-            {children}
-        </div>
-    );
+export function CardContent({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+    return <div className={cn('p-5', className)} {...props}>{children}</div>;
 }
 
-export function CardFooter({
-    className,
-    children,
-    ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+export function CardFooter({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
     return (
-        <div
-            className={cn('px-6 py-4 border-t border-gray-100 bg-gray-50/50', className)}
-            {...props}
-        >
+        <div className={cn('px-5 py-4', className)} style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }} {...props}>
             {children}
         </div>
     );

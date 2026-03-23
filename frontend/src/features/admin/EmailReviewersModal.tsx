@@ -44,9 +44,9 @@ const EmailReviewersModal: React.FC<Props> = ({ reviewers, onClose, onSuccess })
 
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-            <div className="w-[min(640px,calc(100vw-2rem))] max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="w-[min(640px,calc(100vw-2rem))] max-h-[90vh] overflow-hidden rounded-2xl  shadow-2xl">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-600 to-teal-600">
+                <div className="p-6 border-b  bg-gradient-to-r from-emerald-600 to-teal-600">
                     <div className="flex justify-between items-start">
                         <div className="text-white">
                             <h2 className="text-xl font-semibold">Email Reviewers</h2>
@@ -73,11 +73,11 @@ const EmailReviewersModal: React.FC<Props> = ({ reviewers, onClose, onSuccess })
                             <div className="mx-auto w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
                                 <Check size={24} className="text-emerald-600" />
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Emails Sent</h3>
-                            <p className="text-gray-600">
+                            <h3 className="text-base font-semibold text-slate-200 mb-2">Emails Sent</h3>
+                            <p className="text-slate-500">
                                 Successfully sent to {result.sent_count} reviewer{result.sent_count !== 1 ? 's' : ''}.
                                 {result.failed_count > 0 && (
-                                    <span className="text-red-600 block mt-1">
+                                    <span className="text-red-400 block mt-1">
                                         {result.failed_count} failed.
                                     </span>
                                 )}
@@ -87,14 +87,14 @@ const EmailReviewersModal: React.FC<Props> = ({ reviewers, onClose, onSuccess })
                         <>
                             {/* Recipients */}
                             <div className="mb-5">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Recipients</label>
-                                <div className="flex flex-wrap gap-2 p-3 bg-gray-50 border border-gray-200 rounded-lg max-h-28 overflow-y-auto">
+                                <label className="block text-sm font-medium text-slate-400 mb-2">Recipients</label>
+                                <div className="flex flex-wrap gap-2 p-3  border  rounded-lg max-h-28 overflow-y-auto">
                                     {reviewers.map((r) => (
                                         <span
                                             key={r.id}
-                                            className="inline-flex items-center px-2.5 py-1 bg-white border border-gray-300 rounded-full text-sm text-gray-700"
+                                            className="inline-flex items-center px-2.5 py-1  border border-gray-300 rounded-full text-sm text-slate-400"
                                         >
-                                            <Mail size={12} className="mr-1.5 text-gray-400" />
+                                            <Mail size={12} className="mr-1.5 text-slate-600" />
                                             {r.user_name}
                                         </span>
                                     ))}
@@ -103,7 +103,7 @@ const EmailReviewersModal: React.FC<Props> = ({ reviewers, onClose, onSuccess })
 
                             {/* Subject */}
                             <div className="mb-5">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                                <label className="block text-sm font-medium text-slate-400 mb-2">Subject</label>
                                 <input
                                     type="text"
                                     value={subject}
@@ -114,9 +114,9 @@ const EmailReviewersModal: React.FC<Props> = ({ reviewers, onClose, onSuccess })
 
                             {/* Custom Message */}
                             <div className="mb-5">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-slate-400 mb-2">
                                     Additional Message from SRC Chair
-                                    <span className="font-normal text-gray-400 ml-1">(optional)</span>
+                                    <span className="font-normal text-slate-600 ml-1">(optional)</span>
                                 </label>
                                 <textarea
                                     value={message}
@@ -136,7 +136,7 @@ const EmailReviewersModal: React.FC<Props> = ({ reviewers, onClose, onSuccess })
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3">
+                <div className="p-6 border-t   flex justify-end space-x-3">
                     {result ? (
                         <button
                             type="button"
@@ -150,7 +150,7 @@ const EmailReviewersModal: React.FC<Props> = ({ reviewers, onClose, onSuccess })
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100"
+                                className="px-4 py-2 border border-gray-300 text-slate-400 rounded-lg hover:bg-gray-100"
                             >
                                 Cancel
                             </button>

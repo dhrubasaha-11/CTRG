@@ -1,165 +1,169 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
-import {
-    GraduationCap,
-    Shield,
-    BarChart3,
-    Users,
-    Mail,
-    Lock,
-    Eye,
-    EyeOff
-} from 'lucide-react';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, Shield, BarChart3, Users } from 'lucide-react';
+
+const features = [
+    { icon: Shield,   title: 'Secure Role-Based Access',  desc: 'Isolated, auditable workflows for SRC Chair, Reviewers, and PIs.' },
+    { icon: BarChart3, title: 'Decision Intelligence',    desc: 'Stage-wise scoring with full comment history through final decisions.' },
+    { icon: Users,    title: 'Collaborative Review Ops',  desc: 'Assignments, reminders, revisions, and reports in one lifecycle.' },
+];
 
 const Login: React.FC = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [email, setEmail]         = useState('');
+    const [password, setPassword]   = useState('');
+    const [showPw, setShowPw]       = useState(false);
+    const [error, setError]         = useState('');
+    const [loading, setLoading]     = useState(false);
     const { login } = useAuth();
-    const navigate = useNavigate();
+    const navigate  = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setErrorMessage('');
-        setIsSubmitting(true);
+        setError('');
+        setLoading(true);
         try {
-            const response = await login(email, password);
-
-            if (response.redirect_to) {
-                navigate(response.redirect_to);
-                return;
-            }
-
-            // Redirect based on actual user role from backend response
-            const userRole = response.role?.toLowerCase();
-
-            if (userRole === 'src_chair' || userRole === 'admin' || response.user.is_staff) {
-                navigate('/admin/dashboard');
-            } else if (userRole === 'reviewer') {
-                navigate('/reviewer/dashboard');
-            } else if (userRole === 'pi') {
-                navigate('/pi/dashboard');
-            } else {
-                // Fallback based on email if role is missing (legacy)
-                if (email.includes('admin')) {
-                    navigate('/admin/dashboard');
-                } else {
-                    navigate('/reviewer/dashboard');
-                }
-            }
-        } catch (error: any) {
-            const message = error?.response?.data?.non_field_errors?.[0] ||
-                                error?.response?.data?.password?.[0] ||
-                                error?.response?.data?.email?.[0] ||
-                                error?.response?.data?.detail ||
-                                error?.message ||
-                                'Login failed. Please check your credentials.';
-            setErrorMessage(message);
+            const res = await login(email, password);
+            if (res.redirect_to) { navigate(res.redirect_to); return; }
+            const r = res.role?.toLowerCase();
+            if      (r === 'src_chair' || res.user?.is_staff) navigate('/admin/dashboard');
+            else if (r === 'reviewer') navigate('/reviewer/dashboard');
+            else                       navigate('/pi/dashboard');
+        } catch (err: any) {
+            setError(
+                err?.response?.data?.non_field_errors?.[0] ||
+                err?.response?.data?.detail ||
+                err?.message ||
+                'Login failed. Please check your credentials.'
+            );
         } finally {
-            setIsSubmitting(false);
+            setLoading(false);
         }
     };
 
     return (
-        <div className="app-background relative min-h-screen overflow-hidden bg-[#edf2f8]">
-            <div className="pointer-events-none absolute inset-0">
-                <div className="absolute -left-28 top-[-150px] h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,_rgba(212,160,23,0.34)_0%,_rgba(212,160,23,0.02)_72%)]" />
-                <div className="absolute right-[-170px] top-16 h-[440px] w-[440px] rounded-full bg-[radial-gradient(circle,_rgba(30,42,74,0.25)_0%,_rgba(30,42,74,0.02)_72%)]" />
-                <div className="absolute bottom-[-180px] left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,_rgba(42,58,95,0.2)_0%,_rgba(42,58,95,0.01)_70%)]" />
+        <div className="app-bg relative min-h-screen flex" style={{ position: 'relative', overflow: 'hidden' }}>
+            {/* Ambient blobs */}
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+                <div style={{ position: 'absolute', left: '-120px', top: '-80px', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 65%)', borderRadius: '50%' }} />
+                <div style={{ position: 'absolute', right: '-60px', top: '40%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(139,92,246,0.14) 0%, transparent 65%)', borderRadius: '50%' }} />
+                <div style={{ position: 'absolute', bottom: '-100px', left: '35%', width: '380px', height: '380px', background: 'radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 65%)', borderRadius: '50%' }} />
             </div>
 
-            <div className="relative mx-auto min-h-screen max-w-[1360px] xl:grid xl:grid-cols-[minmax(0,1.06fr)_minmax(0,0.94fr)]">
-                <section className="relative hidden min-w-0 xl:block">
-                    <div className="absolute inset-6 overflow-hidden rounded-[32px] border border-white/10 shadow-[0_28px_70px_rgba(15,23,42,0.34)]">
-                        <div className="absolute inset-0 bg-[linear-gradient(145deg,#0f172d_0%,#1e2a4a_46%,#27365b_100%)]" />
-                        <div className="absolute inset-0 opacity-[0.14]" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.24) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.24) 1px, transparent 1px)', backgroundSize: '34px 34px' }} />
-                        <div className="absolute -right-20 top-[-110px] h-[300px] w-[300px] rounded-full bg-[radial-gradient(circle,_rgba(212,160,23,0.52)_0%,_rgba(212,160,23,0)_72%)]" />
-                        <div className="absolute left-0 top-16 h-[220px] w-[220px] rounded-full bg-[radial-gradient(circle,_rgba(132,156,206,0.2)_0%,_rgba(132,156,206,0)_72%)]" />
+            <div className="relative z-10 flex flex-1 min-h-screen">
 
-                        <div className="relative z-10 flex h-full w-full flex-col justify-between p-12 text-[#ecf2ff]">
-                            <div className="max-w-[32rem]">
-                                <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-2xl border border-[#d4a017]/80 bg-[#d4a017]/12">
-                                    <GraduationCap size={36} className="text-[#f4ca5b]" />
-                                </div>
-                                <h1 className="font-serif text-5xl leading-tight text-white">CTRG Portal</h1>
-                                <p className="mt-4 max-w-[28rem] text-base leading-relaxed text-[#c9d5ef]">
-                                    Two-stage research grant evaluation platform for NSU.
-                                    Track submissions, reviews, revisions, and final approvals in one secured workflow.
-                                </p>
-                                <div className="mt-8 inline-flex max-w-full items-center rounded-full border border-[#d4a017]/60 bg-[#d4a017]/14 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#f7d98a]">
-                                    School of Engineering and Physical Sciences
-                                </div>
+                {/* ── Left Panel (branding) ── */}
+                <div className="hidden xl:flex xl:flex-col xl:w-[52%] relative overflow-hidden"
+                     style={{ background: 'linear-gradient(145deg, #060c1c 0%, #0c1428 50%, #111b38 100%)' }}>
+                    {/* Grid texture */}
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)', backgroundSize: '32px 32px', pointerEvents: 'none' }} />
+                    {/* Glow accents */}
+                    <div style={{ position: 'absolute', right: '-80px', top: '0', width: '360px', height: '360px', background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 65%)', borderRadius: '50%' }} />
+                    <div style={{ position: 'absolute', left: '20%', bottom: '10%', width: '240px', height: '240px', background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 65%)', borderRadius: '50%' }} />
+
+                    <div className="relative z-10 flex flex-col h-full p-12 justify-between">
+                        {/* Logo */}
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl"
+                                 style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', boxShadow: '0 0 24px rgba(99,102,241,0.5)' }}>
+                                <GraduationCap className="h-5 w-5 text-white" />
                             </div>
-
-                            <div className="grid max-w-[32rem] gap-4">
-                                <div className="rounded-2xl border border-white/20 bg-white/6 p-4 backdrop-blur-sm">
-                                    <div className="flex items-center gap-3">
-                                        <Shield size={18} className="text-[#f4ca5b]" />
-                                        <p className="text-sm font-semibold text-white">Secure Role-Based Access</p>
-                                    </div>
-                                    <p className="mt-2 text-xs text-[#ced8ee]">SRC Chair and Reviewer workflows are isolated and auditable.</p>
-                                </div>
-                                <div className="rounded-2xl border border-white/20 bg-white/6 p-4 backdrop-blur-sm">
-                                    <div className="flex items-center gap-3">
-                                        <BarChart3 size={18} className="text-[#f4ca5b]" />
-                                        <p className="text-sm font-semibold text-white">Decision Intelligence</p>
-                                    </div>
-                                    <p className="mt-2 text-xs text-[#ced8ee]">Stage-wise scoring and comments remain visible through final decisioning.</p>
-                                </div>
-                                <div className="rounded-2xl border border-white/20 bg-white/6 p-4 backdrop-blur-sm">
-                                    <div className="flex items-center gap-3">
-                                        <Users size={18} className="text-[#f4ca5b]" />
-                                        <p className="text-sm font-semibold text-white">Collaborative Review Ops</p>
-                                    </div>
-                                    <p className="mt-2 text-xs text-[#ced8ee]">Assignments, reminders, revisions, and reporting in one lifecycle.</p>
-                                </div>
+                            <div>
+                                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-400">North South University</p>
+                                <p className="text-sm font-semibold text-white">CTRG Grant Portal</p>
                             </div>
                         </div>
-                    </div>
-                </section>
 
-                <section className="relative flex min-w-0 items-center justify-center px-5 py-8 sm:px-8 sm:py-10 lg:px-10 xl:px-12">
-                    <div className="w-full max-w-[520px] animate-fade-in">
-                        <div className="mb-6 rounded-2xl border border-[#1e2a4a]/20 bg-[linear-gradient(110deg,_#1e2a4a_0%,_#27365b_100%)] px-5 py-4 text-white shadow-[0_20px_48px_rgba(30,42,74,0.28)] xl:hidden">
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d4a017]/16">
-                                    <GraduationCap size={20} className="text-[#f6d47a]" />
-                                </div>
-                                <div>
-                                    <h1 className="font-serif text-2xl leading-none">CTRG</h1>
-                                    <p className="mt-1 text-xs text-[#c8d4ee]">North South University</p>
-                                </div>
+                        {/* Hero text */}
+                        <div className="max-w-md">
+                            <div className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5"
+                                 style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}>
+                                <Sparkles className="h-3.5 w-3.5 text-brand-400" />
+                                <span className="text-xs font-semibold text-brand-300 uppercase tracking-widest">Two-Stage Review System</span>
                             </div>
-                            <p className="mt-3 max-w-[24rem] text-sm leading-6 text-[#d8e2f5]">
-                                Two-stage research grant review, revisions, and final approval in one controlled workflow.
+
+                            <h1 className="text-5xl font-extrabold leading-tight mb-4"
+                                style={{ color: '#f1f5f9', letterSpacing: '-0.03em' }}>
+                                Research Grant{' '}
+                                <span className="text-gradient">Management</span>
+                            </h1>
+                            <p className="text-base leading-relaxed" style={{ color: 'rgba(148,163,184,0.9)' }}>
+                                Track submissions, peer reviews, revisions, and final approvals across the complete grant lifecycle — in one controlled workflow.
                             </p>
+
+                            {/* Feature cards */}
+                            <div className="mt-8 space-y-3">
+                                {features.map((f) => (
+                                    <div key={f.title} className="flex items-start gap-4 rounded-2xl p-4"
+                                         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
+                                             style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)' }}>
+                                            <f.icon className="h-4.5 w-4.5 text-brand-400" size={18} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-200 mb-0.5">{f.title}</p>
+                                            <p className="text-xs leading-relaxed" style={{ color: 'rgba(148,163,184,0.75)' }}>{f.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="rounded-[28px] border border-[#1e2a4a]/12 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl sm:p-8">
-                            <div className="mb-8">
-                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7a8aa8]">Welcome back</p>
-                                <h2 className="font-serif text-4xl leading-tight text-[#1b2747]">Sign in to continue</h2>
-                                <p className="mt-2 text-sm text-[#5f6e8b]">Use your institutional account credentials.</p>
+                        {/* Footer */}
+                        <p className="text-xs" style={{ color: 'rgba(100,116,139,0.7)' }}>
+                            © {new Date().getFullYear()} North South University · CTRG · SEPS
+                        </p>
+                    </div>
+                </div>
+
+                {/* ── Right Panel (form) ── */}
+                <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-10">
+                    <div className="w-full max-w-[420px] animate-slide-up">
+
+                        {/* Mobile logo */}
+                        <div className="mb-6 flex items-center gap-3 xl:hidden">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl"
+                                 style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 0 16px rgba(99,102,241,0.45)' }}>
+                                <GraduationCap className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-brand-400">NSU · CTRG</p>
+                                <p className="text-sm font-semibold text-slate-200">Grant Portal</p>
+                            </div>
+                        </div>
+
+                        {/* Card */}
+                        <div className="rounded-3xl p-7 sm:p-8"
+                             style={{ background: 'rgba(13,21,41,0.8)', border: '1px solid rgba(255,255,255,0.09)', backdropFilter: 'blur(24px)', boxShadow: '0 24px 60px rgba(0,0,0,0.55)' }}>
+
+                            <div className="mb-7">
+                                <p className="section-label mb-1.5">Welcome back</p>
+                                <h2 className="text-2xl font-bold text-slate-100" style={{ letterSpacing: '-0.025em' }}>
+                                    Sign in to continue
+                                </h2>
+                                <p className="mt-1.5 text-sm" style={{ color: 'rgba(100,116,139,0.9)' }}>
+                                    Use your institutional account credentials.
+                                </p>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                {errorMessage && (
-                                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-                                        {errorMessage}
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                {error && (
+                                    <div className="rounded-xl px-4 py-3 text-sm font-medium"
+                                         style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>
+                                        {error}
                                     </div>
                                 )}
 
+                                {/* Email */}
                                 <div>
-                                    <label className="mb-2 block text-sm font-semibold text-[#384867]">Email</label>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-400">Email</label>
                                     <div className="relative">
-                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} />
+                                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600" />
                                         <input
                                             type="email"
+                                            autoComplete="email"
                                             placeholder="your.email@nsu.edu"
-                                            className="input has-icon-left rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white"
+                                            className="input has-icon-left"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             required
@@ -167,56 +171,70 @@ const Login: React.FC = () => {
                                     </div>
                                 </div>
 
+                                {/* Password */}
                                 <div>
-                                    <label className="mb-2 block text-sm font-semibold text-[#384867]">Password</label>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-400">Password</label>
                                     <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} />
+                                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600" />
                                         <input
-                                            type={showPassword ? 'text' : 'password'}
+                                            type={showPw ? 'text' : 'password'}
+                                            autoComplete="current-password"
                                             placeholder="Enter your password"
-                                            className="input has-icon-left has-icon-right rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white"
+                                            className="input has-icon-left has-icon-right"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             required
                                         />
                                         <button
                                             type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7b89a6] transition-colors hover:text-[#1e2a4a]"
+                                            onClick={() => setShowPw(!showPw)}
+                                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 transition-colors hover:text-slate-300"
                                         >
-                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-end text-sm">
-                                    <span className="text-sm text-[#425274]">
-                                        Forgot password? Contact your administrator.
-                                    </span>
-                                </div>
+                                <p className="text-right text-sm" style={{ color: 'rgba(100,116,139,0.8)' }}>
+                                    Forgot password? Contact your administrator.
+                                </p>
 
                                 <button
                                     type="submit"
-                                    disabled={isSubmitting}
-                                    className="btn w-full rounded-xl border border-[#b8850c] bg-[linear-gradient(140deg,#d4a017_0%,#f1c350_100%)] py-3 text-base font-bold text-[#1b2747] shadow-[0_14px_26px_rgba(184,133,12,0.34)] transition-all duration-200 hover:translate-y-[-1px] hover:shadow-[0_18px_30px_rgba(184,133,12,0.36)] disabled:cursor-not-allowed disabled:opacity-70"
+                                    disabled={loading}
+                                    className="btn btn-primary w-full btn-lg"
                                 >
-                                    {isSubmitting ? 'Signing in...' : 'Sign In'}
+                                    {loading ? (
+                                        <span className="flex items-center gap-2">
+                                            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                                <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                                                <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                            </svg>
+                                            Signing in...
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-2">
+                                            Sign In
+                                            <ArrowRight className="h-4 w-4" />
+                                        </span>
+                                    )}
                                 </button>
 
-                                <div className="border-t border-[#e7edf5] pt-5 text-center text-sm text-[#5f6e8b]">
-                                    <p>Reviewer registration is by invitation only. Contact the SRC Chair for access.</p>
+                                <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '16px' }}>
+                                    <p className="text-center text-sm" style={{ color: 'rgba(100,116,139,0.75)' }}>
+                                        Reviewer registration is by invitation only. Contact the SRC Chair for access.
+                                    </p>
+                                    <p className="mt-2 text-center text-sm" style={{ color: 'rgba(100,116,139,0.75)' }}>
+                                        Need help?{' '}
+                                        <a href="mailto:src@nsu.edu" className="font-semibold text-brand-400 hover:text-brand-300 transition-colors">
+                                            src@nsu.edu
+                                        </a>
+                                    </p>
                                 </div>
-
-                                <p className="text-center text-sm text-[#5f6e8b]">
-                                    Need help?{' '}
-                                    <a href="mailto:src@nsu.edu" className="font-semibold text-[#1e2a4a] transition-colors hover:text-[#b8850c]">
-                                        Contact src@nsu.edu
-                                    </a>
-                                </p>
                             </form>
                         </div>
                     </div>
-                </section>
+                </div>
             </div>
         </div>
     );

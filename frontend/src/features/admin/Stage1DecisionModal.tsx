@@ -99,9 +99,9 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
     };
 
     const getScoreColor = (score: number) => {
-        if (score >= 80) return 'text-green-600';
-        if (score >= 60) return 'text-yellow-600';
-        return 'text-red-600';
+        if (score >= 80) return 'text-emerald-400';
+        if (score >= 60) return 'text-amber-400';
+        return 'text-red-400';
     };
 
     const scoreFields = [
@@ -129,7 +129,7 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                                 {proposal.proposal_code} · {proposal.title}
                             </p>
                         </div>
-                        <button onClick={onClose} className="rounded-full border border-white/20 bg-white/10 p-2 text-white/80 hover:bg-white/20 hover:text-white">
+                        <button onClick={onClose} className="rounded-full border border-white/20 /10 p-2 text-white/80 hover:/20 hover:text-white">
                             <X size={20} />
                         </button>
                     </div>
@@ -144,7 +144,7 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                     )}
 
                     <div className="mb-6 grid gap-4 xl:grid-cols-[1.1fr_1.9fr]">
-                        <div className="rounded-[24px] border border-[#ddd7cb] bg-white p-5 shadow-[0_16px_32px_rgba(15,23,42,0.08)]">
+                        <div className="rounded-[24px] border border-[#ddd7cb]  p-5 shadow-[0_16px_32px_rgba(15,23,42,0.08)]">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f4ead1] text-[#9a6c06]">
                                     <Scale size={20} />
@@ -171,7 +171,7 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                             </div>
                         </div>
 
-                        <div className="rounded-[24px] border border-[#ddd7cb] bg-white p-5 shadow-[0_16px_32px_rgba(15,23,42,0.08)]">
+                        <div className="rounded-[24px] border border-[#ddd7cb]  p-5 shadow-[0_16px_32px_rgba(15,23,42,0.08)]">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e8eef8] text-[#314c7d]">
                                     <MessageSquareQuote size={20} />
@@ -198,8 +198,8 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                                     >
                                         <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
                                             <div>
-                                                <span className="text-sm font-medium text-gray-900">Reviewer {idx + 1}</span>
-                                                <span className="ml-2 text-sm text-gray-500">({review.reviewer_name})</span>
+                                                <span className="text-sm font-medium text-slate-200">Reviewer {idx + 1}</span>
+                                                <span className="ml-2 text-sm text-slate-500">({review.reviewer_name})</span>
                                                 {review.review_validity_display && (
                                                     <span className={`ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${review.review_validity === 'REJECTED'
                                                         ? 'bg-red-100 text-red-700'
@@ -218,7 +218,7 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                                                         type="button"
                                                         onClick={() => handleReviewValidity(review, 'INCLUDED')}
                                                         disabled={reviewActionId === review.id}
-                                                        className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                                        className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-slate-400 hover: disabled:opacity-50"
                                                     >
                                                         Reinstate Review
                                                     </button>
@@ -237,26 +237,26 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
 
                                         <div className="mb-4 grid gap-2 text-xs md:grid-cols-2 xl:grid-cols-4">
                                             {scoreFields.map((field) => (
-                                                <div key={field.key} className="rounded-2xl bg-white p-3 text-center">
+                                                <div key={field.key} className="rounded-2xl  p-3 text-center">
                                                     <div className="font-medium">{(review.stage1_score as any)?.[field.key]}/{field.max}</div>
-                                                    <div className="text-gray-500">{field.label}</div>
+                                                    <div className="text-slate-500">{field.label}</div>
                                                 </div>
                                             ))}
                                         </div>
 
                                         {review.stage1_score?.narrative_comments && (
-                                            <div className="rounded-2xl border border-[#ece7db] bg-white p-3 text-sm text-gray-600">
+                                            <div className="rounded-2xl border border-[#ece7db]  p-3 text-sm text-slate-500">
                                                 <FileText size={14} className="mr-1 inline" />
                                                 {review.stage1_score.narrative_comments}
                                             </div>
                                         )}
                                         {review.stage1_score?.detailed_recommendation && (
-                                            <div className="mt-3 rounded-2xl border border-[#ece7db] bg-white p-3 text-sm text-gray-600">
+                                            <div className="mt-3 rounded-2xl border border-[#ece7db]  p-3 text-sm text-slate-500">
                                                 <strong>Detailed recommendation:</strong> {review.stage1_score.detailed_recommendation}
                                             </div>
                                         )}
                                         {review.review_validity === 'REJECTED' && review.chair_rejection_reason && (
-                                            <div className="mt-3 rounded-2xl border border-red-200 bg-white p-3 text-sm text-red-700">
+                                            <div className="mt-3 rounded-2xl border border-red-200  p-3 text-sm text-red-700">
                                                 <strong>Chair rejection reason:</strong> {review.chair_rejection_reason}
                                             </div>
                                         )}
@@ -269,7 +269,7 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
 
                     {/* Decision Selection */}
                     <form onSubmit={handleSubmit}>
-                        <div className="mb-6 rounded-[24px] border border-[#ddd7cb] bg-white p-5 shadow-[0_16px_32px_rgba(15,23,42,0.08)]">
+                        <div className="mb-6 rounded-[24px] border border-[#ddd7cb]  p-5 shadow-[0_16px_32px_rgba(15,23,42,0.08)]">
                             <div className="mb-4 flex items-center gap-3">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e9f1eb] text-[#255c2c]">
                                     <ShieldCheck size={20} />
@@ -288,9 +288,9 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                                         : 'border-[#ddd7cb] bg-[#fbfaf7] hover:border-green-300'
                                         }`}
                                 >
-                                    <CheckCircle size={24} className={`mx-auto mb-2 ${decision === 'ACCEPT' ? 'text-green-600' : 'text-gray-400'}`} />
-                                    <div className="font-medium text-gray-900">Accept</div>
-                                    <div className="text-xs text-gray-500">Editorial approval without revisions</div>
+                                    <CheckCircle size={24} className={`mx-auto mb-2 ${decision === 'ACCEPT' ? 'text-emerald-400' : 'text-slate-600'}`} />
+                                    <div className="font-medium text-slate-200">Accept</div>
+                                    <div className="text-xs text-slate-500">Editorial approval without revisions</div>
                                 </button>
 
                                 <button
@@ -301,9 +301,9 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                                         : 'border-[#ddd7cb] bg-[#fbfaf7] hover:border-yellow-300'
                                         }`}
                                 >
-                                    <AlertTriangle size={24} className={`mx-auto mb-2 ${decision === 'TENTATIVELY_ACCEPT' ? 'text-yellow-600' : 'text-gray-400'}`} />
-                                    <div className="font-medium text-gray-900">Tentative Accept</div>
-                                    <div className="text-xs text-gray-500">Proceed with revision request</div>
+                                    <AlertTriangle size={24} className={`mx-auto mb-2 ${decision === 'TENTATIVELY_ACCEPT' ? 'text-amber-400' : 'text-slate-600'}`} />
+                                    <div className="font-medium text-slate-200">Tentative Accept</div>
+                                    <div className="text-xs text-slate-500">Proceed with revision request</div>
                                 </button>
 
                                 <button
@@ -314,16 +314,16 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                                         : 'border-[#ddd7cb] bg-[#fbfaf7] hover:border-red-300'
                                         }`}
                                 >
-                                    <XCircle size={24} className={`mx-auto mb-2 ${decision === 'REJECT' ? 'text-red-600' : 'text-gray-400'}`} />
-                                    <div className="font-medium text-gray-900">Reject</div>
-                                    <div className="text-xs text-gray-500">Editorial decline at Stage 1</div>
+                                    <XCircle size={24} className={`mx-auto mb-2 ${decision === 'REJECT' ? 'text-red-400' : 'text-slate-600'}`} />
+                                    <div className="font-medium text-slate-200">Reject</div>
+                                    <div className="text-xs text-slate-500">Editorial decline at Stage 1</div>
                                 </button>
                             </div>
                         </div>
 
                         {/* Chair Comments */}
-                        <div className="mb-6 rounded-[24px] border border-[#ddd7cb] bg-white p-5 shadow-[0_16px_32px_rgba(15,23,42,0.08)]">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <div className="mb-6 rounded-[24px] border border-[#ddd7cb]  p-5 shadow-[0_16px_32px_rgba(15,23,42,0.08)]">
+                            <label className="block text-sm font-medium text-slate-400 mb-2">
                                 Editorial Comments {decision === 'TENTATIVELY_ACCEPT' && <span className="text-red-500">*</span>}
                             </label>
                             <p className="mb-3 text-sm text-slate-500">
@@ -346,7 +346,7 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-xl border border-[#cfc7b8] bg-white px-4 py-2 text-gray-700 hover:bg-[#faf8f3]"
+                        className="rounded-xl border border-[#cfc7b8]  px-4 py-2 text-slate-400 hover:bg-[#faf8f3]"
                     >
                         Cancel
                     </button>

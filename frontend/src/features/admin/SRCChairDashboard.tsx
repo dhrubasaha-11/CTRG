@@ -1,37 +1,20 @@
-/**
- * SRC Chair Dashboard Component.
- *
- * The primary landing page for the SRC Chair role. Displays:
- * - Summary stat cards (total proposals, pending reviews, awaiting decision/revision)
- * - Proposal status distribution chart
- * - Quick-action links to management pages
- * - Recent activity timeline
- * - Recent proposals list with status badges
- * - Grant cycle progress indicator
- *
- * Data is loaded from two parallel API calls (stats + proposals) on mount,
- * with a manual refresh button. On API failure, the dashboard degrades
- * gracefully by showing zeroed-out stats rather than an error screen.
- */
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
     FileText, Users, Clock, AlertTriangle,
     Calendar, Download, ChevronRight, RefreshCw,
-    BarChart3
+    BarChart3, TrendingUp, CheckCircle2
 } from 'lucide-react';
 import { dashboardApi, proposalApi, cycleApi, type Proposal, type GrantCycle } from '../../services/api';
 import { ActivityTimeline } from '../../components/dashboard/ActivityTimeline';
 import { CycleProgress } from '../../components/dashboard/CycleProgress';
 import { StatusChart } from '../../components/dashboard/StatusChart';
 
-/** Matches the backend DashboardStatsSerializer shape. */
 interface DashboardStats {
     total_proposals: number;
     pending_reviews: number;
     awaiting_decision: number;
     awaiting_revision: number;
-    /** Maps status strings (e.g., "SUBMITTED") to their counts */
     status_breakdown: Record<string, number>;
 }
 
@@ -43,21 +26,85 @@ interface Activity {
     user?: string;
 }
 
-const SRCChairDashboard: React.FC = () => {
-    const [stats, setStats] = useState<DashboardStats | null>(null);
-    const [recentProposals, setRecentProposals] = useState<Proposal[]>([]);
-    const [activities, setActivities] = useState<Activity[]>([]);
-    const [activeCycle, setActiveCycle] = useState<GrantCycle | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
+const statCards = (stats: DashboardStats | null) => [
+    {
+        label: 'Total Proposals',
+        value: stats?.total_proposals ?? 0,
+        icon: FileText,
+        gradient: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(99,102,241,0.05))',
+        iconBg: 'rgba(99,102,241,0.2)',
+        iconColor: '#818cf8',
+        glow: 'rgba(99,102,241,0.3)',
+        trend: '+12%',
+    },
+    {
+        label: 'Pending Reviews',
+        value: stats?.pending_reviews ?? 0,
+        icon: Clock,
+        gradient: 'linear-gradient(135deg, rgba(245,158,11,0.18), rgba(245,158,11,0.04))',
+        iconBg: 'rgba(245,158,11,0.18)',
+        iconColor: '#fcd34d',
+        glow: 'rgba(245,158,11,0.3)',
+        trend: '',
+    },
+    {
+        label: 'Awaiting Decision',
+        value: stats?.awaiting_decision ?? 0,
+        icon: AlertTriangle,
+        gradient: 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(139,92,246,0.04))',
+        iconBg: 'rgba(139,92,246,0.18)',
+        iconColor: '#c4b5fd',
+        glow: 'rgba(139,92,246,0.3)',
+        trend: '',
+    },
+    {
+        label: 'Awaiting Revision',
+        value: stats?.awaiting_revision ?? 0,
+        icon: RefreshCw,
+        gradient: 'linear-gradient(135deg, rgba(249,115,22,0.18), rgba(249,115,22,0.04))',
+        iconBg: 'rgba(249,115,22,0.18)',
+        iconColor: '#fdba74',
+        glow: 'rgba(249,115,22,0.3)',
+        trend: '',
+    },
+];
 
-    useEffect(() => {
-        loadDashboard();
-    }, []);
+const quickActions = [
+    { label: 'Manage Grant Cycles', icon: Calendar,  path: '/admin/cycles',    color: '#6366f1' },
+    { label: 'Manage Reviewers',    icon: Users,      path: '/admin/reviewers', color: '#8b5cf6' },
+    { label: 'View All Proposals',  icon: FileText,   path: '/admin/proposals', color: '#06b6d4' },
+    { label: 'Generate Reports',    icon: Download,   path: '/admin/reports',   color: '#10b981' },
+];
+
+const statusBadgeClass = (status: string) => {
+    const map: Record<string, string> = {
+        SUBMITTED:                  'badge-brand',
+        UNDER_STAGE_1_REVIEW:       'badge-violet',
+        STAGE_1_REJECTED:           'badge-red',
+        ACCEPTED_NO_CORRECTIONS:    'badge-green',
+        TENTATIVELY_ACCEPTED:       'badge-amber',
+        REVISION_REQUESTED:         'badge-orange',
+        REVISED_PROPOSAL_SUBMITTED: 'badge-violet',
+        UNDER_STAGE_2_REVIEW:       'badge-cyan',
+        FINAL_ACCEPTED:             'badge-green',
+        FINAL_REJECTED:             'badge-red',
+    };
+    return map[status] || 'badge-slate';
+};
+
+const SRCChairDashboard: React.FC = () => {
+    const [stats, setStats]                   = useState<DashboardStats | null>(null);
+    const [recentProposals, setRecentProposals] = useState<Proposal[]>([]);
+    const [activities, setActivities]          = useState<Activity[]>([]);
+    const [activeCycle, setActiveCycle]        = useState<GrantCycle | null>(null);
+    const [loading, setLoading]                = useState(true);
+    const [refreshing, setRefreshing]          = useState(false);
+
+    useEffect(() => { loadDashboard(); }, []);
 
     const loadDashboard = async () => {
+        setLoading(true);
         try {
-            setLoading(true);
             const [statsRes, proposalsRes, activitiesRes, cyclesRes] = await Promise.all([
                 dashboardApi.getSrcChairStats(),
                 proposalApi.getAll(),
@@ -65,228 +112,216 @@ const SRCChairDashboard: React.FC = () => {
                 cycleApi.getActive().catch(() => ({ data: [] })),
             ]);
             setStats(statsRes.data);
-            setRecentProposals(Array.isArray(proposalsRes.data) ? proposalsRes.data.slice(0, 5) : []);
+            setRecentProposals(Array.isArray(proposalsRes.data) ? proposalsRes.data.slice(0, 6) : []);
             setActivities(Array.isArray(activitiesRes.data) ? activitiesRes.data : []);
             const cycles = Array.isArray(cyclesRes.data) ? cyclesRes.data : [];
-            setActiveCycle(cycles.length > 0 ? cycles[0] : null);
+            setActiveCycle(cycles[0] ?? null);
         } catch {
-            setStats({
-                total_proposals: 0,
-                pending_reviews: 0,
-                awaiting_decision: 0,
-                awaiting_revision: 0,
-                status_breakdown: {}
-            });
-            setRecentProposals([]);
-            setActivities([]);
+            setStats({ total_proposals: 0, pending_reviews: 0, awaiting_decision: 0, awaiting_revision: 0, status_breakdown: {} });
         } finally {
             setLoading(false);
         }
     };
 
-    const handleRefresh = async () => {
-        setRefreshing(true);
-        await loadDashboard();
-        setRefreshing(false);
-    };
-
-    // Dashboard stat cards — each maps to a key from DashboardStats.
-    // cssColor is used for the decorative background blur; bgColor for Tailwind classes.
-    const statusCards = [
-        { label: 'Total Proposals', value: stats?.total_proposals || 0, icon: FileText, bgColor: 'bg-blue-500', cssColor: '#3b82f6' },
-        { label: 'Pending Reviews', value: stats?.pending_reviews || 0, icon: Clock, bgColor: 'bg-yellow-500', cssColor: '#eab308' },
-        { label: 'Awaiting Decision', value: stats?.awaiting_decision || 0, icon: AlertTriangle, bgColor: 'bg-purple-500', cssColor: '#a855f7' },
-        { label: 'Tentative Awaiting Revision', value: stats?.awaiting_revision || 0, icon: RefreshCw, bgColor: 'bg-orange-500', cssColor: '#f97316' },
-    ];
-
-    const quickActions = [
-        { label: 'Manage Grant Cycles', icon: Calendar, path: '/admin/cycles', color: 'bg-indigo-600' },
-        { label: 'Manage Reviewers', icon: Users, path: '/admin/reviewers', color: 'bg-teal-600' },
-        { label: 'View All Proposals', icon: FileText, path: '/admin/proposals', color: 'bg-blue-600' },
-        { label: 'Generate Reports', icon: Download, path: '/admin/reports', color: 'bg-purple-600' },
-    ];
-
-    /**
-     * Map proposal status enum values to Tailwind CSS badge classes.
-     * Colors follow a semantic convention: blue=in-progress, green=accepted,
-     * red=rejected, orange/yellow=needs-attention. Falls back to gray for
-     * any unrecognized status (e.g., future status values).
-     */
-    const getStatusColor = (status: string) => {
-        const colors: Record<string, string> = {
-            SUBMITTED: 'bg-blue-100 text-blue-800',
-            UNDER_STAGE_1_REVIEW: 'bg-indigo-100 text-indigo-800',
-            STAGE_1_REJECTED: 'bg-red-100 text-red-800',
-            ACCEPTED_NO_CORRECTIONS: 'bg-green-100 text-green-800',
-            TENTATIVELY_ACCEPTED: 'bg-yellow-100 text-yellow-800',
-            REVISION_REQUESTED: 'bg-orange-100 text-orange-800',
-            REVISED_PROPOSAL_SUBMITTED: 'bg-violet-100 text-violet-800',
-            UNDER_STAGE_2_REVIEW: 'bg-cyan-100 text-cyan-800',
-            FINAL_ACCEPTED: 'bg-green-100 text-green-800',
-            FINAL_REJECTED: 'bg-red-100 text-red-800',
-        };
-        return colors[status] || 'bg-gray-100 text-gray-800';
-    };
+    const handleRefresh = async () => { setRefreshing(true); await loadDashboard(); setRefreshing(false); };
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="flex h-72 items-center justify-center">
+                <div className="spinner" />
             </div>
         );
     }
 
+    const cards = statCards(stats);
+
     return (
         <div className="space-y-6">
-            {/* Hero Welcome Section */}
-            <div className="relative bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 rounded-2xl p-8 text-white overflow-hidden">
-                {/* Background pattern */}
-                <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-0 left-0 w-64 h-64 bg-blue-500 rounded-full blur-3xl"></div>
-                    <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-500 rounded-full blur-3xl"></div>
-                </div>
 
-                <div className="relative z-10">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h1 className="text-3xl font-bold">Welcome back, SRC Chair</h1>
-                            <p className="text-blue-200 mt-2">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+            {/* ── Hero Banner ── */}
+            <div className="relative overflow-hidden rounded-3xl p-7"
+                 style={{ background: 'linear-gradient(135deg, #0c1428 0%, #0f1a35 50%, #0b1225 100%)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                {/* Glow blobs */}
+                <div style={{ position: 'absolute', left: '-40px', top: '-40px', width: '260px', height: '260px', background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 65%)', borderRadius: '50%', pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', right: '5%', bottom: '-30px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 65%)', borderRadius: '50%', pointerEvents: 'none' }} />
+
+                <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <div className="mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1"
+                             style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}>
+                            <CheckCircle2 className="h-3.5 w-3.5 text-brand-400" />
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-brand-300">
+                                {activeCycle ? `Active: ${activeCycle.name}` : 'No Active Cycle'}
+                            </span>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-                                <span className="text-sm font-medium">
-                                    {activeCycle ? `Active Cycle: ${activeCycle.name}` : 'No Active Cycle'}
+                        <h1 className="text-2xl font-bold text-white" style={{ letterSpacing: '-0.02em' }}>
+                            Welcome back, SRC Chair
+                        </h1>
+                        <p className="mt-1 text-sm text-slate-400">
+                            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                        </p>
+                        {(stats?.awaiting_decision ?? 0) > 0 && (
+                            <div className="mt-3 inline-flex items-center gap-2 rounded-lg px-3 py-1.5"
+                                 style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)' }}>
+                                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                                <span className="text-xs font-semibold text-amber-300">
+                                    {stats!.awaiting_decision} proposal{stats!.awaiting_decision > 1 ? 's' : ''} need your attention
                                 </span>
                             </div>
-                            <button
-                                onClick={handleRefresh}
-                                disabled={refreshing}
-                                className="flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/20 transition-colors"
-                            >
-                                <RefreshCw size={18} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                                Refresh
-                            </button>
-                        </div>
+                        )}
                     </div>
 
-                    <div className="mt-4 flex items-center gap-2 bg-yellow-500/20 backdrop-blur-sm px-4 py-2 rounded-lg inline-flex">
-                        <AlertTriangle size={18} />
-                        <span className="text-sm font-medium">{stats?.awaiting_decision || 0} proposals need your attention</span>
-                    </div>
+                    <button
+                        onClick={handleRefresh}
+                        disabled={refreshing}
+                        className="btn btn-secondary flex items-center gap-2"
+                    >
+                        <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </button>
                 </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {statusCards.map((card, idx) => (
-                    <div key={idx} className="relative bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-lg hover:scale-[1.02] transition-all overflow-hidden">
-                        {/* Decorative background */}
-                        <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
-                            <div className="absolute top-0 right-0 w-20 h-20 rounded-full blur-2xl" style={{ backgroundColor: card.cssColor }} />
-                        </div>
-
-                        {/* Left accent bar */}
-                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${card.bgColor}`} />
-
-                        <div className="relative z-10 flex items-center justify-between">
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-500">{card.label}</p>
-                                <p className="text-4xl font-bold text-gray-900 mt-2">{card.value}</p>
+            {/* ── Stat Cards ── */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {cards.map((card) => (
+                    <div key={card.label} className="metric-card" style={{ background: card.gradient }}>
+                        {/* Glow */}
+                        <div style={{ position: 'absolute', top: 0, right: 0, width: '80px', height: '80px', background: `radial-gradient(circle, ${card.glow} 0%, transparent 70%)`, borderRadius: '50%', pointerEvents: 'none' }} />
+                        <div className="relative z-10 flex items-start justify-between gap-3">
+                            <div>
+                                <p className="section-label mb-2">{card.label}</p>
+                                <p className="text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.04em' }}>
+                                    {card.value}
+                                </p>
+                                {card.trend && (
+                                    <div className="mt-2 inline-flex items-center gap-1">
+                                        <TrendingUp className="h-3 w-3 text-emerald-400" />
+                                        <span className="text-xs font-semibold text-emerald-400">{card.trend}</span>
+                                    </div>
+                                )}
                             </div>
-                            <div className={`p-3 ${card.bgColor} rounded-lg`}>
-                                <card.icon size={24} className="text-white" />
+                            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl"
+                                 style={{ background: card.iconBg }}>
+                                <card.icon className="h-5 w-5" style={{ color: card.iconColor }} />
                             </div>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Two-Column Middle Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left: Status Chart (2/3 width) */}
-                <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-gray-900">Proposal Status Distribution</h2>
-                        <BarChart3 size={20} className="text-gray-400" />
+            {/* ── Middle: Chart + Quick Actions + Activity ── */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+
+                {/* Status Chart (2/3) */}
+                <div className="lg:col-span-2 card p-6">
+                    <div className="mb-5 flex items-center justify-between">
+                        <div>
+                            <h2 className="text-base font-semibold text-slate-200">Proposal Status Distribution</h2>
+                            <p className="mt-0.5 text-xs text-slate-500">Overview of all proposals across stages</p>
+                        </div>
+                        <BarChart3 className="h-5 w-5 text-slate-600" />
                     </div>
-                    <StatusChart data={stats?.status_breakdown || {}} />
+                    <StatusChart data={stats?.status_breakdown ?? {}} />
                 </div>
 
-                {/* Right: Actions & Timeline (1/3 width) */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h3>
-                    <div className="space-y-2 mb-6">
-                        {quickActions.map((action, idx) => (
-                            <Link
-                                key={idx}
-                                to={action.path}
-                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
-                            >
-                                <div className={`p-2 ${action.color} rounded-lg group-hover:scale-110 transition-transform`}>
-                                    <action.icon size={16} className="text-white" />
-                                </div>
-                                <span className="text-sm font-medium text-gray-700">{action.label}</span>
-                            </Link>
-                        ))}
+                {/* Quick Actions + Activity (1/3) */}
+                <div className="flex flex-col gap-5">
+
+                    {/* Quick Actions */}
+                    <div className="card p-5">
+                        <h3 className="section-label mb-3">Quick Actions</h3>
+                        <div className="space-y-1.5">
+                            {quickActions.map((action) => (
+                                <Link key={action.path} to={action.path}
+                                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-150 group"
+                                    style={{ border: '1px solid transparent' }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)', e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = '', e.currentTarget.style.borderColor = 'transparent')}>
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg"
+                                         style={{ background: `${action.color}20`, border: `1px solid ${action.color}30` }}>
+                                        <action.icon className="h-4 w-4" style={{ color: action.color }} />
+                                    </div>
+                                    <span className="text-sm font-medium text-slate-300 group-hover:text-slate-100 transition-colors">{action.label}</span>
+                                    <ChevronRight className="ml-auto h-4 w-4 text-slate-600 group-hover:text-slate-400 transition-colors" />
+                                </Link>
+                            ))}
+                        </div>
                     </div>
 
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3 mt-6 pt-6 border-t border-gray-200">Recent Activity</h3>
-                    <ActivityTimeline activities={activities.slice(0, 4)} />
+                    {/* Activity */}
+                    <div className="card p-5 flex-1">
+                        <h3 className="section-label mb-3">Recent Activity</h3>
+                        <ActivityTimeline activities={activities.slice(0, 5)} />
+                    </div>
                 </div>
             </div>
 
-            {/* Recent Proposals */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Recent Proposals</h2>
-                    <Link to="/admin/proposals" className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center">
-                        View All <ChevronRight size={16} />
+            {/* ── Recent Proposals ── */}
+            <div className="card p-6">
+                <div className="mb-5 flex items-center justify-between">
+                    <div>
+                        <h2 className="text-base font-semibold text-slate-200">Recent Proposals</h2>
+                        <p className="mt-0.5 text-xs text-slate-500">Latest submissions across all cycles</p>
+                    </div>
+                    <Link to="/admin/proposals" className="btn btn-ghost btn-sm flex items-center gap-1.5">
+                        View All <ChevronRight className="h-3.5 w-3.5" />
                     </Link>
                 </div>
-                <div className="space-y-3">
-                    {recentProposals.map((proposal) => (
-                        <div key={proposal.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                            {/* Status dot */}
-                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${proposal.status === 'FINAL_ACCEPTED' ? 'bg-green-500' :
-                                    proposal.status === 'FINAL_REJECTED' ? 'bg-red-500' :
-                                        proposal.status === 'REVISION_REQUESTED' ? 'bg-orange-500' :
-                                            'bg-blue-500'
-                                }`} />
 
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center">
-                                    <span className="text-sm font-medium text-gray-900 truncate">{proposal.proposal_code}</span>
-                                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(proposal.status)}`}>
-                                        {proposal.status_display || proposal.status.replace(/_/g, ' ')}
-                                    </span>
+                {recentProposals.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-slate-500">
+                        <FileText className="h-10 w-10 mb-3 opacity-30" />
+                        <p className="text-sm">No proposals yet</p>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {recentProposals.map((p) => (
+                            <div key={p.id} className="flex items-center gap-4 rounded-xl px-4 py-3 transition-all duration-150"
+                                 style={{ border: '1px solid rgba(255,255,255,0.05)' }}
+                                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                                 onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                                        <span className="text-sm font-semibold text-slate-200">{p.proposal_code}</span>
+                                        <span className={`badge ${statusBadgeClass(p.status)}`}>
+                                            {p.status_display ?? p.status.replace(/_/g, ' ')}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-slate-400 truncate">{p.title}</p>
+                                    <p className="text-xs text-slate-600 mt-0.5">{p.pi_name}</p>
                                 </div>
-                                <p className="text-sm text-gray-500 truncate">{proposal.title}</p>
-                                <p className="text-xs text-gray-400">{proposal.pi_name}</p>
+                                <Link to={`/admin/proposals/${p.id}`} className="text-slate-600 hover:text-brand-400 transition-colors">
+                                    <ChevronRight className="h-5 w-5" />
+                                </Link>
                             </div>
-                            <Link to={`/admin/proposals/${proposal.id}`} className="ml-4 text-gray-400 hover:text-blue-600">
-                                <ChevronRight size={20} />
-                            </Link>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
-            {/* Cycle Progress Footer */}
+            {/* ── Cycle Progress ── */}
             {activeCycle && (
                 <CycleProgress
                     currentStage={
-                        (stats?.status_breakdown?.UNDER_STAGE_2_REVIEW || 0) > 0 ? 'stage2' :
-                        (stats?.awaiting_revision || 0) > 0 ? 'revision' : 'stage1'
+                        (stats?.status_breakdown?.UNDER_STAGE_2_REVIEW ?? 0) > 0 ? 'stage2' :
+                        (stats?.awaiting_revision ?? 0) > 0 ? 'revision' : 'stage1'
                     }
-                    stage1Complete={stats?.total_proposals ? Math.round(((stats.status_breakdown?.STAGE_1_REJECTED || 0) + (stats.status_breakdown?.ACCEPTED_NO_CORRECTIONS || 0) + (stats.status_breakdown?.TENTATIVELY_ACCEPTED || 0) + (stats.status_breakdown?.FINAL_ACCEPTED || 0) + (stats.status_breakdown?.FINAL_REJECTED || 0)) / stats.total_proposals * 100) : 0}
-                    stage2Complete={stats?.total_proposals ? Math.round(((stats.status_breakdown?.FINAL_ACCEPTED || 0) + (stats.status_breakdown?.FINAL_REJECTED || 0)) / stats.total_proposals * 100) : 0}
-                    stage1Date={activeCycle.stage1_review_start_date && activeCycle.stage1_review_end_date ? `${activeCycle.stage1_review_start_date} - ${activeCycle.stage1_review_end_date}` : 'Not set'}
+                    stage1Complete={stats?.total_proposals ? Math.round(
+                        ((stats.status_breakdown?.STAGE_1_REJECTED ?? 0) + (stats.status_breakdown?.ACCEPTED_NO_CORRECTIONS ?? 0) +
+                         (stats.status_breakdown?.TENTATIVELY_ACCEPTED ?? 0) + (stats.status_breakdown?.FINAL_ACCEPTED ?? 0) +
+                         (stats.status_breakdown?.FINAL_REJECTED ?? 0)) / stats.total_proposals * 100) : 0}
+                    stage2Complete={stats?.total_proposals ? Math.round(
+                        ((stats.status_breakdown?.FINAL_ACCEPTED ?? 0) + (stats.status_breakdown?.FINAL_REJECTED ?? 0)) / stats.total_proposals * 100) : 0}
+                    stage1Date={activeCycle.stage1_review_start_date && activeCycle.stage1_review_end_date
+                        ? `${activeCycle.stage1_review_start_date} – ${activeCycle.stage1_review_end_date}` : 'Not set'}
                     revisionDate={activeCycle.revision_window_days ? `${activeCycle.revision_window_days} day window` : 'Not set'}
-                    stage2Date={activeCycle.stage2_review_start_date && activeCycle.stage2_review_end_date ? `${activeCycle.stage2_review_start_date} - ${activeCycle.stage2_review_end_date}` : 'Not set'}
+                    stage2Date={activeCycle.stage2_review_start_date && activeCycle.stage2_review_end_date
+                        ? `${activeCycle.stage2_review_start_date} – ${activeCycle.stage2_review_end_date}` : 'Not set'}
                     stats={{
-                        stage1Proposals: stats?.pending_reviews || 0,
-                        revisionProposals: stats?.awaiting_revision || 0,
-                        stage2Proposals: stats?.status_breakdown?.UNDER_STAGE_2_REVIEW || 0,
+                        stage1Proposals:   stats?.pending_reviews ?? 0,
+                        revisionProposals: stats?.awaiting_revision ?? 0,
+                        stage2Proposals:   stats?.status_breakdown?.UNDER_STAGE_2_REVIEW ?? 0,
                     }}
                 />
             )}

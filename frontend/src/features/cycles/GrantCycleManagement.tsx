@@ -167,8 +167,8 @@ const GrantCycleManagement: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Grant Cycle Management</h1>
-                    <p className="text-gray-500 mt-1">Create and manage grant review cycles</p>
+                    <h1 className="text-2xl font-bold text-slate-100">Grant Cycle Management</h1>
+                    <p className="text-slate-500 mt-1">Create and manage grant review cycles</p>
                 </div>
                 <button
                     onClick={() => { setShowForm(true); setEditingId(null); setFormData(initialFormData); }}
@@ -188,33 +188,33 @@ const GrantCycleManagement: React.FC = () => {
             {/* Form Modal */}
             {showForm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                    <div className="w-full min-w-[320px] max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
-                        <div className="p-6 border-b border-gray-200">
-                            <h2 className="text-xl font-semibold text-gray-900">
+                    <div className="w-full min-w-[320px] max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl  shadow-2xl">
+                        <div className="p-6 border-b ">
+                            <h2 className="text-xl font-semibold text-slate-200">
                                 {editingId ? 'Edit Grant Cycle' : 'Create New Grant Cycle'}
                             </h2>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cycle Name</label>
+                                    <label className="block text-sm font-medium text-slate-400 mb-1">Cycle Name</label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="input"
                                         placeholder="e.g., Spring 2025 Grant Cycle"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
+                                    <label className="block text-sm font-medium text-slate-400 mb-1">Academic Year</label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.year}
                                         onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="input"
                                         placeholder="e.g., 2024-2025"
                                     />
                                 </div>
@@ -222,109 +222,109 @@ const GrantCycleManagement: React.FC = () => {
 
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cycle Start Date (Optional)</label>
+                                    <label className="block text-sm font-medium text-slate-400 mb-1">Cycle Start Date (Optional)</label>
                                     <input
                                         type="date"
                                         value={formData.start_date}
                                         onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="input"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cycle End Date (Optional)</label>
+                                    <label className="block text-sm font-medium text-slate-400 mb-1">Cycle End Date (Optional)</label>
                                     <input
                                         type="date"
                                         value={formData.end_date}
                                         onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="input"
                                     />
                                 </div>
                             </div>
 
                             <div className="border-t pt-4 mt-4">
-                                <h3 className="text-sm font-semibold text-gray-700 mb-3">Stage 1 Review Period</h3>
+                                <h3 className="text-sm font-semibold text-slate-400 mb-3">Stage 1 Review Period</h3>
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">Start Date</label>
                                         <input
                                             type="date"
                                             value={formData.stage1_review_start_date}
                                             onChange={(e) => setFormData({ ...formData, stage1_review_start_date: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className="input"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">End Date</label>
                                         <input
                                             type="date"
                                             value={formData.stage1_review_end_date}
                                             onChange={(e) => setFormData({ ...formData, stage1_review_end_date: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className="input"
                                         />
                                     </div>
                                 </div>
                             </div>
 
                             <div className="border-t pt-4">
-                                <h3 className="text-sm font-semibold text-gray-700 mb-3">Stage 2 Review Period</h3>
+                                <h3 className="text-sm font-semibold text-slate-400 mb-3">Stage 2 Review Period</h3>
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">Start Date</label>
                                         <input
                                             type="date"
                                             required
                                             value={formData.stage2_review_start_date}
                                             onChange={(e) => setFormData({ ...formData, stage2_review_start_date: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className="input"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">End Date</label>
                                         <input
                                             type="date"
                                             required
                                             value={formData.stage2_review_end_date}
                                             onChange={(e) => setFormData({ ...formData, stage2_review_end_date: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className="input"
                                         />
                                     </div>
                                 </div>
                             </div>
 
                             <div className="border-t pt-4">
-                                <h3 className="text-sm font-semibold text-gray-700 mb-3">Configuration</h3>
+                                <h3 className="text-sm font-semibold text-slate-400 mb-3">Configuration</h3>
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Revision Window (days)</label>
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">Revision Window (days)</label>
                                         <input
                                             type="number"
                                             min="1"
                                             max="30"
                                             value={formData.revision_window_days}
                                             onChange={(e) => setFormData({ ...formData, revision_window_days: parseInt(e.target.value) })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className="input"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Acceptance Threshold (%)</label>
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">Acceptance Threshold (%)</label>
                                         <input
                                             type="number"
                                             min="0"
                                             max="100"
                                             value={formData.acceptance_threshold}
                                             onChange={(e) => setFormData({ ...formData, acceptance_threshold: parseInt(e.target.value) })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className="input"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Max Reviewers</label>
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">Max Reviewers</label>
                                         <input
                                             type="number"
                                             min="1"
                                             max="4"
                                             value={formData.max_reviewers_per_proposal}
                                             onChange={(e) => setFormData({ ...formData, max_reviewers_per_proposal: parseInt(e.target.value) })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className="input"
                                         />
                                     </div>
                                 </div>
@@ -332,15 +332,15 @@ const GrantCycleManagement: React.FC = () => {
 
                             {/* Score Weights */}
                             <div className="border-t pt-4">
-                                <h3 className="text-sm font-semibold text-gray-700 mb-1">Score Weights</h3>
-                                <p className="text-xs text-gray-500 mb-3">
+                                <h3 className="text-sm font-semibold text-slate-400 mb-1">Score Weights</h3>
+                                <p className="text-xs text-slate-500 mb-3">
                                     Customize max scores per criteria. Default total: 100.
                                     Current total: {Object.values(formData.score_weights).reduce((s, v) => s + v, 0)}
                                 </p>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     {(Object.keys(DEFAULT_WEIGHTS) as (keyof ScoreWeights)[]).map(key => (
                                         <div key={key}>
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">{WEIGHT_LABELS[key]}</label>
+                                            <label className="block text-xs font-medium text-slate-500 mb-1">{WEIGHT_LABELS[key]}</label>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -363,9 +363,9 @@ const GrantCycleManagement: React.FC = () => {
                                     id="is_active"
                                     checked={formData.is_active}
                                     onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    className="h-4 w-4 text-brand-400 focus:ring-blue-500 border-gray-300 rounded"
                                 />
-                                <label htmlFor="is_active" className="ml-2 text-sm text-gray-700">
+                                <label htmlFor="is_active" className="ml-2 text-sm text-slate-400">
                                     Active Cycle (accepting submissions)
                                 </label>
                             </div>
@@ -374,13 +374,13 @@ const GrantCycleManagement: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => { setShowForm(false); setEditingId(null); }}
-                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                                    className="px-4 py-2 border border-gray-300 text-slate-400 rounded-lg hover:"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    className="btn btn-primary"
                                 >
                                     {editingId ? 'Update Cycle' : 'Create Cycle'}
                                 </button>
@@ -393,38 +393,38 @@ const GrantCycleManagement: React.FC = () => {
             {/* Cycles List */}
             {loading ? (
                 <div className="flex justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <div className="spinner"></div>
                 </div>
             ) : (
                 <div className="grid gap-4">
                     {cycles.map((cycle) => (
                         <div
                             key={cycle.id}
-                            className={`bg-white rounded-xl shadow-sm border ${cycle.is_active ? 'border-green-200' : 'border-gray-200'} p-6 hover:shadow-md transition-shadow`}
+                            className={` rounded-xl shadow-sm border ${cycle.is_active ? 'border-green-200' : ''} p-6 hover:shadow-md transition-shadow`}
                         >
                             <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-3">
-                                        <h3 className="text-lg font-semibold text-gray-900">{cycle.name}</h3>
+                                        <h3 className="text-base font-semibold text-slate-200">{cycle.name}</h3>
                                         {cycle.is_active && (
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-green">
                                                 <CheckCircle size={12} className="mr-1" />
                                                 Active
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-sm text-gray-500 mt-1">Academic Year: {cycle.year}</p>
+                                    <p className="text-sm text-slate-500 mt-1">Academic Year: {cycle.year}</p>
                                 </div>
                                 <div className="flex space-x-2">
                                     <button
                                         onClick={() => handleEdit(cycle)}
-                                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        className="p-2 text-slate-500 hover:text-brand-400 hover:bg-blue-50 rounded-lg transition-colors"
                                     >
                                         <Edit2 size={18} />
                                     </button>
                                     <button
                                         onClick={() => handleDelete(cycle.id)}
-                                        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors"
                                     >
                                         <Trash2 size={18} />
                                     </button>
@@ -432,22 +432,22 @@ const GrantCycleManagement: React.FC = () => {
                             </div>
 
                             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="flex items-center text-sm text-gray-600">
-                                    <Calendar size={16} className="mr-2 text-gray-400" />
+                                <div className="flex items-center text-sm text-slate-500">
+                                    <Calendar size={16} className="mr-2 text-slate-600" />
                                     <span>
                                         {cycle.start_date && cycle.end_date
                                             ? `${cycle.start_date} - ${cycle.end_date}`
                                             : `${cycle.stage2_review_start_date || 'TBD'} - ${cycle.stage2_review_end_date || 'TBD'}`}
                                     </span>
                                 </div>
-                                <div className="flex items-center text-sm text-gray-600">
-                                    <Users size={16} className="mr-2 text-gray-400" />
+                                <div className="flex items-center text-sm text-slate-500">
+                                    <Users size={16} className="mr-2 text-slate-600" />
                                     <span>{cycle.proposal_count || 0} Proposals</span>
                                 </div>
-                                <div className="text-sm text-gray-600">
+                                <div className="text-sm text-slate-500">
                                     <span className="font-medium">Threshold:</span> {cycle.acceptance_threshold}%
                                 </div>
-                                <div className="text-sm text-gray-600">
+                                <div className="text-sm text-slate-500">
                                     <span className="font-medium">Revision:</span> {cycle.revision_window_days} days
                                 </div>
                             </div>

@@ -15,6 +15,31 @@ A two-stage research grant review management platform for North South University
 - **Reviewer**: Evaluates assigned proposals, submits scores
 - **SRC Chair (Admin)**: Manages grant cycles, assigns reviewers, makes final decisions
 
+## Frontend Design System (v2 — Dark Mode)
+
+Full dark-mode redesign with a Vizuara AI-inspired aesthetic:
+- **Palette**: Deep midnight navy `#070d1f` background, indigo/violet gradient accents (`#6366f1` → `#8b5cf6`), cyan highlights
+- **Typography**: Inter font, letter-spacing tightened on headings
+- **Components**: Glassmorphic `.glass` cards, `.metric-card` stat tiles, `.table-wrap/.table` for data tables
+- **Buttons**: `.btn-primary` (indigo→violet gradient glow), `.btn-secondary`, `.btn-ghost`, `.btn-danger`
+- **Badges**: `.badge-brand/violet/cyan/green/amber/red/orange/slate`
+- **Inputs**: Dark `.input` with focus glow ring, icon support via `.has-icon-left/.has-icon-right`
+- **Sidebar**: Fixed dark sidebar with gradient active indicator bar and collapsible mode
+- **Animations**: `animate-fade-in`, `animate-slide-up`, glow pulse, spinner
+
+### Key Design Files
+- `frontend/src/index.css` — Complete dark design system (CSS variables, all utility classes)
+- `frontend/tailwind.config.js` — Brand color tokens, dark surfaces, glow shadows, Inter font
+- `frontend/src/components/DashboardLayout.tsx` — Sidebar + topbar shell (all roles)
+- `frontend/src/features/auth/Login.tsx` — Split branding panel + glassmorphic login card
+- `frontend/src/features/admin/SRCChairDashboard.tsx` — Admin overview with gradient stat cards
+- `frontend/src/features/proposals/PIDashboard.tsx` — PI proposal management
+- `frontend/src/features/reviews/ReviewerHome.tsx` — Reviewer workload overview
+- `frontend/src/features/reviews/ReviewerDashboard.tsx` — Full reviewer assignments list
+- `frontend/src/components/dashboard/StatusChart.tsx` — Dark donut chart with glow legend
+- `frontend/src/components/dashboard/ActivityTimeline.tsx` — Dark vertical activity feed
+- `frontend/src/components/dashboard/CycleProgress.tsx` — Grant cycle stage progress bar
+
 ## Development Setup
 
 ### Backend
