@@ -141,9 +141,10 @@ const Login: React.FC = () => {
                         <line x1="100" y1="550" x2="60" y2="700" stroke="rgba(99,102,241,0.1)" strokeWidth="1" />
                     </svg>
 
-                    <div className="relative z-10 flex flex-col h-full p-12 justify-between">
+                    <div className="relative z-10 flex flex-col h-full p-12">
 
-                        <div className="flex items-center gap-3">
+                        {/* Logo — fixed at top */}
+                        <div className="flex items-center gap-3 flex-shrink-0">
                             <div className="login-logo-icon">
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
@@ -153,7 +154,8 @@ const Login: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="max-w-lg">
+                        {/* Hero content — vertically centered */}
+                        <div className="flex-1 flex flex-col justify-center max-w-lg py-8">
                             <div className="mb-6 inline-flex items-center gap-2 rounded-full px-4 py-2"
                                  style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)' }}>
                                 <Atom className="h-4 w-4 text-cyan-400 login-spin-slow" />
@@ -170,7 +172,7 @@ const Login: React.FC = () => {
                                 Where rigorous peer evaluation meets streamlined grant lifecycle management — powering research excellence at NSU.
                             </p>
 
-                            <div className="mt-10 space-y-3">
+                            <div className="mt-8 space-y-3">
                                 {researchTracks.map((t) => (
                                     <div key={t.title} className="login-track-card">
                                         <div className="login-track-icon">
@@ -187,7 +189,7 @@ const Login: React.FC = () => {
                                 ))}
                             </div>
 
-                            <div className="mt-10 flex gap-8">
+                            <div className="mt-8 flex gap-8">
                                 {[
                                     { value: '2-Stage', label: 'Review Process' },
                                     { value: '3 Roles', label: 'PI · Reviewer · SRC' },
@@ -201,7 +203,8 @@ const Login: React.FC = () => {
                             </div>
                         </div>
 
-                        <p className="text-xs text-slate-700">
+                        {/* Copyright — fixed at bottom */}
+                        <p className="text-xs text-slate-700 flex-shrink-0">
                             © {new Date().getFullYear()} North South University · CTRG · SEPS
                         </p>
                     </div>
