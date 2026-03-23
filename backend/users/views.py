@@ -1115,20 +1115,17 @@ class InviteReviewerView(APIView):
             details={'invited_email': email, 'invitation_id': invitation.id, 'email_sent': email_sent},
         )
 
-        # Do NOT return the registration_url (which contains the raw token) in
-        # the API response body.  The token is transmitted only via the email
-        # sent to the invitee.  Returning it here would let anyone with network
-        # access to the API (or API logs) obtain a valid registration token.
+        # Always return the registration_url to the SRC Chair.
+        # This is an authenticated admin-only endpoint. The chair needs the URL
+        # to share manually if email delivery fails (e.g. no mail server configured).
+        # The token is single-use and time-limited, so returning it to the
+        # authenticated admin is intentional and safe.
         response_data = {
             'message': f'Invitation sent to {email}.',
             'email_sent': email_sent,
             'expires_at': invitation.expires_at.isoformat(),
+            'registration_url': registration_url,
         }
-        # In development / DEBUG mode only, include the URL so developers can
-        # test without a working mail server.
-        from django.conf import settings as django_settings
-        if django_settings.DEBUG:
-            response_data['registration_url'] = registration_url
 
         return Response(response_data, status=status.HTTP_201_CREATED)
 
