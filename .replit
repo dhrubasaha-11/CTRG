@@ -51,4 +51,4 @@ externalPort = 80
 [deployment]
 deploymentTarget = "autoscale"
 run = ["bash", "-c", "cd backend && python manage.py collectstatic --noinput && gunicorn --bind=0.0.0.0:5000 --reuse-port --workers=2 config.wsgi:application"]
-build = ["bash", "-c", "cd frontend && npm run build && cp -r dist ../backend/staticfiles/frontend"]
+build = ["bash", "-c", "npm --prefix frontend run build && cp -r frontend/dist backend/staticfiles/frontend"]
