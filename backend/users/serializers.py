@@ -127,13 +127,11 @@ class LoginSerializer(serializers.Serializer):
                 'non_field_errors': 'Invalid email or password.'
             })
 
-        # Inactive accounts should not reveal *why* login is blocked, but we
-        # do need to distinguish "pending approval" from a wrong password so
-        # the user knows to wait rather than repeatedly retry.  This message
-        # does not confirm the password, only the account state.
+        # Use the same generic error for inactive accounts to avoid confirming
+        # that the email address is registered (user-enumeration prevention).
         if not matched_user.is_active:
             raise serializers.ValidationError({
-                'non_field_errors': 'This account is pending approval or has been disabled.'
+                'non_field_errors': 'Invalid email or password.'
             })
 
         # Authenticate with username (Django's ModelBackend uses username)

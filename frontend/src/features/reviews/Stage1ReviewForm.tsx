@@ -312,6 +312,10 @@ const Stage1ReviewForm: React.FC = () => {
                                     value={scores[criterion.key]}
                                     disabled={isFinalized}
                                     onChange={(e) => handleScoreChange(criterion.key, parseInt(e.target.value), criterion.maxScore)}
+                                    aria-label={`${criterion.label} score, maximum ${criterion.maxScore}`}
+                                    aria-valuemin={0}
+                                    aria-valuemax={criterion.maxScore}
+                                    aria-valuenow={scores[criterion.key]}
                                     className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                                 />
                                 <input
@@ -320,6 +324,7 @@ const Stage1ReviewForm: React.FC = () => {
                                     max={criterion.maxScore}
                                     value={scores[criterion.key]}
                                     disabled={isFinalized}
+                                    aria-label={`${criterion.label} score input`}
                                     onChange={(e) => handleScoreChange(criterion.key, parseInt(e.target.value) || 0, criterion.maxScore)}
                                     className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center"
                                 />

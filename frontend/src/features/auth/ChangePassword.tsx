@@ -69,7 +69,7 @@ const ChangePassword: React.FC = () => {
                 )}
 
                 {error && (
-                    <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    <div role="alert" className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                         <AlertCircle size={18} className="flex-shrink-0" />
                         {error}
                     </div>
@@ -116,6 +116,19 @@ const ChangePassword: React.FC = () => {
                             </button>
                         </div>
                     </div>
+                    {newPassword && (
+                        <div className="text-xs text-slate-500 -mt-3 ml-1 space-y-0.5">
+                            <p className={newPassword.length >= 8 ? 'text-green-600' : 'text-red-500'}>
+                                {newPassword.length >= 8 ? '\u2713' : '\u2717'} At least 8 characters
+                            </p>
+                            <p className={/[A-Z]/.test(newPassword) ? 'text-green-600' : 'text-slate-400'}>
+                                {/[A-Z]/.test(newPassword) ? '\u2713' : '\u2717'} Uppercase letter (recommended)
+                            </p>
+                            <p className={/[0-9]/.test(newPassword) ? 'text-green-600' : 'text-slate-400'}>
+                                {/[0-9]/.test(newPassword) ? '\u2713' : '\u2717'} Number (recommended)
+                            </p>
+                        </div>
+                    )}
 
                     <div>
                         <label className="mb-1.5 block text-sm font-medium text-slate-700">Confirm New Password</label>

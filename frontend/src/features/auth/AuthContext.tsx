@@ -11,11 +11,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as authService from '../../services/authService';
 
-import type { LoginResponse } from '../../services/authService';
+import type { LoginResponse, User } from '../../services/authService';
+
+/** Re-export so consumers can import from AuthContext */
+export type AuthUser = User;
 
 /** Shape of the context value consumed by useAuth(). */
 interface AuthContextType {
-    user: any;
+    user: User | null;
     /** User role (e.g., 'PI', 'REVIEWER', 'SRC_CHAIR') — drives route access */
     role: string | null;
     /** JWT access token — attached to API requests by the axios interceptor */
@@ -30,7 +33,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<any>(() => authService.getUser());
+    const [user, setUser] = useState<User | null>(() => {
+        const stored = authService.getUser();
+        return stored.id ? (stored as User) : null;
+    });
     const [role, setRole] = useState<string | null>(() => authService.getRole());
     const [token, setToken] = useState<string | null>(() => authService.getToken());
     const [isAuthReady, setIsAuthReady] = useState(false);
@@ -88,6 +94,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => {
             isMounted = false;
         };
+    }, []);
+
+    // Listen for auth:unauthorized events dispatched by the API interceptor
+    useEffect(() => {
+        const handleUnauthorized = () => {
+            authService.clearAuthData();
+            setToken(null);
+            setRole(null);
+            setUser(null);
+        };
+        window.addEventListener('auth:unauthorized', handleUnauthorized);
+        return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
     }, []);
 
     /**

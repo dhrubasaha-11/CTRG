@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-    FileText, Plus, Clock, CheckCircle, AlertTriangle, XCircle,
-    Edit3, Eye, Upload, ChevronRight, RefreshCw
+    FileText, Plus, Clock, CheckCircle, AlertTriangle,
+    Edit3, Eye, Upload, RefreshCw
 } from 'lucide-react';
 import { proposalApi, type Proposal } from '../../services/api';
 import StatusTracker from './StatusTracker';
+
+const COUNTDOWN_REFRESH_MS = 60000; // 1 minute
+const MS_PER_DAY = 86400000;
+const MS_PER_HOUR = 3600000;
 
 interface PIStats {
     submitted_proposals: number;
@@ -42,7 +46,7 @@ const PIDashboard: React.FC = () => {
     useEffect(() => {
         const hasDeadlines = proposals.some(p => p.revision_deadline && ['REVISION_REQUESTED', 'TENTATIVELY_ACCEPTED'].includes(p.status));
         if (!hasDeadlines) return;
-        const t = setInterval(() => setTick(n => n + 1), 60000);
+        const t = setInterval(() => setTick(n => n + 1), COUNTDOWN_REFRESH_MS);
         return () => clearInterval(t);
     }, [proposals]);
 
@@ -66,7 +70,7 @@ const PIDashboard: React.FC = () => {
     const getCountdown = useCallback((deadline: string) => {
         const diff = new Date(deadline).getTime() - Date.now();
         if (diff <= 0) return { text: 'Deadline passed', urgent: true };
-        const d = Math.floor(diff / 86400000), h = Math.floor((diff % 86400000) / 3600000);
+        const d = Math.floor(diff / MS_PER_DAY), h = Math.floor((diff % MS_PER_DAY) / MS_PER_HOUR);
         return { text: d > 0 ? `${d}d ${h}h remaining` : `${h}h remaining`, urgent: d < 2 };
     }, []);
 

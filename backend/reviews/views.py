@@ -1,12 +1,16 @@
 """
 API Views for the reviews module.
 """
+import logging
+
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 from django.http import HttpResponse
 import csv
+
+logger = logging.getLogger(__name__)
 
 from .models import ReviewerProfile, ReviewAssignment, Stage1Score, Stage2Review
 from .serializers import (
@@ -248,13 +252,21 @@ class ReviewAssignmentViewSet(viewsets.ModelViewSet):
         )
         
         sent_count = 0
+        failed = []
         for assignment in assignments:
-            if EmailService.send_reviewer_assignment_email(assignment):
-                sent_count += 1
-        
+            try:
+                if EmailService.send_reviewer_assignment_email(assignment):
+                    sent_count += 1
+                else:
+                    failed.append({'assignment_id': assignment.id, 'error': 'Send returned False'})
+            except Exception as e:
+                logger.error("Failed to send notification for assignment %s: %s", assignment.id, e)
+                failed.append({'assignment_id': assignment.id, 'error': str(e)})
+
         return Response({
             'sent': sent_count,
-            'total': len(assignment_ids)
+            'total': len(assignment_ids),
+            'failed': failed,
         })
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])

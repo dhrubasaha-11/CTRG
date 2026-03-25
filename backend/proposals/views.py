@@ -133,28 +133,28 @@ class GrantCycleViewSet(viewsets.ModelViewSet):
         """Optimized queryset with prefetch for better performance."""
         return GrantCycle.objects.all().prefetch_related('proposals')
     
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAdminUser])
     def statistics(self, request, pk=None):
         """Get proposal statistics for a specific cycle."""
         cycle = self.get_object()
         proposals = cycle.proposals.all()
-        
-        stats = {
-            'total_proposals': proposals.count(),
-            'submitted': proposals.filter(status=Proposal.Status.SUBMITTED).count(),
-            'under_stage1_review': proposals.filter(status=Proposal.Status.UNDER_STAGE_1_REVIEW).count(),
-            'stage1_rejected': proposals.filter(status=Proposal.Status.STAGE_1_REJECTED).count(),
-            'accepted_no_corrections': proposals.filter(status=Proposal.Status.ACCEPTED_NO_CORRECTIONS).count(),
-            'tentatively_accepted': proposals.filter(status=Proposal.Status.TENTATIVELY_ACCEPTED).count(),
-            'revision_requested': proposals.filter(status=Proposal.Status.REVISION_REQUESTED).count(),
-            'revised_submitted': proposals.filter(status=Proposal.Status.REVISED_PROPOSAL_SUBMITTED).count(),
-            'under_stage2_review': proposals.filter(status=Proposal.Status.UNDER_STAGE_2_REVIEW).count(),
-            'final_accepted': proposals.filter(status=Proposal.Status.FINAL_ACCEPTED).count(),
-            'final_rejected': proposals.filter(status=Proposal.Status.FINAL_REJECTED).count(),
-            'revision_deadline_missed': proposals.filter(status=Proposal.Status.REVISION_DEADLINE_MISSED).count(),
-        }
-        
-        serializer = GrantCycleStatsSerializer(stats)
+
+        agg = proposals.aggregate(
+            total_proposals=Count('id'),
+            submitted=Count('id', filter=Q(status=Proposal.Status.SUBMITTED)),
+            under_stage1_review=Count('id', filter=Q(status=Proposal.Status.UNDER_STAGE_1_REVIEW)),
+            stage1_rejected=Count('id', filter=Q(status=Proposal.Status.STAGE_1_REJECTED)),
+            accepted_no_corrections=Count('id', filter=Q(status=Proposal.Status.ACCEPTED_NO_CORRECTIONS)),
+            tentatively_accepted=Count('id', filter=Q(status=Proposal.Status.TENTATIVELY_ACCEPTED)),
+            revision_requested=Count('id', filter=Q(status=Proposal.Status.REVISION_REQUESTED)),
+            revised_submitted=Count('id', filter=Q(status=Proposal.Status.REVISED_PROPOSAL_SUBMITTED)),
+            under_stage2_review=Count('id', filter=Q(status=Proposal.Status.UNDER_STAGE_2_REVIEW)),
+            final_accepted=Count('id', filter=Q(status=Proposal.Status.FINAL_ACCEPTED)),
+            final_rejected=Count('id', filter=Q(status=Proposal.Status.FINAL_REJECTED)),
+            revision_deadline_missed=Count('id', filter=Q(status=Proposal.Status.REVISION_DEADLINE_MISSED)),
+        )
+
+        serializer = GrantCycleStatsSerializer(agg)
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
@@ -285,7 +285,10 @@ class ProposalViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def my_proposals(self, request):
         """Get all proposals with PI email matching current user."""
-        proposals = Proposal.objects.filter(
+        proposals = Proposal.objects.select_related(
+            'cycle', 'stage1_decision', 'final_decision',
+            'primary_research_area', 'created_by', 'submitted_by',
+        ).prefetch_related('keywords').filter(
             Q(pi_email=request.user.email) | Q(created_by=request.user)
         ).distinct()
         serializer = ProposalListSerializer(proposals, many=True)
@@ -447,8 +450,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
         from reviews.serializers import ReviewAssignmentSerializer, Stage2ReviewSerializer
         
         proposal = self.get_object()
-        assignments = ReviewAssignment.objects.filter(proposal=proposal)
-        chair_reviews = Stage2Review.objects.filter(proposal=proposal, is_chair_review=True)
+        assignments = ReviewAssignment.objects.filter(proposal=proposal).select_related('reviewer', 'stage1_score', 'stage2_review')
+        chair_reviews = Stage2Review.objects.filter(proposal=proposal, is_chair_review=True).select_related('reviewed_by')
         return Response({
             'assignments': ReviewAssignmentSerializer(assignments, many=True).data,
             'chair_stage2_reviews': Stage2ReviewSerializer(chair_reviews, many=True).data,
@@ -601,14 +604,32 @@ class DashboardViewSet(viewsets.ViewSet):
             stage1_decision__isnull=True,
         ).count()
 
+        from reviews.models import Stage2Review
+        # Count Stage 2 proposals where all assignments are completed or chair review exists
         stage2_candidates = proposals.filter(
             status=Proposal.Status.UNDER_STAGE_2_REVIEW,
             final_decision__isnull=True,
+        ).annotate(
+            pending_s2=Count('review_assignments', filter=Q(
+                review_assignments__status=ReviewAssignment.Status.PENDING,
+                review_assignments__stage=2
+            )),
+            total_s2=Count('review_assignments', filter=Q(
+                review_assignments__stage=2
+            )),
         )
-        stage2_awaiting_decision = 0
-        for proposal in stage2_candidates:
-            if ProposalService.check_stage2_completion(proposal):
-                stage2_awaiting_decision += 1
+        # Proposals ready for decision: either all Stage 2 assignments done, or chair review exists
+        chair_reviewed_ids = set(
+            Stage2Review.objects.filter(
+                is_chair_review=True, is_draft=False,
+                proposal__status=Proposal.Status.UNDER_STAGE_2_REVIEW,
+                proposal__final_decision__isnull=True,
+            ).values_list('proposal_id', flat=True)
+        )
+        stage2_awaiting_decision = sum(
+            1 for p in stage2_candidates
+            if (p.total_s2 > 0 and p.pending_s2 == 0) or p.id in chair_reviewed_ids
+        )
         
         awaiting_revision = proposals.filter(
             status__in=[Proposal.Status.REVISION_REQUESTED, Proposal.Status.REVISION_DEADLINE_MISSED]
@@ -678,34 +699,33 @@ class DashboardViewSet(viewsets.ViewSet):
             ]
         )
         
+        agg = proposals.aggregate(
+            drafts=Count('id', filter=Q(status=Proposal.Status.DRAFT)),
+            under_review=Count('id', filter=Q(status__in=[
+                Proposal.Status.SUBMITTED,
+                Proposal.Status.UNDER_STAGE_1_REVIEW,
+                Proposal.Status.UNDER_STAGE_2_REVIEW,
+            ])),
+            awaiting_revision=Count('id', filter=Q(status=Proposal.Status.REVISION_REQUESTED)),
+            accepted=Count('id', filter=Q(status__in=[
+                Proposal.Status.ACCEPTED_NO_CORRECTIONS,
+                Proposal.Status.FINAL_ACCEPTED,
+            ])),
+            rejected=Count('id', filter=Q(status__in=[
+                Proposal.Status.STAGE_1_REJECTED,
+                Proposal.Status.FINAL_REJECTED,
+            ])),
+        )
         data = {
             'submitted_proposals': submitted_proposals.count(),
             'revision_deadlines': len(upcoming_deadlines_list),
             'final_decisions': final_decisions.count(),
             'total_submitted': submitted_proposals.count(),
-            'drafts': proposals.filter(status=Proposal.Status.DRAFT).count(),
-            'under_review': proposals.filter(
-                status__in=[
-                    Proposal.Status.SUBMITTED,
-                    Proposal.Status.UNDER_STAGE_1_REVIEW,
-                    Proposal.Status.UNDER_STAGE_2_REVIEW
-                ]
-            ).count(),
-            'awaiting_revision': proposals.filter(
-                status=Proposal.Status.REVISION_REQUESTED
-            ).count(),
-            'accepted': proposals.filter(
-                status__in=[
-                    Proposal.Status.ACCEPTED_NO_CORRECTIONS,
-                    Proposal.Status.FINAL_ACCEPTED
-                ]
-            ).count(),
-            'rejected': proposals.filter(
-                status__in=[
-                    Proposal.Status.STAGE_1_REJECTED,
-                    Proposal.Status.FINAL_REJECTED
-                ]
-            ).count(),
+            'drafts': agg['drafts'],
+            'under_review': agg['under_review'],
+            'awaiting_revision': agg['awaiting_revision'],
+            'accepted': agg['accepted'],
+            'rejected': agg['rejected'],
             'upcoming_deadlines': upcoming_deadlines_list,
             'proposals': ProposalListSerializer(proposals, many=True).data
         }

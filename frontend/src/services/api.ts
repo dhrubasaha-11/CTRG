@@ -6,17 +6,14 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { getToken, clearAuthData } from './authService';
 
 const resolveApiBaseUrl = () => {
-    if (typeof window === 'undefined') {
-        return 'http://localhost:8000/api';
+    // Prefer explicit environment variable
+    if (import.meta.env.VITE_API_URL) {
+        return import.meta.env.VITE_API_URL;
     }
-
-    const { hostname } = window.location;
-    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-
-    if (isLocal) {
-        return 'http://localhost:8000/api';
+    // In development, use relative path to leverage Vite proxy
+    if (import.meta.env.DEV) {
+        return '/api';
     }
-
     return '/api';
 };
 
@@ -130,20 +127,16 @@ api.interceptors.response.use(
         if (error.response) {
             const status = error.response.status;
 
-            // 401 Unauthorized - Clear auth and redirect to login
+            // 401 Unauthorized - Dispatch event for AuthContext to handle
             if (status === 401) {
                 clearAuthData();
-                if (window.location.pathname !== '/login') {
-                    window.location.href = '/login';
-                }
+                window.dispatchEvent(new CustomEvent('auth:unauthorized'));
                 return Promise.reject(error);
             }
 
-            // 403 Forbidden - Redirect to unauthorized page
+            // 403 Forbidden - Dispatch event for app-level handling
             if (status === 403) {
-                if (window.location.pathname !== '/unauthorized') {
-                    window.location.href = '/unauthorized';
-                }
+                window.dispatchEvent(new CustomEvent('auth:forbidden'));
                 return Promise.reject(error);
             }
 
@@ -185,8 +178,9 @@ api.interceptors.response.use(
             const errorMessage = error.message.toLowerCase();
             if (errorMessage.includes('network') || errorMessage.includes('timeout')) {
                 console.error('Network error detected:', error.message);
-                // You can dispatch a global notification here
-                // Example: toast.error('Network error. Please check your connection.');
+                window.dispatchEvent(new CustomEvent('api:error', {
+                    detail: { message: 'Network error. Please check your connection.' }
+                }));
             }
         }
 

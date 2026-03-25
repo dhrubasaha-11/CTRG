@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-ro
 import { Suspense, lazy } from 'react';
 import { AuthProvider } from './features/auth/AuthContext';
 import ProtectedRoute from './features/auth/ProtectedRoute';
+import ErrorBoundary from './features/ErrorBoundary';
 
 // Eagerly load auth and layout (needed immediately)
 import Login from './features/auth/Login';
@@ -38,7 +39,7 @@ const ProfilePage = lazy(() => import('./features/auth/ProfilePage'));
 
 // Loading fallback component
 const LoadingFallback = () => (
-  <div className="app-background flex min-h-screen items-center justify-center px-4">
+  <div className="app-background flex min-h-screen items-center justify-center px-4" role="status" aria-live="polite">
     <div className="surface-glass flex w-full max-w-sm flex-col items-center gap-3 rounded-3xl border border-slate-200 p-8 text-center shadow-[0_20px_38px_rgba(15,23,42,0.14)]">
       <div className="relative">
         <div className="h-14 w-14 animate-spin rounded-full border-4 border-[#d7dfec] border-t-[#1e2a4a]" />
@@ -84,6 +85,7 @@ const Unauthorized = () => (
 
 function App() {
   return (
+    <ErrorBoundary>
     <Router>
       <AuthProvider>
         <Routes>
@@ -137,6 +139,7 @@ function App() {
         </Routes>
       </AuthProvider>
     </Router>
+    </ErrorBoundary>
   );
 }
 

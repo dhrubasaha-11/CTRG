@@ -479,10 +479,11 @@ class ImportReviewersFromExcelView(APIView):
                             message=f"Dear {first_name},\n\nYour reviewer account has been created.\n\nUsername: {username}\nEmail: {email}\nTemporary Password: {password}\n\nPlease change your password after logging in.\n\nBest regards,\nCTRG Grant Review System",
                             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@nsu.edu'),
                             recipient_list=[email],
-                            fail_silently=True,
+                            fail_silently=False,
                         )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        import logging
+                        logging.getLogger(__name__).error("Failed to send credentials email to %s: %s", email, e)
                 created.append(created_row)
                 _audit_user_event(
                     request,
@@ -557,6 +558,11 @@ class ChangePasswordView(APIView):
 
         # Save new password (serializer handles hashing)
         serializer.save()
+
+        # Invalidate old token and issue a new one
+        Token.objects.filter(user=request.user).delete()
+        new_token = Token.objects.create(user=request.user)
+
         _audit_user_event(
             request,
             action_type='PASSWORD_CHANGED',
@@ -565,7 +571,7 @@ class ChangePasswordView(APIView):
         )
 
         return Response(
-            {'message': 'Password successfully changed.'},
+            {'message': 'Password successfully changed.', 'token': new_token.key},
             status=status.HTTP_200_OK
         )
 
@@ -613,7 +619,7 @@ class UserListView(generics.ListAPIView):
 
     serializer_class = UserListSerializer
     permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
-    queryset = User.objects.all().order_by('-date_joined')
+    queryset = User.objects.prefetch_related('groups', 'reviewer_profile').all().order_by('-date_joined')
 
     def get_queryset(self):
         """
@@ -1199,19 +1205,24 @@ class ListInvitationsView(generics.ListAPIView):
     List all reviewer invitations (Admin only).
 
     GET /api/auth/invitations/
+    Uses DRF pagination (configured in settings).
     """
     permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
 
-    def get(self, request):
+    def get_queryset(self):
         from .models import ReviewerInvitation
-        invitations = ReviewerInvitation.objects.all().order_by('-created_at')
+        return ReviewerInvitation.objects.select_related('invited_by').order_by('-created_at')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        items = page if page is not None else queryset
+
         data = []
-        for inv in invitations:
+        for inv in items:
             data.append({
                 'id': inv.id,
                 'email': inv.email,
-                # Raw token is omitted to prevent anyone with read access to
-                # the admin API (or its logs) from obtaining a usable token.
                 'invited_by': inv.invited_by.get_full_name() if inv.invited_by else None,
                 'created_at': inv.created_at.isoformat(),
                 'expires_at': inv.expires_at.isoformat(),
@@ -1219,6 +1230,9 @@ class ListInvitationsView(generics.ListAPIView):
                 'is_expired': inv.is_expired,
                 'is_valid': inv.is_valid,
             })
+
+        if page is not None:
+            return self.get_paginated_response(data)
         return Response(data)
 
 

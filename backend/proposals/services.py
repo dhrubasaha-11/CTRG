@@ -31,14 +31,19 @@ class ProposalService:
     
     @staticmethod
     def generate_proposal_code(cycle):
-        """Generate unique proposal code like CTRG-2025-001."""
+        """Generate unique proposal code like CTRG-2025-001.
+
+        NOTE: The authoritative code generation lives in Proposal.save().
+        This helper is kept for callers that need a preview code before saving.
+        """
         from .models import Proposal
         cycle_year = str(cycle.year).split('-')[0] if cycle and cycle.year else str(timezone.now().year)
-        count = Proposal.objects.filter(proposal_code__startswith=f"CTRG-{cycle_year}-").count() + 1
-        proposal_code = f"CTRG-{cycle_year}-{count:03d}"
+        prefix = f"CTRG-{cycle_year}-"
+        count = Proposal.objects.filter(proposal_code__startswith=prefix).count() + 1
+        proposal_code = f"{prefix}{count:03d}"
         while Proposal.objects.filter(proposal_code=proposal_code).exists():
             count += 1
-            proposal_code = f"CTRG-{cycle_year}-{count:03d}"
+            proposal_code = f"{prefix}{count:03d}"
         return proposal_code
     
     @staticmethod
@@ -151,8 +156,8 @@ class ProposalService:
         """
         from reviews.models import ReviewAssignment, Stage1Score
         
-        assignments = ReviewAssignment.objects.filter(
-            proposal=proposal, 
+        assignments = ReviewAssignment.objects.select_related('stage1_score').filter(
+            proposal=proposal,
             stage=ReviewAssignment.Stage.STAGE_1
         )
         if not assignments.exists():
@@ -204,8 +209,11 @@ class ProposalService:
             pass  # Chair can accept below threshold at their discretion
 
         # Guard against duplicate decisions
-        if hasattr(proposal, 'stage1_decision'):
+        try:
+            proposal.stage1_decision
             raise ValueError("Stage 1 decision already exists for this proposal")
+        except Stage1Decision.DoesNotExist:
+            pass
 
         # Create decision record
         stage1_decision = Stage1Decision.objects.create(
@@ -238,6 +246,7 @@ class ProposalService:
                 EmailService.send_stage1_decision_email(proposal, decision)
             except Exception:
                 logger.warning("Failed to send Stage 1 decision email for proposal %s", proposal.proposal_code)
+
 
         # Audit log
         AuditLog.objects.create(
@@ -353,8 +362,11 @@ class ProposalService:
         }
         if proposal.status not in allowed_statuses:
             raise ValueError("Final decision can only be applied after Stage 2 workflow starts")
-        if hasattr(proposal, 'final_decision'):
+        try:
+            proposal.final_decision
             raise ValueError("Final decision already exists for this proposal")
+        except FinalDecision.DoesNotExist:
+            pass
 
         # If Stage 2 assignments exist, ensure they are complete. Otherwise require
         # an explicit completed chair-authored Stage 2 review.
@@ -395,6 +407,7 @@ class ProposalService:
             EmailService.send_final_decision_email(proposal)
         except Exception:
             logger.warning("Failed to send final decision email for proposal %s", proposal.proposal_code)
+
 
         # Audit log
         AuditLog.objects.create(
@@ -616,8 +629,8 @@ class ReviewerService:
         # Auto-notify reviewer via email
         try:
             EmailService.send_reviewer_assignment_email(assignment)
-        except Exception:
-            logger.warning("Failed to auto-notify reviewer %s for assignment %s", reviewer.email, assignment.id)
+        except Exception as e:
+            logger.error("Failed to auto-notify reviewer %s for assignment %s: %s", reviewer.email, assignment.id, e, exc_info=True)
 
         return assignment
 
@@ -988,21 +1001,21 @@ North South University"""
     
     @staticmethod
     def send_bulk_email(recipients, subject, message):
-        """Send email to multiple recipients."""
-        from django.core.mail import send_mass_mail
+        """Send email to multiple recipients. Returns dict with sent/failed counts."""
+        from django.core.mail import send_mail as _send_mail
         from_email = EmailService._get_from_email()
-        
-        messages = [
-            (subject, message, from_email, [recipient.email])
-            for recipient in recipients
-        ]
 
-        try:
-            sent_count = send_mass_mail(messages, fail_silently=False)
-            return sent_count > 0
-        except Exception:
-            logger.exception("Bulk email send failed for subject '%s'", subject)
-            return False
+        sent = 0
+        failed = []
+        for recipient in recipients:
+            try:
+                _send_mail(subject, message, from_email, [recipient.email], fail_silently=False)
+                sent += 1
+            except Exception:
+                logger.exception("Bulk email failed for recipient %s", recipient.email)
+                failed.append(recipient.email)
+
+        return {'sent': sent, 'failed': failed, 'success': sent > 0}
 
     @staticmethod
     def send_reviewer_proposal_details_email(reviewer_ids, custom_subject=None, custom_message=''):

@@ -67,10 +67,8 @@ class EncryptedFileStorage(FileSystemStorage):
 
         try:
             decrypted_data = fernet.decrypt(encrypted_data)
-        except Exception:
-            # If decryption fails the file may have been stored before
-            # encryption was enabled – return the raw bytes.
-            logger.warning("Could not decrypt %s – returning raw content", name)
-            decrypted_data = encrypted_data
+        except Exception as e:
+            logger.critical("Failed to decrypt file %s: %s", name, e)
+            raise IOError(f"Failed to decrypt file: {name}") from e
 
         return ContentFile(decrypted_data, name=name)

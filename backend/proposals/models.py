@@ -1,5 +1,6 @@
-from django.db import models
+from django.db import models, transaction, IntegrityError
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from proposals.storage import EncryptedFileStorage
 
@@ -22,9 +23,9 @@ class GrantCycle(models.Model):
     stage2_review_end_date = models.DateField(null=True, blank=True, help_text="Stage 2 review end date")
     
     # Configuration
-    revision_window_days = models.IntegerField(default=7, help_text="Number of days for revision after tentative acceptance")
+    revision_window_days = models.IntegerField(default=7, validators=[MinValueValidator(0)], help_text="Number of days for revision after tentative acceptance")
     acceptance_threshold = models.DecimalField(max_digits=5, decimal_places=2, default=70.0, help_text="Minimum percentage score for acceptance")
-    max_reviewers_per_proposal = models.IntegerField(default=2, help_text="Maximum number of reviewers (1-4)")
+    max_reviewers_per_proposal = models.IntegerField(default=2, validators=[MinValueValidator(1), MaxValueValidator(4)], help_text="Maximum number of reviewers (1-4)")
 
     # Customizable score weights per cycle (JSON field).
     # Keys match Stage1Score field names. Values are max scores.
@@ -37,8 +38,8 @@ class GrantCycle(models.Model):
     )
 
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     class Meta:
         ordering = ['-year', '-created_at']
@@ -196,7 +197,7 @@ class Proposal(models.Model):
     keywords = models.ManyToManyField(Keyword, through='ProposalKeyword', related_name='proposals', blank=True)
     
     # Status tracking
-    status = models.CharField(max_length=50, choices=Status.choices, default=Status.DRAFT)
+    status = models.CharField(max_length=50, choices=Status.choices, default=Status.DRAFT, db_index=True)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -214,23 +215,31 @@ class Proposal(models.Model):
         return f"{self.proposal_code} - {self.title}"
     
     def save(self, *args, **kwargs):
-        """Auto-generate proposal code if not set"""
+        """Auto-generate proposal code if not set, with retry on collision."""
         if not self.proposal_code:
-            # Generate code like CTRG-2025-001
             if self.cycle:
-                # Handle both string ('2025' or '2025-2026') and integer (2025) year formats
                 year_str = str(self.cycle.year)
                 cycle_year = year_str.split('-')[0] if '-' in year_str else year_str
             else:
                 cycle_year = str(timezone.now().year)
 
-            # Generate sequence across the year (not only within the cycle) to keep proposal_code globally unique.
-            count = Proposal.objects.filter(proposal_code__startswith=f"CTRG-{cycle_year}-").count() + 1
-            proposal_code = f"CTRG-{cycle_year}-{count:03d}"
-            while Proposal.objects.filter(proposal_code=proposal_code).exists():
-                count += 1
-                proposal_code = f"CTRG-{cycle_year}-{count:03d}"
-            self.proposal_code = proposal_code
+            prefix = f"CTRG-{cycle_year}-"
+            for _attempt in range(5):
+                count = Proposal.objects.filter(proposal_code__startswith=prefix).count() + 1
+                proposal_code = f"{prefix}{count:03d}"
+                while Proposal.objects.filter(proposal_code=proposal_code).exists():
+                    count += 1
+                    proposal_code = f"{prefix}{count:03d}"
+                self.proposal_code = proposal_code
+                try:
+                    with transaction.atomic():
+                        super().save(*args, **kwargs)
+                    return
+                except IntegrityError:
+                    self.proposal_code = ''
+                    continue
+            # Final attempt — let any IntegrityError propagate
+            self.proposal_code = f"{prefix}{Proposal.objects.filter(proposal_code__startswith=prefix).count() + 1:03d}"
         super().save(*args, **kwargs)
     
     @property
@@ -298,8 +307,8 @@ class FinalDecision(models.Model):
     proposal = models.OneToOneField(Proposal, on_delete=models.CASCADE, related_name='final_decision')
     decision = models.CharField(max_length=20, choices=Decision.choices)
     decision_date = models.DateTimeField(auto_now_add=True)
-    approved_grant_amount = models.DecimalField(max_digits=12, decimal_places=2, help_text="Final approved grant amount")
-    final_remarks = models.TextField(help_text="Final remarks from SRC Chair")
+    approved_grant_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Final approved grant amount (required for acceptances)")
+    final_remarks = models.TextField(blank=True, default='', help_text="Final remarks from SRC Chair")
     
     class Meta:
         verbose_name = "Final Decision"
