@@ -471,14 +471,50 @@ export const assignmentApi = {
     getProposalDetails: (id: number) => api.get<ReviewAssignment>(`/assignments/${id}/proposal_details/`),
 };
 
+// ===== Notification Log Types =====
+export interface NotificationLog {
+    id: number;
+    recipient_email: string;
+    recipient_name: string;
+    subject: string;
+    notification_type: string;
+    trigger_event: string;
+    proposal: number | null;
+    proposal_code: string | null;
+    status: 'SUCCESS' | 'FAILED';
+    error_message: string;
+    sent_at: string;
+}
+
+export interface EmailConfig {
+    smtp_host: string;
+    smtp_port: number;
+    smtp_username: string;
+    use_tls: boolean;
+    from_email: string;
+    from_name: string;
+    is_active: boolean;
+    has_password: boolean;
+    updated_at: string;
+    // Settings.py fallback info
+    settings_backend: string;
+    settings_is_console: boolean;
+    settings_host: string;
+    settings_from_email: string;
+}
+
 // ===== Auth APIs =====
 export const authApi = {
     changePassword: (old_password: string, new_password: string) =>
         api.post('/auth/change-password/', { old_password, new_password }),
     getEmailConfig: () =>
-        api.get('/auth/email-config/'),
+        api.get<EmailConfig>('/auth/email-config/'),
+    updateEmailConfig: (data: Partial<EmailConfig & { smtp_password?: string }>) =>
+        api.put<EmailConfig>('/auth/email-config/', data),
     sendTestEmail: (recipient: string) =>
-        api.post('/auth/email-config/', { recipient }),
+        api.post('/auth/email-config/test/', { recipient }),
+    getNotificationLogs: (params?: { page?: number; status?: string; type?: string }) =>
+        api.get<NotificationLog[]>('/auth/notification-logs/', { params }),
 };
 
 // ===== User Management APIs =====

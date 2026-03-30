@@ -1,8 +1,13 @@
+import logging
+
+from cryptography.fernet import Fernet, InvalidToken
 from django.db import models, transaction, IntegrityError
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from proposals.storage import EncryptedFileStorage
+
+logger = logging.getLogger(__name__)
 
 encrypted_storage = EncryptedFileStorage()
 
@@ -336,4 +341,97 @@ class AuditLog(models.Model):
     
     def __str__(self):
         return f"{self.timestamp} - {self.user} - {self.action_type}"
+
+
+class EmailConfiguration(models.Model):
+    """Singleton — stores SMTP settings editable by SRC Chair."""
+    smtp_host = models.CharField(max_length=255, blank=True, default='')
+    smtp_port = models.IntegerField(default=587)
+    smtp_username = models.CharField(max_length=255, blank=True, default='')
+    smtp_password = models.CharField(max_length=500, blank=True, default='')  # encrypted via Fernet
+    use_tls = models.BooleanField(default=True)
+    from_email = models.EmailField(blank=True, default='')
+    from_name = models.CharField(max_length=255, blank=True, default='CTRG Grant System')
+    is_active = models.BooleanField(default=False)  # if False, fall back to settings.py
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        verbose_name = "Email Configuration"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1  # singleton pattern
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_config(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    # --- Fernet helpers ---
+    @staticmethod
+    def _get_fernet():
+        key = getattr(settings, 'FILE_ENCRYPTION_KEY', '')
+        if not key:
+            return None
+        try:
+            return Fernet(key.encode() if isinstance(key, str) else key)
+        except Exception:
+            logger.warning("Invalid FILE_ENCRYPTION_KEY — password stored in plaintext")
+            return None
+
+    def set_password(self, raw_password):
+        """Encrypt and store the SMTP password."""
+        if not raw_password:
+            self.smtp_password = ''
+            return
+        f = self._get_fernet()
+        if f:
+            self.smtp_password = f.encrypt(raw_password.encode()).decode()
+        else:
+            self.smtp_password = raw_password
+
+    def get_password(self):
+        """Decrypt and return the SMTP password."""
+        if not self.smtp_password:
+            return ''
+        f = self._get_fernet()
+        if f:
+            try:
+                return f.decrypt(self.smtp_password.encode()).decode()
+            except InvalidToken:
+                # Possibly stored as plaintext before encryption was configured
+                return self.smtp_password
+        return self.smtp_password
+
+    def __str__(self):
+        return f"EmailConfiguration (host={self.smtp_host})"
+
+
+class NotificationLog(models.Model):
+    """Tracks every email sent by the system."""
+    class Status(models.TextChoices):
+        SUCCESS = 'SUCCESS'
+        FAILED = 'FAILED'
+
+    recipient_email = models.EmailField()
+    recipient_name = models.CharField(max_length=255, blank=True, default='')
+    subject = models.CharField(max_length=500)
+    notification_type = models.CharField(max_length=100)  # e.g. 'reviewer_assignment', 'final_decision'
+    trigger_event = models.CharField(max_length=100, blank=True, default='')  # e.g. 'proposal_submitted'
+    proposal = models.ForeignKey('Proposal', null=True, blank=True, on_delete=models.SET_NULL, related_name='notification_logs')
+    status = models.CharField(max_length=20, choices=Status.choices)
+    error_message = models.TextField(blank=True, default='')
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-sent_at']
+        indexes = [
+            models.Index(fields=['-sent_at']),
+            models.Index(fields=['status']),
+            models.Index(fields=['notification_type']),
+        ]
+
+    def __str__(self):
+        return f"{self.sent_at} — {self.recipient_email} — {self.subject[:50]}"
 

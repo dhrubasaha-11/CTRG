@@ -809,28 +809,91 @@ class EmailService:
 
     @staticmethod
     def _get_from_email():
-        from django.conf import settings
-        return settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@nsu.edu'
+        from .models import EmailConfiguration
+        config = EmailConfiguration.get_config()
+        if config.is_active and config.from_email:
+            if config.from_name:
+                return f"{config.from_name} <{config.from_email}>"
+            return config.from_email
+        from django.conf import settings as _s
+        return getattr(_s, 'DEFAULT_FROM_EMAIL', 'noreply@nsu.edu')
 
     @staticmethod
-    def _send_email(subject, message, recipient_list):
-        from django.core.mail import send_mail
+    def _get_email_backend():
+        """Return a Django EmailBackend using DB config if active, else default."""
+        from .models import EmailConfiguration
+        from django.core.mail import get_connection
+
+        config = EmailConfiguration.get_config()
+        if config.is_active and config.smtp_host:
+            return get_connection(
+                backend='django.core.mail.backends.smtp.EmailBackend',
+                host=config.smtp_host,
+                port=config.smtp_port,
+                username=config.smtp_username,
+                password=config.get_password(),
+                use_tls=config.use_tls,
+                fail_silently=False,
+            )
+        # Fall back to settings.py default
+        return get_connection()
+
+    @staticmethod
+    def _log_notification(subject, recipient_list, success, error_message='',
+                          notification_type='general', trigger_event='', proposal=None):
+        """Create NotificationLog entries for every send attempt."""
+        from .models import NotificationLog
+        status = NotificationLog.Status.SUCCESS if success else NotificationLog.Status.FAILED
+        for recipient in recipient_list:
+            try:
+                NotificationLog.objects.create(
+                    recipient_email=recipient,
+                    subject=subject,
+                    notification_type=notification_type,
+                    trigger_event=trigger_event,
+                    proposal=proposal,
+                    status=status,
+                    error_message=error_message,
+                )
+            except Exception:
+                logger.exception("Failed to write NotificationLog for %s", recipient)
+
+    @staticmethod
+    def _send_email(subject, message, recipient_list,
+                    notification_type='general', trigger_event='', proposal=None):
+        from django.core.mail import EmailMessage
 
         if not recipient_list:
             logger.warning("Email not sent: empty recipient list for subject '%s'", subject)
             return False
 
         try:
-            sent_count = send_mail(
+            connection = EmailService._get_email_backend()
+            email = EmailMessage(
                 subject=subject,
-                message=message,
+                body=message,
                 from_email=EmailService._get_from_email(),
-                recipient_list=recipient_list,
-                fail_silently=False
+                to=recipient_list,
+                connection=connection,
             )
-            return sent_count > 0
-        except Exception:
+            sent_count = email.send(fail_silently=False)
+            success = sent_count > 0
+            EmailService._log_notification(
+                subject, recipient_list, success,
+                notification_type=notification_type,
+                trigger_event=trigger_event,
+                proposal=proposal,
+            )
+            return success
+        except Exception as exc:
             logger.exception("Email send failed for subject '%s'", subject)
+            EmailService._log_notification(
+                subject, recipient_list, False,
+                error_message=str(exc),
+                notification_type=notification_type,
+                trigger_event=trigger_event,
+                proposal=proposal,
+            )
             return False
     
     @staticmethod
@@ -856,7 +919,10 @@ CTRG Grant Review System
         sent = EmailService._send_email(
             subject=subject,
             message=message,
-            recipient_list=[assignment.reviewer.email]
+            recipient_list=[assignment.reviewer.email],
+            notification_type='reviewer_assignment',
+            trigger_event='reviewer_assigned',
+            proposal=assignment.proposal,
         )
         if sent:
             assignment.notification_sent = True
@@ -901,7 +967,10 @@ North South University"""
         return EmailService._send_email(
             subject=subject,
             message=message,
-            recipient_list=[proposal.pi_email]
+            recipient_list=[proposal.pi_email],
+            notification_type='stage1_decision',
+            trigger_event='stage1_decision_made',
+            proposal=proposal,
         )
 
     @staticmethod
@@ -925,7 +994,10 @@ CTRG Grant Review System
         return EmailService._send_email(
             subject=subject,
             message=message,
-            recipient_list=[proposal.pi_email]
+            recipient_list=[proposal.pi_email],
+            notification_type='revision_request',
+            trigger_event='revision_requested',
+            proposal=proposal,
         )
 
     @staticmethod
@@ -949,7 +1021,10 @@ CTRG Grant Review System
         return EmailService._send_email(
             subject=subject,
             message=message,
-            recipient_list=[proposal.pi_email]
+            recipient_list=[proposal.pi_email],
+            notification_type='deadline_missed',
+            trigger_event='revision_deadline_missed',
+            proposal=proposal,
         )
 
     @staticmethod
@@ -996,23 +1071,26 @@ North South University"""
         return EmailService._send_email(
             subject=subject,
             message=message,
-            recipient_list=[proposal.pi_email]
+            recipient_list=[proposal.pi_email],
+            notification_type='final_decision',
+            trigger_event='final_decision_made',
+            proposal=proposal,
         )
-    
+
     @staticmethod
     def send_bulk_email(recipients, subject, message):
         """Send email to multiple recipients. Returns dict with sent/failed counts."""
-        from django.core.mail import send_mail as _send_mail
-        from_email = EmailService._get_from_email()
-
         sent = 0
         failed = []
         for recipient in recipients:
-            try:
-                _send_mail(subject, message, from_email, [recipient.email], fail_silently=False)
+            success = EmailService._send_email(
+                subject, message, [recipient.email],
+                notification_type='bulk_email',
+                trigger_event='bulk_send',
+            )
+            if success:
                 sent += 1
-            except Exception:
-                logger.exception("Bulk email failed for recipient %s", recipient.email)
+            else:
                 failed.append(recipient.email)
 
         return {'sent': sent, 'failed': failed, 'success': sent > 0}
@@ -1076,7 +1154,11 @@ North South University"""
 
             body = '\n\n'.join(parts)
 
-            success = EmailService._send_email(subject, body, [reviewer.email])
+            success = EmailService._send_email(
+                subject, body, [reviewer.email],
+                notification_type='reviewer_proposal_details',
+                trigger_event='chair_email_reviewers',
+            )
             if success:
                 sent_count += 1
             else:
