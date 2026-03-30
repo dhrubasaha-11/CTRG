@@ -278,7 +278,7 @@ const Stage1ReviewForm: React.FC = () => {
                 <button
                     type="button"
                     onClick={() => handleOpenDocument(assignment?.proposal_file)}
-                    className="px-4 py-2 /20 hover:/30 rounded-lg transition-colors"
+                    className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
                 >
                     Download Proposal PDF
                 </button>
@@ -407,7 +407,7 @@ const Stage1ReviewForm: React.FC = () => {
             <div className="flex justify-between items-center">
                 <button
                     onClick={() => navigate('/reviewer/dashboard')}
-                    className="px-4 py-2 border border-gray-300 text-slate-400 rounded-lg hover:"
+                    className="px-4 py-2 border border-gray-300 text-slate-500 rounded-lg hover:bg-gray-50"
                 >
                     Cancel
                 </button>
@@ -415,7 +415,7 @@ const Stage1ReviewForm: React.FC = () => {
                     <button
                         onClick={handleSaveDraft}
                         disabled={submitting || isFinalized}
-                        className="flex items-center px-4 py-2 bg-gray-100 text-slate-400 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                        className="flex items-center px-4 py-2 bg-gray-100 text-slate-600 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                     >
                         <Save size={18} className="mr-2" />
                         Save Draft

@@ -1243,11 +1243,20 @@ textarea.input {
 
 /* Inline dark surface overrides for panels that embed their own dark BG */
 .dashboard-theme .bg-\[\#0d1529\],
+.dashboard-theme .bg-\[\#111c34\],
 .dashboard-theme .bg-surface,
 .dashboard-theme [style*="background: rgba(13"],
 .dashboard-theme [style*="background:rgba(13"] {
     background: #ffffff !important;
 }
+
+/* Dark border overrides — translucent white borders are invisible on white bg */
+.dashboard-theme .border-white\/10 { border-color: rgba(15,23,42,0.1) !important; }
+.dashboard-theme .divide-white\/10 > * + * { border-color: rgba(15,23,42,0.08) !important; }
+
+/* bg-white/5 is nearly invisible on white — remap to subtle gray */
+.dashboard-theme .bg-white\/5  { background-color: #f1f5f9 !important; }
+.dashboard-theme .hover\:bg-white\/10:hover { background-color: #e2e8f0 !important; }
 
 /* Card inner text fixes */
 .dashboard-theme .section-label { color: #94a3b8; }

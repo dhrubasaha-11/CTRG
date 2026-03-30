@@ -339,9 +339,9 @@ const ProposalList: React.FC = () => {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="" style={{}}>
+                        <tbody className="divide-y divide-gray-100">
                             {paginatedProposals.map((proposal) => (
-                                <tr key={proposal.id} className="hover:" style={{background:"rgba(0,0,0,0.2)"}}>
+                                <tr key={proposal.id} className="hover:bg-slate-50">
                                     <td className="px-5 py-3.5">
                                         <div>
                                             <div className="flex items-center">

@@ -226,9 +226,9 @@ const ReportsPage: React.FC = () => {
                                     <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Combined Report</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y ">
+                            <tbody className="divide-y divide-gray-100">
                                 {proposals.map(proposal => (
-                                    <tr key={proposal.id} className="hover:">
+                                    <tr key={proposal.id} className="hover:bg-slate-50">
                                         <td className="px-6 py-4 text-sm font-medium text-slate-200">{proposal.proposal_code}</td>
                                         <td className="px-6 py-4 text-sm text-slate-200 max-w-xs truncate">{proposal.title}</td>
                                         <td className="px-6 py-4 text-sm text-slate-500">{proposal.pi_name}</td>
