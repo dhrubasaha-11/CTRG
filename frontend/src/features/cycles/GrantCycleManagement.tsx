@@ -188,8 +188,8 @@ const GrantCycleManagement: React.FC = () => {
             {/* Form Modal */}
             {showForm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                    <div className="w-full min-w-[320px] max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl  shadow-2xl">
-                        <div className="p-6 border-b ">
+                    <div className="w-full min-w-[320px] max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#111c34] shadow-2xl">
+                        <div className="p-6 border-b border-white/10">
                             <h2 className="text-xl font-semibold text-slate-200">
                                 {editingId ? 'Edit Grant Cycle' : 'Create New Grant Cycle'}
                             </h2>
@@ -374,7 +374,7 @@ const GrantCycleManagement: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => { setShowForm(false); setEditingId(null); }}
-                                    className="px-4 py-2 border border-gray-300 text-slate-400 rounded-lg hover:"
+                                    className="px-4 py-2 border border-white/10 text-slate-400 rounded-lg hover:bg-white/5"
                                 >
                                     Cancel
                                 </button>
@@ -400,7 +400,7 @@ const GrantCycleManagement: React.FC = () => {
                     {cycles.map((cycle) => (
                         <div
                             key={cycle.id}
-                            className={` rounded-xl shadow-sm border ${cycle.is_active ? 'border-green-200' : ''} p-6 hover:shadow-md transition-shadow`}
+                            className={`bg-[#111c34] rounded-xl shadow-sm border ${cycle.is_active ? 'border-green-500/30' : 'border-white/10'} p-6 hover:shadow-md transition-shadow`}
                         >
                             <div className="flex justify-between items-start">
                                 <div className="flex-1">

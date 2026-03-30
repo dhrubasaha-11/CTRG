@@ -561,8 +561,8 @@ const ReviewerManagement: React.FC = () => {
             {/* Edit Reviewer Modal */}
             {editingReviewer && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                    <div className="w-[min(640px,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto rounded-2xl  shadow-2xl">
-                        <div className="p-6 border-b ">
+                    <div className="w-[min(640px,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto rounded-2xl bg-[#111c34] shadow-2xl">
+                        <div className="p-6 border-b border-white/10">
                             <h2 className="text-xl font-semibold text-slate-200">Edit Reviewer</h2>
                             <p className="text-sm text-slate-500">{editingReviewer.user_name}</p>
                         </div>
@@ -646,10 +646,10 @@ const ReviewerManagement: React.FC = () => {
                                 </label>
                             </div>
                         </div>
-                        <div className="p-6 border-t  flex justify-end space-x-3">
+                        <div className="p-6 border-t border-white/10 flex justify-end space-x-3">
                             <button
                                 onClick={() => setEditingReviewer(null)}
-                                className="px-4 py-2 bg-gray-100 text-slate-400 rounded-lg hover:bg-gray-200"
+                                className="px-4 py-2 bg-white/5 text-slate-400 rounded-lg hover:bg-white/10"
                             >
                                 Cancel
                             </button>
@@ -668,12 +668,12 @@ const ReviewerManagement: React.FC = () => {
             {/* Add Reviewer Modal */}
             {showAddModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                    <div className="w-[min(960px,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto rounded-2xl  shadow-2xl">
-                        <div className="p-6 border-b ">
+                    <div className="w-[min(960px,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto rounded-2xl bg-[#111c34] shadow-2xl">
+                        <div className="p-6 border-b border-white/10">
                             <h2 className="text-xl font-semibold text-slate-200">Add New Reviewer</h2>
                             <p className="text-sm text-slate-500">Create one reviewer manually or import many from Excel</p>
                         </div>
-                        <div className="p-6 border-b  space-y-3 ">
+                        <div className="p-6 border-b border-white/10 space-y-3">
                             <div className="text-sm font-medium text-slate-400">Bulk Import (.xlsx)</div>
                             <input
                                 type="file"
@@ -786,7 +786,7 @@ const ReviewerManagement: React.FC = () => {
                                         setExcelFile(null);
                                         setShowAddModal(false);
                                     }}
-                                    className="px-4 py-2 bg-gray-100 text-slate-400 rounded-lg hover:bg-gray-200"
+                                    className="px-4 py-2 bg-white/5 text-slate-400 rounded-lg hover:bg-white/10"
                                 >
                                     Cancel
                                 </button>
@@ -805,8 +805,8 @@ const ReviewerManagement: React.FC = () => {
             {/* Invite Reviewer Modal */}
             {showInviteModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                    <div className="w-[min(520px,calc(100vw-2rem))] rounded-2xl  shadow-2xl">
-                        <div className="p-6 border-b ">
+                    <div className="w-[min(520px,calc(100vw-2rem))] rounded-2xl bg-[#111c34] shadow-2xl">
+                        <div className="p-6 border-b border-white/10">
                             <h2 className="text-xl font-semibold text-slate-200">Invite Reviewer</h2>
                             <p className="text-sm text-slate-500 mt-1">Send an invitation email with a registration link</p>
                         </div>
@@ -852,7 +852,7 @@ const ReviewerManagement: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setShowInviteModal(false)}
-                                            className="px-4 py-2 bg-gray-100 text-slate-400 rounded-lg hover:bg-gray-200 text-sm"
+                                            className="px-4 py-2 bg-white/5 text-slate-400 rounded-lg hover:bg-white/10 text-sm"
                                         >
                                             Close
                                         </button>
@@ -885,7 +885,7 @@ const ReviewerManagement: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setShowInviteModal(false)}
-                                            className="px-4 py-2 bg-gray-100 text-slate-400 rounded-lg hover:bg-gray-200"
+                                            className="px-4 py-2 bg-white/5 text-slate-400 rounded-lg hover:bg-white/10"
                                         >
                                             Cancel
                                         </button>
@@ -919,8 +919,8 @@ const ReviewerManagement: React.FC = () => {
 
             {selectedReviewer && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                    <div className="w-[min(760px,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto rounded-2xl  shadow-2xl">
-                        <div className="p-6 border-b ">
+                    <div className="w-[min(760px,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto rounded-2xl bg-[#111c34] shadow-2xl">
+                        <div className="p-6 border-b border-white/10">
                             <div className="flex justify-between items-start">
                                 <div className="flex items-center">
                                     <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">
