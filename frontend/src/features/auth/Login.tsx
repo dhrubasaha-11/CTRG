@@ -26,9 +26,9 @@ const floatingLabels = [
 ];
 
 const researchTracks = [
-    { icon: FlaskConical, label: 'Stage 1', title: 'Initial Screening', desc: 'Eligibility and merit-based pre-review by domain experts' },
-    { icon: Microscope, label: 'Stage 2', title: 'Deep Evaluation', desc: 'Comprehensive scoring with detailed rubrics and peer consensus' },
-    { icon: BrainCircuit, label: 'Decision', title: 'Final Adjudication', desc: 'SRC Chair decision with full audit trail and revision support' },
+    { icon: GraduationCap, label: 'PI', title: 'Principal Investigator', desc: 'Submit and track grant proposals, respond to revision requests, and monitor review progress' },
+    { icon: Microscope, label: 'Reviewer', title: 'Reviewer', desc: 'Evaluate assigned proposals across Stage 1 and Stage 2 using structured rubrics' },
+    { icon: BrainCircuit, label: 'SRC Chair', title: 'SRC Chair', desc: 'Manage grant cycles, oversee reviewers, and make final adjudication decisions' },
 ];
 
 const Login: React.FC = () => {
@@ -159,7 +159,7 @@ const Login: React.FC = () => {
                             <div className="mb-6 inline-flex items-center gap-2 rounded-full px-4 py-2"
                                  style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)' }}>
                                 <Atom className="h-4 w-4 text-cyan-400 login-spin-slow" />
-                                <span className="text-xs font-bold text-brand-300 uppercase tracking-[0.15em]">Two-Stage Review System</span>
+                                <span className="text-xs font-bold text-brand-300 uppercase tracking-[0.15em]">Unified Research Portal</span>
                             </div>
 
                             <h1 className="login-hero-heading">
@@ -169,7 +169,7 @@ const Login: React.FC = () => {
                                 Grant Review
                             </h1>
                             <p className="mt-4 text-base leading-relaxed text-slate-500 max-w-md">
-                                Where rigorous peer evaluation meets streamlined grant lifecycle management — powering research excellence at NSU.
+                                One portal for all roles — PIs submit proposals, Reviewers evaluate them, and the SRC Chair oversees the full grant lifecycle at NSU.
                             </p>
 
                             <div className="mt-8 space-y-3">
@@ -244,7 +244,9 @@ const Login: React.FC = () => {
                                         Sign in to continue
                                     </h2>
                                     <p className="mt-1.5 text-[13px] text-slate-500">
-                                        Access the research grant review portal with your institutional credentials.
+                                        This portal is for <span className="text-brand-400 font-medium">PIs</span>,{' '}
+                                        <span className="text-cyan-400 font-medium">Reviewers</span>, and{' '}
+                                        <span className="text-violet-400 font-medium">SRC Chair</span>. Use your institutional email and password.
                                     </p>
                                 </div>
 
@@ -334,11 +336,11 @@ const Login: React.FC = () => {
 
                                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
                                         <p className="text-center text-[12.5px] text-slate-600">
-                                            Reviewer registration is by invitation only.
-                                            <br />Contact the SRC Chair for access.
+                                            New users must be registered by the SRC Chair.
+                                            <br />Reviewer accounts are created by invitation only.
                                         </p>
                                         <p className="mt-2.5 text-center text-[12.5px] text-slate-600">
-                                            Need help?{' '}
+                                            Need access?{' '}
                                             <a href="mailto:src@nsu.edu" className="font-semibold text-brand-400 hover:text-brand-300 transition-colors">
                                                 src@nsu.edu
                                             </a>
