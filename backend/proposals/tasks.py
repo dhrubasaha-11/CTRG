@@ -2,10 +2,14 @@
 Celery tasks for the proposals module.
 Runs periodic background jobs for deadline monitoring.
 """
+import logging
 from celery import shared_task
 from django.utils import timezone
+from django.core.cache import cache
 from .models import Proposal
 from .services import ProposalService, EmailService
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
@@ -24,11 +28,7 @@ def check_revision_deadlines():
     for proposal in proposals:
         if ProposalService.check_revision_deadline(proposal):
             count += 1
-            # Send deadline missed notification
-            try:
-                EmailService.send_deadline_missed_email(proposal)
-            except Exception:
-                pass
+            # Email is already sent inside mark_revision_deadline_missed()
     
     return f"Checked {proposals.count()} proposals, marked {count} as deadline missed"
 
@@ -54,6 +54,11 @@ def send_deadline_reminders():
     
     count = 0
     for proposal in proposals:
+        # Idempotency: skip if reminder was already sent for this proposal today
+        cache_key = f"revision_reminder_{proposal.id}_{now.date().isoformat()}"
+        if cache.get(cache_key):
+            continue
+
         subject = f"REMINDER: Revision Deadline Tomorrow - {proposal.proposal_code}"
         message = f"""
 Dear {proposal.pi_name},
@@ -68,19 +73,20 @@ Please log in to the system to submit your revised proposal before the deadline.
 Best regards,
 CTRG Grant Review System
         """
-        
+
         try:
             send_mail(
                 subject,
                 message,
                 settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@nsu.edu',
                 [proposal.pi_email],
-                fail_silently=True
+                fail_silently=False
             )
             count += 1
+            cache.set(cache_key, True, timeout=86400)  # 24 hours
         except Exception:
-            pass
-    
+            logger.exception("Failed to send revision reminder for %s", proposal.proposal_code)
+
     return f"Sent {count} deadline reminder emails"
 
 
@@ -105,6 +111,11 @@ def send_review_reminders():
     
     count = 0
     for assignment in assignments:
+        # Idempotency: skip if reminder was already sent for this assignment today
+        cache_key = f"review_reminder_{assignment.id}_{now.date().isoformat()}"
+        if cache.get(cache_key):
+            continue
+
         subject = f"REMINDER: Review Due Soon - {assignment.proposal.proposal_code}"
         message = f"""
 Dear {assignment.reviewer.get_full_name() or assignment.reviewer.username},
@@ -120,17 +131,18 @@ Please log in to complete your review before the deadline.
 Best regards,
 CTRG Grant Review System
         """
-        
+
         try:
             send_mail(
                 subject,
                 message,
                 settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@nsu.edu',
                 [assignment.reviewer.email],
-                fail_silently=True
+                fail_silently=False
             )
             count += 1
+            cache.set(cache_key, True, timeout=86400)  # 24 hours
         except Exception:
-            pass
-    
+            logger.exception("Failed to send review reminder for assignment %s", assignment.id)
+
     return f"Sent {count} review reminder emails"

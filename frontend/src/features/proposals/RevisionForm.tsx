@@ -72,6 +72,12 @@ const RevisionForm: React.FC = () => {
                 setError('File size exceeds 50MB limit');
                 return;
             }
+            const allowedExtensions = ['.pdf', '.doc', '.docx'];
+            const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            if (!allowedExtensions.includes(ext)) {
+                setError('Only PDF and Word documents (.pdf, .doc, .docx) are allowed');
+                return;
+            }
             setter(file);
             setError(null);
         }

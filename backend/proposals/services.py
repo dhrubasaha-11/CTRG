@@ -31,14 +31,19 @@ class ProposalService:
     
     @staticmethod
     def generate_proposal_code(cycle):
-        """Generate unique proposal code like CTRG-2025-001."""
+        """Generate unique proposal code like CTRG-2025-001.
+
+        NOTE: The authoritative code generation lives in Proposal.save().
+        This helper is kept for callers that need a preview code before saving.
+        """
         from .models import Proposal
         cycle_year = str(cycle.year).split('-')[0] if cycle and cycle.year else str(timezone.now().year)
-        count = Proposal.objects.filter(proposal_code__startswith=f"CTRG-{cycle_year}-").count() + 1
-        proposal_code = f"CTRG-{cycle_year}-{count:03d}"
+        prefix = f"CTRG-{cycle_year}-"
+        count = Proposal.objects.filter(proposal_code__startswith=prefix).count() + 1
+        proposal_code = f"{prefix}{count:03d}"
         while Proposal.objects.filter(proposal_code=proposal_code).exists():
             count += 1
-            proposal_code = f"CTRG-{cycle_year}-{count:03d}"
+            proposal_code = f"{prefix}{count:03d}"
         return proposal_code
     
     @staticmethod
@@ -151,8 +156,8 @@ class ProposalService:
         """
         from reviews.models import ReviewAssignment, Stage1Score
         
-        assignments = ReviewAssignment.objects.filter(
-            proposal=proposal, 
+        assignments = ReviewAssignment.objects.select_related('stage1_score').filter(
+            proposal=proposal,
             stage=ReviewAssignment.Stage.STAGE_1
         )
         if not assignments.exists():
@@ -204,8 +209,11 @@ class ProposalService:
             pass  # Chair can accept below threshold at their discretion
 
         # Guard against duplicate decisions
-        if hasattr(proposal, 'stage1_decision'):
+        try:
+            proposal.stage1_decision
             raise ValueError("Stage 1 decision already exists for this proposal")
+        except Stage1Decision.DoesNotExist:
+            pass
 
         # Create decision record
         stage1_decision = Stage1Decision.objects.create(
@@ -238,6 +246,7 @@ class ProposalService:
                 EmailService.send_stage1_decision_email(proposal, decision)
             except Exception:
                 logger.warning("Failed to send Stage 1 decision email for proposal %s", proposal.proposal_code)
+
 
         # Audit log
         AuditLog.objects.create(
@@ -353,8 +362,11 @@ class ProposalService:
         }
         if proposal.status not in allowed_statuses:
             raise ValueError("Final decision can only be applied after Stage 2 workflow starts")
-        if hasattr(proposal, 'final_decision'):
+        try:
+            proposal.final_decision
             raise ValueError("Final decision already exists for this proposal")
+        except FinalDecision.DoesNotExist:
+            pass
 
         # If Stage 2 assignments exist, ensure they are complete. Otherwise require
         # an explicit completed chair-authored Stage 2 review.
@@ -395,6 +407,7 @@ class ProposalService:
             EmailService.send_final_decision_email(proposal)
         except Exception:
             logger.warning("Failed to send final decision email for proposal %s", proposal.proposal_code)
+
 
         # Audit log
         AuditLog.objects.create(
@@ -616,8 +629,8 @@ class ReviewerService:
         # Auto-notify reviewer via email
         try:
             EmailService.send_reviewer_assignment_email(assignment)
-        except Exception:
-            logger.warning("Failed to auto-notify reviewer %s for assignment %s", reviewer.email, assignment.id)
+        except Exception as e:
+            logger.error("Failed to auto-notify reviewer %s for assignment %s: %s", reviewer.email, assignment.id, e, exc_info=True)
 
         return assignment
 
@@ -796,28 +809,91 @@ class EmailService:
 
     @staticmethod
     def _get_from_email():
-        from django.conf import settings
-        return settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@nsu.edu'
+        from .models import EmailConfiguration
+        config = EmailConfiguration.get_config()
+        if config.is_active and config.from_email:
+            if config.from_name:
+                return f"{config.from_name} <{config.from_email}>"
+            return config.from_email
+        from django.conf import settings as _s
+        return getattr(_s, 'DEFAULT_FROM_EMAIL', 'noreply@nsu.edu')
 
     @staticmethod
-    def _send_email(subject, message, recipient_list):
-        from django.core.mail import send_mail
+    def _get_email_backend():
+        """Return a Django EmailBackend using DB config if active, else default."""
+        from .models import EmailConfiguration
+        from django.core.mail import get_connection
+
+        config = EmailConfiguration.get_config()
+        if config.is_active and config.smtp_host:
+            return get_connection(
+                backend='django.core.mail.backends.smtp.EmailBackend',
+                host=config.smtp_host,
+                port=config.smtp_port,
+                username=config.smtp_username,
+                password=config.get_password(),
+                use_tls=config.use_tls,
+                fail_silently=False,
+            )
+        # Fall back to settings.py default
+        return get_connection()
+
+    @staticmethod
+    def _log_notification(subject, recipient_list, success, error_message='',
+                          notification_type='general', trigger_event='', proposal=None):
+        """Create NotificationLog entries for every send attempt."""
+        from .models import NotificationLog
+        status = NotificationLog.Status.SUCCESS if success else NotificationLog.Status.FAILED
+        for recipient in recipient_list:
+            try:
+                NotificationLog.objects.create(
+                    recipient_email=recipient,
+                    subject=subject,
+                    notification_type=notification_type,
+                    trigger_event=trigger_event,
+                    proposal=proposal,
+                    status=status,
+                    error_message=error_message,
+                )
+            except Exception:
+                logger.exception("Failed to write NotificationLog for %s", recipient)
+
+    @staticmethod
+    def _send_email(subject, message, recipient_list,
+                    notification_type='general', trigger_event='', proposal=None):
+        from django.core.mail import EmailMessage
 
         if not recipient_list:
             logger.warning("Email not sent: empty recipient list for subject '%s'", subject)
             return False
 
         try:
-            sent_count = send_mail(
+            connection = EmailService._get_email_backend()
+            email = EmailMessage(
                 subject=subject,
-                message=message,
+                body=message,
                 from_email=EmailService._get_from_email(),
-                recipient_list=recipient_list,
-                fail_silently=False
+                to=recipient_list,
+                connection=connection,
             )
-            return sent_count > 0
-        except Exception:
+            sent_count = email.send(fail_silently=False)
+            success = sent_count > 0
+            EmailService._log_notification(
+                subject, recipient_list, success,
+                notification_type=notification_type,
+                trigger_event=trigger_event,
+                proposal=proposal,
+            )
+            return success
+        except Exception as exc:
             logger.exception("Email send failed for subject '%s'", subject)
+            EmailService._log_notification(
+                subject, recipient_list, False,
+                error_message=str(exc),
+                notification_type=notification_type,
+                trigger_event=trigger_event,
+                proposal=proposal,
+            )
             return False
     
     @staticmethod
@@ -843,7 +919,10 @@ CTRG Grant Review System
         sent = EmailService._send_email(
             subject=subject,
             message=message,
-            recipient_list=[assignment.reviewer.email]
+            recipient_list=[assignment.reviewer.email],
+            notification_type='reviewer_assignment',
+            trigger_event='reviewer_assigned',
+            proposal=assignment.proposal,
         )
         if sent:
             assignment.notification_sent = True
@@ -888,7 +967,10 @@ North South University"""
         return EmailService._send_email(
             subject=subject,
             message=message,
-            recipient_list=[proposal.pi_email]
+            recipient_list=[proposal.pi_email],
+            notification_type='stage1_decision',
+            trigger_event='stage1_decision_made',
+            proposal=proposal,
         )
 
     @staticmethod
@@ -912,7 +994,10 @@ CTRG Grant Review System
         return EmailService._send_email(
             subject=subject,
             message=message,
-            recipient_list=[proposal.pi_email]
+            recipient_list=[proposal.pi_email],
+            notification_type='revision_request',
+            trigger_event='revision_requested',
+            proposal=proposal,
         )
 
     @staticmethod
@@ -936,7 +1021,10 @@ CTRG Grant Review System
         return EmailService._send_email(
             subject=subject,
             message=message,
-            recipient_list=[proposal.pi_email]
+            recipient_list=[proposal.pi_email],
+            notification_type='deadline_missed',
+            trigger_event='revision_deadline_missed',
+            proposal=proposal,
         )
 
     @staticmethod
@@ -983,26 +1071,29 @@ North South University"""
         return EmailService._send_email(
             subject=subject,
             message=message,
-            recipient_list=[proposal.pi_email]
+            recipient_list=[proposal.pi_email],
+            notification_type='final_decision',
+            trigger_event='final_decision_made',
+            proposal=proposal,
         )
-    
+
     @staticmethod
     def send_bulk_email(recipients, subject, message):
-        """Send email to multiple recipients."""
-        from django.core.mail import send_mass_mail
-        from_email = EmailService._get_from_email()
-        
-        messages = [
-            (subject, message, from_email, [recipient.email])
-            for recipient in recipients
-        ]
+        """Send email to multiple recipients. Returns dict with sent/failed counts."""
+        sent = 0
+        failed = []
+        for recipient in recipients:
+            success = EmailService._send_email(
+                subject, message, [recipient.email],
+                notification_type='bulk_email',
+                trigger_event='bulk_send',
+            )
+            if success:
+                sent += 1
+            else:
+                failed.append(recipient.email)
 
-        try:
-            sent_count = send_mass_mail(messages, fail_silently=False)
-            return sent_count > 0
-        except Exception:
-            logger.exception("Bulk email send failed for subject '%s'", subject)
-            return False
+        return {'sent': sent, 'failed': failed, 'success': sent > 0}
 
     @staticmethod
     def send_reviewer_proposal_details_email(reviewer_ids, custom_subject=None, custom_message=''):
@@ -1063,7 +1154,11 @@ North South University"""
 
             body = '\n\n'.join(parts)
 
-            success = EmailService._send_email(subject, body, [reviewer.email])
+            success = EmailService._send_email(
+                subject, body, [reviewer.email],
+                notification_type='reviewer_proposal_details',
+                trigger_event='chair_email_reviewers',
+            )
             if success:
                 sent_count += 1
             else:

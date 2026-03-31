@@ -107,7 +107,8 @@ MIDDLEWARE = [
 
     # Django core middleware
     'django.middleware.security.SecurityMiddleware',
-    'django.middleware.gzip.GZipMiddleware',
+    # GZipMiddleware removed: vulnerable to BREACH attacks over HTTPS.
+    # Use reverse proxy (nginx/cloudfront) gzip instead.
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -239,7 +240,7 @@ if not DEBUG and not FILE_ENCRYPTION_KEY:
 # Cache Configuration
 # ========================================
 
-CACHE_BACKEND = env('CACHE_BACKEND')
+CACHE_BACKEND = env('CACHE_BACKEND').strip().lower()
 if CACHE_BACKEND == 'redis':
     CACHES = {
         'default': {
@@ -461,7 +462,7 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_NAME = env('SESSION_COOKIE_NAME', default='ctrg_sessionid')
 
 # CSRF settings
-CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
+CSRF_COOKIE_HTTPONLY = True  # Prevent JS access to CSRF cookie; frontend reads token from response header
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SAMESITE = 'Lax'

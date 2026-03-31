@@ -12,7 +12,8 @@ from django.conf import settings
 from decimal import Decimal
 from .models import (
     GrantCycle, Proposal, Stage1Decision, FinalDecision, AuditLog,
-    ResearchArea, Keyword, ResearchAreaKeyword
+    ResearchArea, Keyword, ResearchAreaKeyword,
+    EmailConfiguration, NotificationLog,
 )
 from .services import ProposalService
 
@@ -513,3 +514,51 @@ class DashboardStatsSerializer(serializers.Serializer):
     awaiting_decision = serializers.IntegerField()
     awaiting_revision = serializers.IntegerField()
     status_breakdown = serializers.DictField()
+
+
+# =============================================================================
+# Email Configuration & Notification Log Serializers
+# =============================================================================
+
+class EmailConfigurationSerializer(serializers.ModelSerializer):
+    """Serializer for SMTP settings. Password is write-only."""
+    smtp_password = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, default=''
+    )
+    has_password = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EmailConfiguration
+        fields = [
+            'smtp_host', 'smtp_port', 'smtp_username', 'smtp_password',
+            'use_tls', 'from_email', 'from_name', 'is_active',
+            'has_password', 'updated_at',
+        ]
+        read_only_fields = ['updated_at']
+
+    def get_has_password(self, obj):
+        return bool(obj.smtp_password)
+
+    def update(self, instance, validated_data):
+        raw_password = validated_data.pop('smtp_password', None)
+        # Only update password if a non-empty value was provided
+        if raw_password:
+            instance.set_password(raw_password)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.updated_by = self.context.get('request', {}) and self.context['request'].user
+        instance.save()
+        return instance
+
+
+class NotificationLogSerializer(serializers.ModelSerializer):
+    """Read-only serializer for the notification log viewer."""
+    proposal_code = serializers.CharField(source='proposal.proposal_code', read_only=True, default=None)
+
+    class Meta:
+        model = NotificationLog
+        fields = [
+            'id', 'recipient_email', 'recipient_name', 'subject',
+            'notification_type', 'trigger_event', 'proposal', 'proposal_code',
+            'status', 'error_message', 'sent_at',
+        ]

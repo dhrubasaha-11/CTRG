@@ -479,10 +479,11 @@ class ImportReviewersFromExcelView(APIView):
                             message=f"Dear {first_name},\n\nYour reviewer account has been created.\n\nUsername: {username}\nEmail: {email}\nTemporary Password: {password}\n\nPlease change your password after logging in.\n\nBest regards,\nCTRG Grant Review System",
                             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@nsu.edu'),
                             recipient_list=[email],
-                            fail_silently=True,
+                            fail_silently=False,
                         )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        import logging
+                        logging.getLogger(__name__).error("Failed to send credentials email to %s: %s", email, e)
                 created.append(created_row)
                 _audit_user_event(
                     request,
@@ -557,6 +558,11 @@ class ChangePasswordView(APIView):
 
         # Save new password (serializer handles hashing)
         serializer.save()
+
+        # Invalidate old token and issue a new one
+        Token.objects.filter(user=request.user).delete()
+        new_token = Token.objects.create(user=request.user)
+
         _audit_user_event(
             request,
             action_type='PASSWORD_CHANGED',
@@ -565,7 +571,7 @@ class ChangePasswordView(APIView):
         )
 
         return Response(
-            {'message': 'Password successfully changed.'},
+            {'message': 'Password successfully changed.', 'token': new_token.key},
             status=status.HTTP_200_OK
         )
 
@@ -613,7 +619,7 @@ class UserListView(generics.ListAPIView):
 
     serializer_class = UserListSerializer
     permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
-    queryset = User.objects.all().order_by('-date_joined')
+    queryset = User.objects.prefetch_related('groups', 'reviewer_profile').all().order_by('-date_joined')
 
     def get_queryset(self):
         """
@@ -1199,19 +1205,24 @@ class ListInvitationsView(generics.ListAPIView):
     List all reviewer invitations (Admin only).
 
     GET /api/auth/invitations/
+    Uses DRF pagination (configured in settings).
     """
     permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
 
-    def get(self, request):
+    def get_queryset(self):
         from .models import ReviewerInvitation
-        invitations = ReviewerInvitation.objects.all().order_by('-created_at')
+        return ReviewerInvitation.objects.select_related('invited_by').order_by('-created_at')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        items = page if page is not None else queryset
+
         data = []
-        for inv in invitations:
+        for inv in items:
             data.append({
                 'id': inv.id,
                 'email': inv.email,
-                # Raw token is omitted to prevent anyone with read access to
-                # the admin API (or its logs) from obtaining a usable token.
                 'invited_by': inv.invited_by.get_full_name() if inv.invited_by else None,
                 'created_at': inv.created_at.isoformat(),
                 'expires_at': inv.expires_at.isoformat(),
@@ -1219,60 +1230,118 @@ class ListInvitationsView(generics.ListAPIView):
                 'is_expired': inv.is_expired,
                 'is_valid': inv.is_valid,
             })
+
+        if page is not None:
+            return self.get_paginated_response(data)
         return Response(data)
 
 
-class TestEmailView(APIView):
+class EmailConfigView(APIView):
     """
-    Send a test email to verify SMTP configuration.
-    Admin only. POST with optional {"recipient": "email@example.com"}.
+    Manage SMTP email configuration stored in the database.
+
+    GET  /api/auth/email-config/       — return current SMTP config (password masked)
+    PUT  /api/auth/email-config/       — update SMTP settings
+    POST /api/auth/email-config/test/  — send test email (handled via separate URL)
     """
     permission_classes = [permissions.IsAdminUser]
 
     def get(self, request):
-        """Return current email backend configuration (no secrets)."""
-        from django.conf import settings
-        backend = getattr(settings, 'EMAIL_BACKEND', '')
-        is_console = 'console' in backend.lower()
-        return Response({
-            'backend': backend,
-            'is_smtp': not is_console,
-            'host': getattr(settings, 'EMAIL_HOST', ''),
-            'port': getattr(settings, 'EMAIL_PORT', 587),
-            'use_tls': getattr(settings, 'EMAIL_USE_TLS', True),
-            'from_email': getattr(settings, 'DEFAULT_FROM_EMAIL', ''),
-            'user_configured': bool(getattr(settings, 'EMAIL_HOST_USER', '')),
-        })
+        """Return current email configuration (DB-stored + settings.py fallback info)."""
+        from proposals.models import EmailConfiguration
+        from proposals.serializers import EmailConfigurationSerializer
+        from django.conf import settings as _s
+
+        config = EmailConfiguration.get_config()
+        serializer = EmailConfigurationSerializer(config)
+        data = serializer.data
+
+        # Also include settings.py fallback info so the UI can show what's in use
+        settings_backend = getattr(_s, 'EMAIL_BACKEND', '')
+        data['settings_backend'] = settings_backend
+        data['settings_is_console'] = 'console' in settings_backend.lower()
+        data['settings_host'] = getattr(_s, 'EMAIL_HOST', '')
+        data['settings_from_email'] = getattr(_s, 'DEFAULT_FROM_EMAIL', '')
+        return Response(data)
+
+    def put(self, request):
+        """Update SMTP settings."""
+        from proposals.models import EmailConfiguration
+        from proposals.serializers import EmailConfigurationSerializer
+
+        config = EmailConfiguration.get_config()
+        serializer = EmailConfigurationSerializer(config, data=request.data, partial=True, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class TestEmailConfigView(APIView):
+    """
+    Send a test email using the saved DB config (or settings.py fallback).
+
+    POST /api/auth/email-config/test/
+    """
+    permission_classes = [permissions.IsAdminUser]
 
     def post(self, request):
-        """Send a test email."""
-        from django.core.mail import send_mail
-        from django.conf import settings
+        from proposals.services import EmailService
 
         recipient = request.data.get('recipient') or request.user.email
         if not recipient:
             return Response({'error': 'No recipient email provided.'}, status=400)
 
-        backend = getattr(settings, 'EMAIL_BACKEND', '')
-        is_console = 'console' in backend.lower()
+        subject = 'CTRG System — Test Email'
+        message = (
+            'This is a test email from the CTRG Grant Review Management System.\n\n'
+            'If you received this, your email configuration is working correctly.\n\n'
+            'Best regards,\nCTRG Grant Review System\nNorth South University'
+        )
 
-        try:
-            sent = send_mail(
-                subject='CTRG System — Test Email',
-                message=(
-                    'This is a test email from the CTRG Grant Review Management System.\n\n'
-                    'If you received this, your email configuration is working correctly.\n\n'
-                    'Best regards,\nCTRG Grant Review System\nNorth South University'
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[recipient],
-                fail_silently=False,
-            )
+        success = EmailService._send_email(
+            subject=subject,
+            message=message,
+            recipient_list=[recipient],
+            notification_type='test_email',
+            trigger_event='manual_test',
+        )
+
+        if success:
             return Response({
                 'success': True,
                 'sent_to': recipient,
-                'backend': backend,
-                'note': 'Email printed to server console (no SMTP configured).' if is_console else 'Email sent via SMTP.',
+                'note': 'Test email sent successfully.',
             })
-        except Exception as exc:
-            return Response({'success': False, 'error': str(exc)}, status=500)
+        else:
+            return Response({
+                'success': False,
+                'error': 'Failed to send test email. Check SMTP settings and server logs.',
+            }, status=500)
+
+
+class NotificationLogView(generics.ListAPIView):
+    """
+    Paginated list of notification logs (admin only).
+
+    GET /api/auth/notification-logs/
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def get_serializer_class(self):
+        from proposals.serializers import NotificationLogSerializer
+        return NotificationLogSerializer
+
+    def get_queryset(self):
+        from proposals.models import NotificationLog
+        qs = NotificationLog.objects.select_related('proposal').all()
+
+        # Optional filters
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        notification_type = self.request.query_params.get('type')
+        if notification_type:
+            qs = qs.filter(notification_type=notification_type)
+
+        return qs

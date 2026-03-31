@@ -139,7 +139,9 @@ const ProposalForm: React.FC = () => {
                 return;
             }
             // Accept PDF (.pdf), legacy Word (.doc), and modern Word (.docx)
-            if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
+            const allowedExtensions = ['.pdf', '.doc', '.docx'];
+            const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            if (!allowedExtensions.includes(ext) || !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
                 setError('Only PDF and Word documents are allowed');
                 return;
             }

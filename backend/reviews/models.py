@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from django.core.validators import FileExtensionValidator
+from django.core.validators import FileExtensionValidator, MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from proposals.models import Proposal
 
@@ -121,35 +121,43 @@ class Stage1Score(models.Model):
     # 8 Criteria Scores (exact requirements)
     originality_score = models.IntegerField(
         help_text="Originality of the proposed research (0-15)",
-        default=0
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(15)]
     )
     clarity_score = models.IntegerField(
         help_text="Clarity and rationality of the research question, thesis, hypotheses (0-15)",
-        default=0
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(15)]
     )
     literature_review_score = models.IntegerField(
         help_text="Literature review (assessment of relevant background materials and prior related studies) (0-15)",
-        default=0
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(15)]
     )
     methodology_score = models.IntegerField(
         help_text="Appropriateness of the methodology (0-15)",
-        default=0
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(15)]
     )
     impact_score = models.IntegerField(
         help_text="Potential impact of research findings/Policy implication/Contribution to existing knowledge (0-15)",
-        default=0
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(15)]
     )
     publication_potential_score = models.IntegerField(
         help_text="Potential for publication/dissemination of research results (0-10)",
-        default=0
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(10)]
     )
     budget_appropriateness_score = models.IntegerField(
         help_text="Appropriateness of the proposed budget (0-10)",
-        default=0
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(10)]
     )
     timeline_practicality_score = models.IntegerField(
         help_text="Practicality of the proposed time frame (0-5)",
-        default=0
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(5)]
     )
     
     # Narrative feedback
@@ -279,7 +287,8 @@ class Stage2Review(models.Model):
     revised_score = models.IntegerField(
         null=True,
         blank=True,
-        help_text="Optional revised score (0-100)"
+        help_text="Optional revised score (0-100)",
+        validators=[MinValueValidator(0), MaxValueValidator(100)]
     )
     technical_comments = models.TextField(
         help_text="Comments on how PI addressed technical and methodological concerns"
@@ -297,7 +306,15 @@ class Stage2Review(models.Model):
     class Meta:
         verbose_name = "Stage 2 Review"
         verbose_name_plural = "Stage 2 Reviews"
-    
+
+    def clean(self):
+        if self.is_chair_review:
+            if not self.proposal_id:
+                raise ValidationError("Chair reviews must have a proposal.")
+        else:
+            if not self.assignment_id:
+                raise ValidationError("Non-chair reviews must have an assignment.")
+
     def __str__(self):
         proposal = self.proposal or (self.assignment.proposal if self.assignment_id else None)
         proposal_code = proposal.proposal_code if proposal else 'Unknown Proposal'

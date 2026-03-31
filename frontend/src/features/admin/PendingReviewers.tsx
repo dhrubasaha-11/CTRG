@@ -307,7 +307,7 @@ const PendingReviewers: React.FC = () => {
                                                 </div>
                                                 <div className="text-sm text-slate-600 flex items-center mt-1">
                                                     <FileText size={12} className="mr-1" />
-                                                    {reviewer.cv_url ? (
+                                                    {reviewer.cv_url && (() => { try { new URL(reviewer.cv_url, window.location.origin); return true; } catch { return false; } })() ? (
                                                         <a
                                                             href={reviewer.cv_url}
                                                             target="_blank"
