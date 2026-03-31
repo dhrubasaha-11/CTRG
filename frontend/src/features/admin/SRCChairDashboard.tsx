@@ -247,8 +247,8 @@ const SRCChairDashboard: React.FC = () => {
                                          style={{ background: `${action.color}20`, border: `1px solid ${action.color}30` }}>
                                         <action.icon className="h-4 w-4" style={{ color: action.color }} />
                                     </div>
-                                    <span className="text-sm font-medium text-slate-700 group-hover:text-emerald-700 transition-colors">{action.label}</span>
-                                    <ChevronRight className="ml-auto h-4 w-4 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+                                    <span className="text-sm font-medium text-slate-300 group-hover:text-slate-100 transition-colors">{action.label}</span>
+                                    <ChevronRight className="ml-auto h-4 w-4 text-slate-600 group-hover:text-slate-400 transition-colors" />
                                 </Link>
                             ))}
                         </div>

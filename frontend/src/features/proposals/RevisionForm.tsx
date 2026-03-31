@@ -323,7 +323,7 @@ const RevisionForm: React.FC = () => {
             <div className="flex justify-between items-center">
                 <button
                     onClick={() => navigate('/pi/dashboard')}
-                    className="px-4 py-2 border border-gray-300 text-slate-500 rounded-lg hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 text-slate-400 rounded-lg hover:"
                 >
                     Cancel
                 </button>

@@ -98,9 +98,9 @@ const AuditLogViewer: React.FC = () => {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Details</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className=" divide-y ">
                             {logs.map(log => (
-                                <tr key={log.id} className="hover:bg-slate-50">
+                                <tr key={log.id} className="hover:">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center text-sm text-slate-200">
                                             <Clock size={14} className="mr-2 text-slate-600" />

@@ -424,7 +424,7 @@ const Stage2ReviewForm: React.FC = () => {
             <div className="flex justify-between items-center">
                 <button
                     onClick={() => navigate('/reviewer/dashboard')}
-                    className="px-4 py-2 border border-gray-300 text-slate-500 rounded-lg hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 text-slate-400 rounded-lg hover:"
                 >
                     Cancel
                 </button>
@@ -432,7 +432,7 @@ const Stage2ReviewForm: React.FC = () => {
                     <button
                         onClick={handleSaveDraft}
                         disabled={submitting || isFinalized}
-                        className="flex items-center px-4 py-2 bg-gray-100 text-slate-600 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                        className="flex items-center px-4 py-2 bg-gray-100 text-slate-400 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                     >
                         <Save size={18} className="mr-2" />
                         Save Draft

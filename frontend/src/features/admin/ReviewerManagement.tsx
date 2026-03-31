@@ -446,9 +446,9 @@ const ReviewerManagement: React.FC = () => {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className=" divide-y ">
                             {filteredReviewers.map((reviewer) => (
-                                <tr key={reviewer.id} className="hover:bg-slate-50">
+                                <tr key={reviewer.id} className="hover:">
                                     <td className="px-4 py-4">
                                         <input
                                             type="checkbox"

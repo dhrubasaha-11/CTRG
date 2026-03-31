@@ -281,9 +281,9 @@ const PendingReviewers: React.FC = () => {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className=" divide-y ">
                             {pendingReviewers.map((reviewer) => (
-                                <tr key={reviewer.id} className="hover:bg-slate-50">
+                                <tr key={reviewer.id} className="hover:">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center">
                                             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white font-semibold">
