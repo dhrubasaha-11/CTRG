@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
 
     # Third-party apps
@@ -107,6 +108,7 @@ MIDDLEWARE = [
 
     # Django core middleware
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     # GZipMiddleware removed: vulnerable to BREACH attacks over HTTPS.
     # Use reverse proxy (nginx/cloudfront) gzip instead.
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -217,6 +219,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ========================================
 # Media Files (User Uploads)
@@ -481,8 +484,14 @@ if not DEBUG:
 # ========================================
 
 # Create logs directory if it doesn't exist
-LOGS_DIR = BASE_DIR / 'logs'
-LOGS_DIR.mkdir(exist_ok=True)
+# Fall back to /tmp on read-only filesystems (e.g. Vercel serverless)
+_logs_default = BASE_DIR / 'logs'
+try:
+    _logs_default.mkdir(exist_ok=True)
+    LOGS_DIR = _logs_default
+except (PermissionError, OSError):
+    LOGS_DIR = Path('/tmp/ctrg-logs')
+    LOGS_DIR.mkdir(exist_ok=True)
 
 LOGGING = {
     'version': 1,
