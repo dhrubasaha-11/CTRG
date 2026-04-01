@@ -483,11 +483,16 @@ if not DEBUG:
 # Logging Configuration
 # ========================================
 
-# Create logs directory if it doesn't exist
-# Fall back to /tmp on read-only filesystems (e.g. Vercel serverless)
+# Create logs directory if it doesn't exist.
+# Fall back to /tmp on read-only filesystems (e.g. Vercel serverless) —
+# mkdir(exist_ok=True) succeeds even on read-only dirs, so we must also
+# verify write access by attempting to create a temp file.
 _logs_default = BASE_DIR / 'logs'
 try:
     _logs_default.mkdir(exist_ok=True)
+    _test = _logs_default / '.write_test'
+    _test.touch()
+    _test.unlink()
     LOGS_DIR = _logs_default
 except (PermissionError, OSError):
     LOGS_DIR = Path('/tmp/ctrg-logs')
