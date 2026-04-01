@@ -15,6 +15,13 @@
 
 import axios from 'axios';
 
+/** Normalize role strings from the backend to match frontend route guards.
+ *  Backend may return "SRC Chair" (with space); guards expect "SRC_Chair". */
+const normalizeRole = (role: string | null | undefined): string | null => {
+    if (!role) return null;
+    return role.replace(/ /g, '_');
+};
+
 const resolveApiUrl = () => {
     if (import.meta.env.VITE_API_URL) {
         return `${import.meta.env.VITE_API_URL}/auth`;
@@ -126,7 +133,8 @@ export const login = async (email: string, password: string): Promise<LoginRespo
             email,
             password
         });
-        return response.data;
+        const data = response.data;
+        return { ...data, role: normalizeRole(data.role) };
     } catch (error: any) {
         // Handle authentication errors
         if (error.response?.status === 401) {
@@ -212,7 +220,8 @@ export const validateToken = async (token: string): Promise<TokenValidationRespo
     const response = await authApi.get<TokenValidationResponse>('/validate-token/', {
         headers: { Authorization: `Token ${token}` }
     });
-    return response.data;
+    const data = response.data;
+    return { ...data, role: normalizeRole(data.role) };
 };
 
 /**
