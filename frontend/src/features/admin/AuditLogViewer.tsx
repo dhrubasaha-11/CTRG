@@ -44,9 +44,10 @@ const AuditLogViewer: React.FC = () => {
             const params: Record<string, any> = { page };
             if (actionFilter) params.action_type = actionFilter;
             const response = await auditApi.getAll(params);
-            const data = Array.isArray(response.data) ? response.data : [];
+            const payload = response.data as any;
+            const data = Array.isArray(payload) ? payload : (payload.results ?? []);
             setLogs(data);
-            setHasMore((response as any).pagination?.next != null);
+            setHasMore(!!payload.next);
         } catch {
             setLogs([]);
         } finally {
@@ -115,7 +116,7 @@ const AuditLogViewer: React.FC = () => {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center text-sm text-slate-400">
                                             <User size={14} className="mr-2 text-slate-600" />
-                                            {log.user || 'System'}
+                                            {log.user_email || log.user || 'System'}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
