@@ -165,14 +165,14 @@ else:
     _db_url = env('DATABASE_URL', default='')
     if _db_url:
         # Use a single DATABASE_URL connection string (avoids per-param newline issues)
+        _db_config = env.db('DATABASE_URL')
+        # Merge URL-parsed OPTIONS (e.g. sslmode) with our runtime options
+        _db_options = {**_db_config.get('OPTIONS', {}), 'connect_timeout': 10, 'options': '-c statement_timeout=30000'}
         DATABASES = {
             'default': {
-                **env.db('DATABASE_URL'),
+                **_db_config,
                 'CONN_MAX_AGE': 0,
-                'OPTIONS': {
-                    'connect_timeout': 10,
-                    'options': '-c statement_timeout=30000',
-                },
+                'OPTIONS': _db_options,
             }
         }
     else:
