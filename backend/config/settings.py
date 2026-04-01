@@ -171,10 +171,11 @@ else:
             'HOST': env('DATABASE_HOST'),
             'PORT': env('DATABASE_PORT'),
             # Connection pooling for better performance
-            'CONN_MAX_AGE': 600,  # Keep connections alive for 10 minutes
+            'CONN_MAX_AGE': 0,  # 0 for serverless (new connection per request)
             'OPTIONS': {
                 'connect_timeout': 10,
                 'options': '-c statement_timeout=30000',  # 30 second query timeout
+                'sslmode': env('DATABASE_SSLMODE', default='require'),
             },
         }
     }
