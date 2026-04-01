@@ -6,13 +6,10 @@ import traceback
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Temporary diagnostic — remove after DB connection is confirmed working
-_db_url = os.environ.get('DATABASE_URL', 'NOT SET')
-try:
-    from urllib.parse import urlparse
-    _p = urlparse(_db_url)
-    print(f"[DIAG] DB user={_p.username!r} host={_p.hostname!r} port={_p.port!r} db={_p.path!r} scheme={_p.scheme!r}", flush=True)
-except Exception as _e:
-    print(f"[DIAG] parse error: {_e}", flush=True)
+print(f"[DIAG] DB_HOST={os.environ.get('DATABASE_HOST','?').strip()!r} "
+      f"DB_USER={os.environ.get('DATABASE_USER','?').strip()!r} "
+      f"DB_PORT={os.environ.get('DATABASE_PORT','?').strip()!r} "
+      f"DB_NAME={os.environ.get('DATABASE_NAME','?').strip()!r}", flush=True)
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 

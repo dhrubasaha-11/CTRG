@@ -161,37 +161,25 @@ elif env('DATABASE_ENGINE') == 'django.db.backends.sqlite3':
         }
     }
 # PostgreSQL with connection pooling
+# Strip all values to remove any trailing newlines from env var injection.
 else:
-    _db_url = env('DATABASE_URL', default='')
-    if _db_url:
-        # Use a single DATABASE_URL connection string (avoids per-param newline issues)
-        _db_config = env.db('DATABASE_URL')
-        # Merge URL-parsed OPTIONS (e.g. sslmode) with our runtime options
-        _db_options = {**_db_config.get('OPTIONS', {}), 'connect_timeout': 10, 'options': '-c statement_timeout=30000'}
-        DATABASES = {
-            'default': {
-                **_db_config,
-                'CONN_MAX_AGE': 0,
-                'OPTIONS': _db_options,
-            }
+    import os as _os
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': _os.environ.get('DATABASE_NAME', 'postgres').strip(),
+            'USER': _os.environ.get('DATABASE_USER', '').strip(),
+            'PASSWORD': _os.environ.get('DATABASE_PASSWORD', '').strip(),
+            'HOST': _os.environ.get('DATABASE_HOST', '').strip(),
+            'PORT': _os.environ.get('DATABASE_PORT', '5432').strip(),
+            'CONN_MAX_AGE': 0,
+            'OPTIONS': {
+                'connect_timeout': 10,
+                'options': '-c statement_timeout=30000',
+                'sslmode': 'require',
+            },
         }
-    else:
-        DATABASES = {
-            'default': {
-                'ENGINE': env('DATABASE_ENGINE'),
-                'NAME': env('DATABASE_NAME'),
-                'USER': env('DATABASE_USER'),
-                'PASSWORD': env('DATABASE_PASSWORD'),
-                'HOST': env('DATABASE_HOST'),
-                'PORT': env('DATABASE_PORT'),
-                'CONN_MAX_AGE': 0,
-                'OPTIONS': {
-                    'connect_timeout': 10,
-                    'options': '-c statement_timeout=30000',
-                    'sslmode': env('DATABASE_SSLMODE', default='require'),
-                },
-            }
-        }
+    }
 
 # ========================================
 # Password Validation
