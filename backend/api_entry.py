@@ -5,6 +5,11 @@ import traceback
 # Add backend/ to sys.path so Django can find config.settings, users, proposals, reviews
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Temporary diagnostic — remove after DB connection is confirmed working
+_db_url = os.environ.get('DATABASE_URL', 'NOT SET')
+_safe = _db_url[:40] + '...' if len(_db_url) > 40 else _db_url
+print(f"[DIAG] DATABASE_URL prefix: {_safe}", flush=True)
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 _application = None
