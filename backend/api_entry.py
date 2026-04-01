@@ -5,11 +5,7 @@ import traceback
 # Add backend/ to sys.path so Django can find config.settings, users, proposals, reviews
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Temporary diagnostic — remove after DB connection is confirmed working
-print(f"[DIAG] DB_HOST={os.environ.get('DATABASE_HOST','?').strip()!r} "
-      f"DB_USER={os.environ.get('DATABASE_USER','?').strip()!r} "
-      f"DB_PORT={os.environ.get('DATABASE_PORT','?').strip()!r} "
-      f"DB_NAME={os.environ.get('DATABASE_NAME','?').strip()!r}", flush=True)
+
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
