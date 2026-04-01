@@ -262,7 +262,6 @@ export const importReviewersFromExcel = async (
     const response = await authApi.post<ReviewerImportResult>('/import-reviewers/', formData, {
         headers: {
             Authorization: `Token ${token}`,
-            'Content-Type': 'multipart/form-data',
         },
     });
     return response.data;
