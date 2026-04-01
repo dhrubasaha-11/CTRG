@@ -561,6 +561,8 @@ export const userApi = {
 export interface AuditLogEntry {
     id: number;
     user: string | null;
+    user_email: string | null;
+    proposal_code: string | null;
     action_type: string;
     proposal: number | null;
     timestamp: string;

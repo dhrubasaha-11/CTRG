@@ -120,10 +120,10 @@ const AuditLogViewer: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {log.proposal ? (
-                                            <div className="flex items-center text-sm text-brand-400">
+                                        {log.proposal_code ? (
+                                            <div className="flex items-center text-sm text-indigo-600">
                                                 <FileText size={14} className="mr-1" />
-                                                #{log.proposal}
+                                                {log.proposal_code}
                                             </div>
                                         ) : (
                                             <span className="text-sm text-slate-600">-</span>
