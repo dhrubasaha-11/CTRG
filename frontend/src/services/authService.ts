@@ -16,18 +16,15 @@
 import axios from 'axios';
 
 const resolveApiUrl = () => {
+    if (import.meta.env.VITE_API_URL) {
+        return `${import.meta.env.VITE_API_URL}/auth`;
+    }
     if (typeof window === 'undefined') {
         return 'http://localhost:8000/api/auth';
     }
-
     const { hostname } = window.location;
     const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-
-    if (isLocal) {
-        return 'http://localhost:8000/api/auth';
-    }
-
-    return '/api/auth';
+    return isLocal ? 'http://localhost:8000/api/auth' : '/api/auth';
 };
 
 // Base URL for authentication endpoints (use environment variable)
