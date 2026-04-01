@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
     Mail, Send, CheckCircle, XCircle, Settings,
-    RefreshCw, Save, ChevronDown, ChevronUp,
+    RefreshCw, Save, ChevronDown, ChevronUp, ExternalLink,
 } from 'lucide-react';
 import { authApi, type EmailConfig, type NotificationLog } from '../../services/api';
 
@@ -264,6 +264,19 @@ export default function EmailSettingsPage() {
                                             placeholder={config?.has_password ? '(unchanged — leave blank to keep)' : 'App password or SMTP password'}
                                             className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
                                         />
+                                        <p className="mt-1.5 text-xs text-slate-500">
+                                            Using Gmail?{' '}
+                                            <a
+                                                href="https://myaccount.google.com/apppasswords"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-0.5 text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
+                                            >
+                                                Generate an App Password here
+                                                <ExternalLink size={11} className="ml-0.5" />
+                                            </a>
+                                            {' '}(requires 2-Step Verification enabled).
+                                        </p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-600 mb-1">From Email</label>
