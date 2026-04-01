@@ -502,19 +502,14 @@ class ImportReviewersFromExcelView(APIView):
                 if 'password' not in index_map or not _cell('password'):
                     created_row['has_temporary_password'] = True
                     # Send temp password via email instead of returning in response
-                    try:
-                        from django.core.mail import send_mail
-                        from django.conf import settings
-                        send_mail(
-                            subject='CTRG Grant System - Your Account Credentials',
-                            message=f"Dear {first_name},\n\nYour reviewer account has been created.\n\nUsername: {username}\nEmail: {email}\nTemporary Password: {password}\n\nPlease change your password after logging in.\n\nBest regards,\nCTRG Grant Review System",
-                            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@nsu.edu'),
-                            recipient_list=[email],
-                            fail_silently=False,
-                        )
-                    except Exception as e:
-                        import logging
-                        logging.getLogger(__name__).error("Failed to send credentials email to %s: %s", email, e)
+                    from proposals.services import EmailService
+                    EmailService._send_email(
+                        subject='CTRG Grant System - Your Account Credentials',
+                        message=f"Dear {first_name},\n\nYour reviewer account has been created.\n\nUsername: {username}\nEmail: {email}\nTemporary Password: {password}\n\nPlease change your password after logging in.\n\nBest regards,\nCTRG Grant Review System",
+                        recipient_list=[email],
+                        notification_type='reviewer_credentials',
+                        trigger_event='reviewer_imported',
+                    )
                 created.append(created_row)
                 _audit_user_event(
                     request,
@@ -1133,17 +1128,14 @@ class InviteReviewerView(APIView):
             f"CTRG Grant Review System"
         )
 
-        try:
-            send_mail(
-                subject,
-                message,
-                settings.DEFAULT_FROM_EMAIL,
-                [email],
-                fail_silently=False,
-            )
-            email_sent = True
-        except Exception:
-            email_sent = False
+        from proposals.services import EmailService
+        email_sent = EmailService._send_email(
+            subject=subject,
+            message=message,
+            recipient_list=[email],
+            notification_type='reviewer_invitation',
+            trigger_event='reviewer_invited',
+        )
 
         _audit_user_event(
             request,
