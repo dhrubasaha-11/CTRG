@@ -259,7 +259,7 @@ export const importReviewersFromExcel = async (
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await authApi.post<ReviewerImportResult>('/import-reviewers/', formData, {
+    const response = await axios.post<ReviewerImportResult>(`${API_URL}/import-reviewers/`, formData, {
         headers: {
             Authorization: `Token ${token}`,
         },
