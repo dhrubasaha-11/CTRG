@@ -28,6 +28,7 @@ from .views import (
     CurrentUserView,
     TokenValidationView,
     UserRegistrationView,
+    PIRegistrationView,
     ChangePasswordView,
     UserListView,
     UserDetailView,
@@ -62,6 +63,9 @@ urlpatterns = [
     # User management endpoints (admin only)
     path('register/', UserRegistrationView.as_view(), name='register'),
     # Create new user account (SRC Chair only)
+
+    path('register-pi/', PIRegistrationView.as_view(), name='register-pi'),
+    # PI self-registration (public)
 
     path('import-reviewers/', ImportReviewersFromExcelView.as_view(), name='import-reviewers'),
     # Bulk import reviewer accounts from Excel (.xlsx) (admin only)

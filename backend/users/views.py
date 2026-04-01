@@ -373,6 +373,37 @@ class UserRegistrationView(generics.CreateAPIView):
         )
 
 
+class PIRegistrationView(generics.CreateAPIView):
+    """
+    Open self-registration for PI (Principal Investigator) accounts.
+
+    POST /api/auth/register-pi/
+
+    No authentication required. Creates an active PI account.
+    Role is forced to 'PI' regardless of request data.
+    """
+    serializer_class = UserCreateSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        data['role'] = 'PI'
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        _audit_user_event(
+            request,
+            action_type='USER_CREATED',
+            actor=user,
+            target_user=user,
+            details={'role': 'PI', 'self_registered': True},
+        )
+        return Response(
+            {'message': 'PI account created successfully. You can now log in.'},
+            status=status.HTTP_201_CREATED,
+        )
+
+
 class ImportReviewersFromExcelView(APIView):
     """
     Import reviewer accounts from an Excel file (.xlsx).

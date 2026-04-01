@@ -14,6 +14,7 @@ const LocationAwareErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ c
 // Eagerly load auth and layout (needed immediately)
 import Login from './features/auth/Login';
 import ReviewerRegistration from './features/auth/ReviewerRegistration';
+import PIRegistration from './features/auth/PIRegistration';
 import DashboardLayout from './components/DashboardLayout';
 
 // Lazy load feature components for code splitting
@@ -98,6 +99,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register-reviewer" element={<ReviewerRegistration />} />
+          <Route path="/register-pi" element={<PIRegistration />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
 
           <Route element={<DashboardLayout />}>

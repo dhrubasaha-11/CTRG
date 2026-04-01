@@ -336,14 +336,13 @@ const Login: React.FC = () => {
 
                                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
                                         <p className="text-center text-[12.5px] text-slate-600">
-                                            New users must be registered by the SRC Chair.
-                                            <br />Reviewer accounts are created by invitation only.
+                                            Principal Investigator?{' '}
+                                            <button type="button" onClick={() => navigate('/register-pi')} className="font-semibold text-brand-400 hover:text-brand-300 transition-colors">
+                                                Register as PI
+                                            </button>
                                         </p>
-                                        <p className="mt-2.5 text-center text-[12.5px] text-slate-600">
-                                            Need access?{' '}
-                                            <a href="mailto:src@nsu.edu" className="font-semibold text-brand-400 hover:text-brand-300 transition-colors">
-                                                src@nsu.edu
-                                            </a>
+                                        <p className="mt-2 text-center text-[12.5px] text-slate-600">
+                                            Reviewer accounts are created by invitation only.
                                         </p>
                                     </div>
                                 </form>
