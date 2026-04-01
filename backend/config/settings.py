@@ -162,23 +162,36 @@ elif env('DATABASE_ENGINE') == 'django.db.backends.sqlite3':
     }
 # PostgreSQL with connection pooling
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': env('DATABASE_ENGINE'),
-            'NAME': env('DATABASE_NAME'),
-            'USER': env('DATABASE_USER'),
-            'PASSWORD': env('DATABASE_PASSWORD'),
-            'HOST': env('DATABASE_HOST'),
-            'PORT': env('DATABASE_PORT'),
-            # Connection pooling for better performance
-            'CONN_MAX_AGE': 0,  # 0 for serverless (new connection per request)
-            'OPTIONS': {
-                'connect_timeout': 10,
-                'options': '-c statement_timeout=30000',  # 30 second query timeout
-                'sslmode': env('DATABASE_SSLMODE', default='require'),
-            },
+    _db_url = env('DATABASE_URL', default='')
+    if _db_url:
+        # Use a single DATABASE_URL connection string (avoids per-param newline issues)
+        DATABASES = {
+            'default': {
+                **env.db('DATABASE_URL'),
+                'CONN_MAX_AGE': 0,
+                'OPTIONS': {
+                    'connect_timeout': 10,
+                    'options': '-c statement_timeout=30000',
+                },
+            }
         }
-    }
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': env('DATABASE_ENGINE'),
+                'NAME': env('DATABASE_NAME'),
+                'USER': env('DATABASE_USER'),
+                'PASSWORD': env('DATABASE_PASSWORD'),
+                'HOST': env('DATABASE_HOST'),
+                'PORT': env('DATABASE_PORT'),
+                'CONN_MAX_AGE': 0,
+                'OPTIONS': {
+                    'connect_timeout': 10,
+                    'options': '-c statement_timeout=30000',
+                    'sslmode': env('DATABASE_SSLMODE', default='require'),
+                },
+            }
+        }
 
 # ========================================
 # Password Validation
