@@ -258,11 +258,13 @@ export default function EmailSettingsPage() {
                                             )}
                                         </label>
                                         <input
-                                            type="password"
+                                            type="text"
                                             value={form.smtp_password}
                                             onChange={e => updateField('smtp_password', e.target.value)}
-                                            placeholder={config?.has_password ? '(unchanged — leave blank to keep)' : 'App password or SMTP password'}
-                                            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
+                                            placeholder={config?.has_password ? '(unchanged — leave blank to keep)' : 'Paste app password here'}
+                                            autoComplete="off"
+                                            spellCheck={false}
+                                            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 font-mono"
                                         />
                                         <p className="mt-1.5 text-xs text-slate-500">
                                             Using Gmail?{' '}
