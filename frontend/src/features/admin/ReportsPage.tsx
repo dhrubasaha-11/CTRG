@@ -144,7 +144,7 @@ const ReportsPage: React.FC = () => {
         <div className="space-y-8">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-100">Reports</h1>
+                    <h1 className="text-2xl font-bold text-slate-800">Reports</h1>
                     <p className="text-slate-500 mt-1">Generate and download proposal and cycle reports</p>
                 </div>
                 <button
@@ -157,7 +157,7 @@ const ReportsPage: React.FC = () => {
 
             {/* Cycle Summary Reports */}
             <div>
-                <h2 className="text-base font-semibold text-slate-200 mb-4 flex items-center">
+                <h2 className="text-base font-semibold text-slate-800 mb-4 flex items-center">
                     <BarChart3 size={20} className="mr-2 text-violet-400" />
                     Cycle Summary Reports
                 </h2>
@@ -166,7 +166,7 @@ const ReportsPage: React.FC = () => {
                         <div key={cycle.id} className="card p-5">
                             <div className="flex justify-between items-start mb-3">
                                 <div>
-                                    <h3 className="font-semibold text-slate-200">{cycle.name}</h3>
+                                    <h3 className="font-semibold text-slate-800">{cycle.name}</h3>
                                     <p className="text-sm text-slate-500">{cycle.year}</p>
                                 </div>
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${cycle.is_active ? 'badge-green' : 'bg-gray-100 text-slate-300'}`}>
@@ -204,7 +204,7 @@ const ReportsPage: React.FC = () => {
 
             {/* Proposal-wise Reports */}
             <div>
-                <h2 className="text-base font-semibold text-slate-200 mb-4 flex items-center">
+                <h2 className="text-base font-semibold text-slate-800 mb-4 flex items-center">
                     <FileText size={20} className="mr-2 text-brand-400" />
                     Proposal Review Reports
                 </h2>
@@ -229,8 +229,8 @@ const ReportsPage: React.FC = () => {
                             <tbody className="divide-y ">
                                 {proposals.map(proposal => (
                                     <tr key={proposal.id} className="hover:">
-                                        <td className="px-6 py-4 text-sm font-medium text-slate-200">{proposal.proposal_code}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-200 max-w-xs truncate">{proposal.title}</td>
+                                        <td className="px-6 py-4 text-sm font-medium text-slate-800">{proposal.proposal_code}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-800 max-w-xs truncate">{proposal.title}</td>
                                         <td className="px-6 py-4 text-sm text-slate-500">{proposal.pi_name}</td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(proposal.status)}`}>
@@ -250,7 +250,7 @@ const ReportsPage: React.FC = () => {
                                                 <button
                                                     onClick={() => handleDownloadReviewTemplateDocx(proposal)}
                                                     disabled={downloading === 300000 + proposal.id}
-                                                    className="inline-flex items-center px-3 py-1.5 bg-slate-900 text-white rounded-lg hover:bg-black disabled:opacity-50 text-sm"
+                                                    className="inline-flex items-center px-3 py-1.5 bg-slate-700 text-white rounded-lg hover:bg-slate-900 disabled:opacity-50 text-sm"
                                                 >
                                                     <Download size={14} className="mr-1" />
                                                     {downloading === 300000 + proposal.id ? '...' : 'DOCX'}

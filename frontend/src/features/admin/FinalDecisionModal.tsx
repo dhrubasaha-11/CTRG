@@ -129,12 +129,12 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <span className="text-sm text-slate-500">Principal Investigator</span>
-                                <div className="font-medium text-slate-200">{proposal.pi_name}</div>
+                                <div className="font-medium text-slate-800">{proposal.pi_name}</div>
                                 <div className="text-sm text-slate-500">{proposal.pi_department}</div>
                             </div>
                             <div>
                                 <span className="text-sm text-slate-500">Requested Funding</span>
-                                <div className="font-medium text-slate-200 text-lg">
+                                <div className="font-medium text-slate-800 text-lg">
                                     ${proposal.fund_requested?.toLocaleString()}
                                 </div>
                             </div>
@@ -143,22 +143,22 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                     <div className="mb-6 grid gap-4 lg:grid-cols-3">
                         <div className="rounded-xl border   p-4">
                             <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Stage 1 Reviews</p>
-                            <p className="mt-2 text-2xl font-semibold text-slate-200">{stage1Reviews.length}</p>
+                            <p className="mt-2 text-2xl font-semibold text-slate-800">{stage1Reviews.length}</p>
                         </div>
                         <div className="rounded-xl border   p-4">
                             <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Average Stage 1 Score</p>
-                            <p className="mt-2 text-2xl font-semibold text-slate-200">{averageStage1Score}%</p>
+                            <p className="mt-2 text-2xl font-semibold text-slate-800">{averageStage1Score}%</p>
                         </div>
                         <div className="rounded-xl border   p-4">
                             <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Proposal Lock</p>
-                            <p className="mt-2 text-sm font-medium text-slate-200">Finalization will lock all further edits.</p>
+                            <p className="mt-2 text-sm font-medium text-slate-800">Finalization will lock all further edits.</p>
                         </div>
                     </div>
 
                     <div className="mb-6 rounded-xl border  p-5">
                         <div className="flex items-center gap-2">
                             <FileText size={18} className="text-slate-400" />
-                            <h3 className="font-semibold text-slate-200">Revision Record</h3>
+                            <h3 className="font-semibold text-slate-800">Revision Record</h3>
                         </div>
                         <div className="mt-4 grid gap-3 lg:grid-cols-3">
                             <button
@@ -195,7 +195,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                     </div>
 
                     <div className="mb-6 rounded-xl border  p-5">
-                        <h3 className="font-semibold text-slate-200">Stage 1 Review Record</h3>
+                        <h3 className="font-semibold text-slate-800">Stage 1 Review Record</h3>
                         {stage1Reviews.length === 0 ? (
                             <p className="mt-3 text-sm text-slate-500">No completed Stage 1 reviews available.</p>
                         ) : (
@@ -204,7 +204,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                                     <div key={review.id} className="rounded-lg border   p-4">
                                         <div className="flex justify-between gap-3">
                                             <div>
-                                                <p className="font-medium text-slate-200">Reviewer {idx + 1}</p>
+                                                <p className="font-medium text-slate-800">Reviewer {idx + 1}</p>
                                                 <p className="text-sm text-slate-500">{review.reviewer_name}</p>
                                             </div>
                                             <div className="text-right text-sm text-slate-500">
@@ -224,7 +224,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                     {/* Stage 2 Review Summary */}
                     <div className="mb-6">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-semibold text-slate-200">Stage 2 Review Summary</h3>
+                            <h3 className="font-semibold text-slate-800">Stage 2 Review Summary</h3>
                             <div className="flex space-x-4">
                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-green">
                                     <CheckCircle size={12} className="mr-1" /> {acceptCount} Accept
@@ -245,7 +245,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                                     <div key={review.id} className=" p-4 rounded-lg border ">
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
-                                                <span className="text-sm font-medium text-slate-200">Reviewer {idx + 1}</span>
+                                                <span className="text-sm font-medium text-slate-800">Reviewer {idx + 1}</span>
                                                 <span className="text-sm text-slate-500 ml-2">({review.reviewer_name})</span>
                                             </div>
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${review.stage2_review?.revised_recommendation === 'ACCEPT'
@@ -269,7 +269,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                                             {review.stage2_review?.revised_score && (
                                                 <div>
                                                     <span className="text-slate-500">Revised Score:</span>
-                                                    <span className="ml-2 font-medium text-slate-200">
+                                                    <span className="ml-2 font-medium text-slate-800">
                                                         {review.stage2_review.revised_score}%
                                                     </span>
                                                 </div>
@@ -294,7 +294,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                                     <div key={review.id} className=" p-4 rounded-lg border ">
                                         <div className="mb-2 flex justify-between items-start">
                                             <div>
-                                                <span className="text-sm font-medium text-slate-200">SRC Chair</span>
+                                                <span className="text-sm font-medium text-slate-800">SRC Chair</span>
                                                 <span className="ml-2 text-sm text-slate-500">Direct Stage 2 review</span>
                                             </div>
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${review.revised_recommendation === 'ACCEPT'
@@ -317,7 +317,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                                             {review.revised_score != null && (
                                                 <div>
                                                     <span className="text-slate-500">Revised Score:</span>
-                                                    <span className="ml-2 font-medium text-slate-200">{review.revised_score}%</span>
+                                                    <span className="ml-2 font-medium text-slate-800">{review.revised_score}%</span>
                                                 </div>
                                             )}
                                         </div>
@@ -354,7 +354,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                                         }`}
                                 >
                                     <CheckCircle size={28} className={`mx-auto mb-2 ${decision === 'ACCEPTED' ? 'text-emerald-600' : 'text-slate-600'}`} />
-                                    <div className="font-semibold text-slate-200">Accept & Fund</div>
+                                    <div className="font-semibold text-slate-800">Accept & Fund</div>
                                     <div className="text-sm text-slate-500">Approve grant funding</div>
                                 </button>
 
@@ -367,7 +367,7 @@ const FinalDecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) =
                                         }`}
                                 >
                                     <XCircle size={28} className={`mx-auto mb-2 ${decision === 'REJECTED' ? 'text-red-400' : 'text-slate-600'}`} />
-                                    <div className="font-semibold text-slate-200">Reject</div>
+                                    <div className="font-semibold text-slate-800">Reject</div>
                                     <div className="text-sm text-slate-500">Do not fund proposal</div>
                                 </button>
                             </div>

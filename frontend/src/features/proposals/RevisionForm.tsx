@@ -137,12 +137,12 @@ const RevisionForm: React.FC = () => {
             <div>
                 <button
                     onClick={() => navigate('/pi/dashboard')}
-                    className="flex items-center text-slate-500 hover:text-slate-200 mb-2"
+                    className="flex items-center text-slate-500 hover:text-slate-800 mb-2"
                 >
                     <ArrowLeft size={16} className="mr-1" />
                     Back to Dashboard
                 </button>
-                <h1 className="text-2xl font-bold text-slate-100">Submit Revision</h1>
+                <h1 className="text-2xl font-bold text-slate-800">Submit Revision</h1>
                 <p className="text-slate-500">{proposal?.proposal_code} - {proposal?.title}</p>
             </div>
 
@@ -191,7 +191,7 @@ const RevisionForm: React.FC = () => {
             </div>
 
             <div className="card p-6">
-                <h2 className="font-semibold text-slate-200 mb-3">Combined Reviewer Comments</h2>
+                <h2 className="font-semibold text-slate-800 mb-3">Combined Reviewer Comments</h2>
                 {combinedComments.length === 0 ? (
                     <p className="text-sm text-slate-500">No Stage 1 reviewer comments are available yet.</p>
                 ) : (
@@ -199,7 +199,7 @@ const RevisionForm: React.FC = () => {
                         {combinedComments.map((comment, index) => (
                             <div key={`${comment.reviewer}-${index}`} className="rounded-lg border  p-4">
                                 <div className="flex items-center justify-between gap-3">
-                                    <p className="font-medium text-slate-200">Reviewer {index + 1}</p>
+                                    <p className="font-medium text-slate-800">Reviewer {index + 1}</p>
                                     <span className="text-sm text-slate-500">{comment.reviewer}</span>
                                 </div>
                                 {comment.recommendation && (
@@ -230,7 +230,7 @@ const RevisionForm: React.FC = () => {
             <div className="card p-6 space-y-6">
                 {/* Revised Proposal */}
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Revised Proposal Document <span className="text-red-500">*</span>
                     </label>
                     <p className="text-sm text-slate-500 mb-3">
@@ -242,7 +242,7 @@ const RevisionForm: React.FC = () => {
                             <div className="flex items-center">
                                 <FileText size={24} className="text-emerald-400 mr-3" />
                                 <div>
-                                    <p className="font-medium text-slate-200">{revisedProposal.name}</p>
+                                    <p className="font-medium text-slate-800">{revisedProposal.name}</p>
                                     <p className="text-sm text-slate-500">
                                         {(revisedProposal.size / (1024 * 1024)).toFixed(2)} MB
                                     </p>
@@ -271,7 +271,7 @@ const RevisionForm: React.FC = () => {
 
                 {/* Response to Reviewers */}
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Response to Reviewers <span className="text-sm font-normal text-slate-600">(optional)</span>
                     </label>
                     <p className="text-sm text-slate-500 mb-3">
@@ -283,7 +283,7 @@ const RevisionForm: React.FC = () => {
                             <div className="flex items-center">
                                 <FileText size={24} className="text-emerald-400 mr-3" />
                                 <div>
-                                    <p className="font-medium text-slate-200">{responseToReviewers.name}</p>
+                                    <p className="font-medium text-slate-800">{responseToReviewers.name}</p>
                                     <p className="text-sm text-slate-500">
                                         {(responseToReviewers.size / (1024 * 1024)).toFixed(2)} MB
                                     </p>
@@ -312,7 +312,7 @@ const RevisionForm: React.FC = () => {
 
                 {/* Additional Notes */}
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Additional Notes (Optional)
                     </label>
                     <textarea

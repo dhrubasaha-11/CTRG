@@ -238,12 +238,12 @@ const Stage1ReviewForm: React.FC = () => {
                 <div>
                     <button
                         onClick={() => navigate('/reviewer/dashboard')}
-                        className="flex items-center text-slate-500 hover:text-slate-200 mb-2"
+                        className="flex items-center text-slate-500 hover:text-slate-800 mb-2"
                     >
                         <ArrowLeft size={16} className="mr-1" />
                         Back to Dashboard
                     </button>
-                    <h1 className="text-2xl font-bold text-slate-100">Stage 1 Review</h1>
+                    <h1 className="text-2xl font-bold text-slate-800">Stage 1 Review</h1>
                     <p className="text-slate-500">{assignment?.proposal_code} - {assignment?.proposal_title}</p>
                     {isFinalized && (
                         <p className="mt-1 text-sm font-medium text-emerald-700">
@@ -253,7 +253,7 @@ const Stage1ReviewForm: React.FC = () => {
                 </div>
                 <div className="text-right">
                     <div className="text-sm text-slate-500">Deadline</div>
-                    <div className="font-medium text-slate-200">
+                    <div className="font-medium text-slate-800">
                         {assignment?.deadline && new Date(assignment.deadline).toLocaleDateString()}
                     </div>
                 </div>
@@ -286,21 +286,21 @@ const Stage1ReviewForm: React.FC = () => {
 
             {/* Scoring Form */}
             <div className="card p-6">
-                <h2 className="text-base font-semibold text-slate-200 mb-6">Evaluation Criteria</h2>
+                <h2 className="text-base font-semibold text-slate-800 mb-6">Evaluation Criteria</h2>
 
                 <div className="space-y-6">
                     {criteria.map((criterion) => (
                         <div key={criterion.key} className="border-b border-gray-100 pb-6 last:border-0">
                             <div className="flex justify-between items-start mb-2">
                                 <div>
-                                    <label className="block font-medium text-slate-200">
+                                    <label className="block font-medium text-slate-800">
                                         {criterion.label}
                                         <span className="text-slate-600 font-normal ml-2">(0-{criterion.maxScore})</span>
                                     </label>
                                     <p className="text-sm text-slate-500">{criterion.description}</p>
                                 </div>
                                 <div className="text-right">
-                                    <span className="text-2xl font-bold text-slate-100">{scores[criterion.key]}</span>
+                                    <span className="text-2xl font-bold text-slate-800">{scores[criterion.key]}</span>
                                     <span className="text-slate-600">/{criterion.maxScore}</span>
                                 </div>
                             </div>
@@ -356,7 +356,7 @@ const Stage1ReviewForm: React.FC = () => {
 
             {/* Comments */}
             <div className="card p-6">
-                <label className="block font-medium text-slate-200 mb-2">
+                <label className="block font-medium text-slate-800 mb-2">
                     Narrative Comments <span className="text-red-500">*</span>
                 </label>
                 <p className="text-sm text-slate-500 mb-3">
@@ -375,7 +375,7 @@ const Stage1ReviewForm: React.FC = () => {
             {/* Recommendation */}
             <div className="card p-6 space-y-4">
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Recommendation <span className="text-red-500">*</span>
                     </label>
                     <select
@@ -391,7 +391,7 @@ const Stage1ReviewForm: React.FC = () => {
                     </select>
                 </div>
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Detailed Recommendation Notes <span className="text-red-500">*</span>
                     </label>
                     <p className="text-sm text-slate-500 mb-3">

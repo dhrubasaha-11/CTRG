@@ -132,7 +132,7 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                                 <h2 className="mt-2 text-2xl font-semibold">SRC Chair Revision Assessment</h2>
                                 <p className="mt-2 text-sm text-white/75">{proposal.proposal_code} · {proposal.title}</p>
                             </div>
-                            <button onClick={onClose} className="rounded-full border border-white/20 p-2 text-white/80 hover:/10 hover:text-white">
+                            <button onClick={onClose} className="rounded-full border border-slate-300 p-2 text-white/80 hover:/10 hover:text-white">
                                 <X size={20} />
                             </button>
                         </div>
@@ -161,22 +161,22 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                                 <div className="grid gap-4 lg:grid-cols-3">
                                     <div className="rounded-xl border   p-4">
                                         <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Requested Funding</p>
-                                        <p className="mt-2 text-2xl font-semibold text-slate-200">${proposal.fund_requested?.toLocaleString()}</p>
+                                        <p className="mt-2 text-2xl font-semibold text-slate-800">${proposal.fund_requested?.toLocaleString()}</p>
                                     </div>
                                     <div className="rounded-xl border   p-4">
                                         <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Stage 1 Reviews</p>
-                                        <p className="mt-2 text-2xl font-semibold text-slate-200">{reviews.length}</p>
+                                        <p className="mt-2 text-2xl font-semibold text-slate-800">{reviews.length}</p>
                                     </div>
                                     <div className="rounded-xl border   p-4">
                                         <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Average Stage 1 Score</p>
-                                        <p className="mt-2 text-2xl font-semibold text-slate-200">{averageStage1Score}%</p>
+                                        <p className="mt-2 text-2xl font-semibold text-slate-800">{averageStage1Score}%</p>
                                     </div>
                                 </div>
 
                                 <div className="rounded-xl border  p-5">
                                     <div className="flex items-center gap-2">
                                         <FileText size={18} className="text-slate-700" />
-                                        <h3 className="text-base font-semibold text-slate-200">Revision Materials</h3>
+                                        <h3 className="text-base font-semibold text-slate-800">Revision Materials</h3>
                                     </div>
                                     <div className="mt-4 grid gap-3 md:grid-cols-3">
                                         <button
@@ -213,7 +213,7 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                                 </div>
 
                                 <div className="rounded-xl border  p-5">
-                                    <h3 className="text-base font-semibold text-slate-200">Stage 1 Reviewer Comments</h3>
+                                    <h3 className="text-base font-semibold text-slate-800">Stage 1 Reviewer Comments</h3>
                                     {reviews.length === 0 ? (
                                         <p className="mt-3 text-sm text-slate-500">No completed Stage 1 reviews are available.</p>
                                     ) : (
@@ -222,7 +222,7 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                                                 <div key={review.id} className="rounded-xl border   p-4">
                                                     <div className="flex items-center justify-between gap-3">
                                                         <div>
-                                                            <p className="font-medium text-slate-200">Reviewer {index + 1}</p>
+                                                            <p className="font-medium text-slate-800">Reviewer {index + 1}</p>
                                                             <p className="text-sm text-slate-500">{review.reviewer_name}</p>
                                                         </div>
                                                         <div className="text-right text-sm text-slate-500">
@@ -245,7 +245,7 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                                 </div>
 
                                 <div className="rounded-xl border  p-5">
-                                    <h3 className="text-base font-semibold text-slate-200">Chair Stage 2 Assessment</h3>
+                                    <h3 className="text-base font-semibold text-slate-800">Chair Stage 2 Assessment</h3>
                                     <div className="mt-4 grid gap-4 md:grid-cols-3">
                                         {[
                                             { value: 'YES', label: 'Yes', description: 'All concerns addressed', tone: 'green' },
@@ -266,7 +266,7 @@ const ChairStage2ReviewModal: React.FC<Props> = ({ proposal, onClose, onSuccess 
                                                     : ' hover:border-gray-300'
                                                     } disabled:cursor-not-allowed disabled:opacity-70`}
                                             >
-                                                <p className="font-medium text-slate-200">{option.label}</p>
+                                                <p className="font-medium text-slate-800">{option.label}</p>
                                                 <p className="mt-1 text-sm text-slate-500">{option.description}</p>
                                             </button>
                                         ))}

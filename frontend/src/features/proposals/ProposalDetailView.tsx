@@ -98,7 +98,7 @@ const ProposalDetailView: React.FC = () => {
                             {proposal.status_display || proposal.status.replace(/_/g, ' ')}
                         </span>
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-100 mt-1">{proposal.title}</h1>
+                    <h1 className="text-2xl font-bold text-slate-800 mt-1">{proposal.title}</h1>
                 </div>
             </div>
 
@@ -223,7 +223,7 @@ const ProposalDetailView: React.FC = () => {
                                 >
                                     <FileText size={18} className="text-blue-500" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-slate-200">Research Proposal</p>
+                                        <p className="text-sm font-medium text-slate-800">Research Proposal</p>
                                         <p className="text-xs text-slate-500">Original submission</p>
                                     </div>
                                     <Download size={16} className="text-slate-600" />
@@ -236,7 +236,7 @@ const ProposalDetailView: React.FC = () => {
                                 >
                                     <FileText size={18} className="text-green-500" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-slate-200">Application Template</p>
+                                        <p className="text-sm font-medium text-slate-800">Application Template</p>
                                     </div>
                                     <Download size={16} className="text-slate-600" />
                                 </button>
@@ -248,7 +248,7 @@ const ProposalDetailView: React.FC = () => {
                                 >
                                     <FileText size={18} className="text-purple-500" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-slate-200">Revised Proposal</p>
+                                        <p className="text-sm font-medium text-slate-800">Revised Proposal</p>
                                     </div>
                                     <Download size={16} className="text-slate-600" />
                                 </button>
@@ -260,7 +260,7 @@ const ProposalDetailView: React.FC = () => {
                                 >
                                     <FileText size={18} className="text-orange-500" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-slate-200">Response to Reviewers</p>
+                                        <p className="text-sm font-medium text-slate-800">Response to Reviewers</p>
                                     </div>
                                     <Download size={16} className="text-slate-600" />
                                 </button>

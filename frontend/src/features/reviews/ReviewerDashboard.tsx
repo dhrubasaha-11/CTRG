@@ -64,7 +64,7 @@ const ReviewerDashboard: React.FC = () => {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-slate-100" style={{ letterSpacing: '-0.02em' }}>My Reviews</h1>
+                <h1 className="text-2xl font-bold text-slate-800" style={{ letterSpacing: '-0.02em' }}>My Reviews</h1>
                 <p className="mt-1 text-sm text-slate-500">Manage and complete your assigned proposal reviews</p>
             </div>
 
@@ -129,7 +129,7 @@ const ReviewerDashboard: React.FC = () => {
                                                     <span className={`badge ${badgeOutcome[assignment.proposal_status ?? ''] || 'badge-slate'}`}>{assignment.proposal_status_display}</span>
                                                 )}
                                             </div>
-                                            <h3 className="mt-1.5 text-sm font-semibold text-slate-200">{assignment.proposal_title}</h3>
+                                            <h3 className="mt-1.5 text-sm font-semibold text-slate-800">{assignment.proposal_title}</h3>
                                             <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
                                                 <Calendar className="h-3.5 w-3.5" />
                                                 <span>Deadline: {new Date(assignment.deadline).toLocaleDateString()}</span>

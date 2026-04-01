@@ -58,7 +58,7 @@ const AuditLogViewer: React.FC = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-100">Audit Logs</h1>
+                    <h1 className="text-2xl font-bold text-slate-800">Audit Logs</h1>
                     <p className="text-slate-500 mt-1">Track all system activities and changes</p>
                 </div>
                 <Shield size={24} className="text-slate-600" />
@@ -102,7 +102,7 @@ const AuditLogViewer: React.FC = () => {
                             {logs.map(log => (
                                 <tr key={log.id} className="hover:">
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center text-sm text-slate-200">
+                                        <div className="flex items-center text-sm text-slate-800">
                                             <Clock size={14} className="mr-2 text-slate-600" />
                                             {new Date(log.timestamp).toLocaleString()}
                                         </div>

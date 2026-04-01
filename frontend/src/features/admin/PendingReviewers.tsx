@@ -227,7 +227,7 @@ const PendingReviewers: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-100">Pending Reviewer Registrations</h1>
+                    <h1 className="text-2xl font-bold text-slate-800">Pending Reviewer Registrations</h1>
                     <p className="text-slate-500 mt-1">Review and approve new reviewer registrations</p>
                 </div>
                 {pendingReviewers.length > 0 && (
@@ -259,7 +259,7 @@ const PendingReviewers: React.FC = () => {
             ) : pendingReviewers.length === 0 ? (
                 <div className="card p-12 text-center">
                     <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
-                    <h3 className="text-lg font-medium text-slate-200 mb-2">All Caught Up!</h3>
+                    <h3 className="text-lg font-medium text-slate-800 mb-2">All Caught Up!</h3>
                     <p className="text-slate-500">There are no pending reviewer registrations at the moment.</p>
                 </div>
             ) : (
@@ -291,7 +291,7 @@ const PendingReviewers: React.FC = () => {
                                             </div>
                                             <div className="ml-4">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="text-sm font-medium text-slate-200">{reviewer.full_name}</div>
+                                                    <div className="text-sm font-medium text-slate-800">{reviewer.full_name}</div>
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium badge-amber">
                                                         <Clock size={12} className="mr-1" />
                                                         Pending
@@ -324,7 +324,7 @@ const PendingReviewers: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-slate-200">{formatDate(reviewer.date_joined)}</div>
+                                        <div className="text-sm text-slate-800">{formatDate(reviewer.date_joined)}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-red">

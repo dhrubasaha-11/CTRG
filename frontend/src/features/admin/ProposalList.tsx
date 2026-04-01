@@ -257,7 +257,7 @@ const ProposalList: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-100">All Proposals</h1>
+                    <h1 className="text-2xl font-bold text-slate-800">All Proposals</h1>
                     <p className="text-sm text-slate-500 mt-1">{filteredProposals.length} proposals found</p>
                 </div>
                 <Link
@@ -346,7 +346,7 @@ const ProposalList: React.FC = () => {
                                         <div>
                                             <div className="flex items-center">
                                                 <FileText size={16} className="text-slate-600 mr-2" />
-                                                <span className="text-sm font-semibold text-slate-200">{proposal.proposal_code}</span>
+                                                <span className="text-sm font-semibold text-slate-800">{proposal.proposal_code}</span>
                                             </div>
                                             <div className="text-xs text-slate-500 mt-0.5 max-w-xs truncate">
                                                 {proposal.title}
@@ -354,11 +354,11 @@ const ProposalList: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-5 py-3.5">
-                                        <div className="text-sm font-semibold text-slate-200">{proposal.pi_name}</div>
+                                        <div className="text-sm font-semibold text-slate-800">{proposal.pi_name}</div>
                                         <div className="text-xs text-slate-500">{proposal.pi_department}</div>
                                     </td>
                                     <td className="px-5 py-3.5">
-                                        <div className="text-sm font-semibold text-slate-200">
+                                        <div className="text-sm font-semibold text-slate-800">
                                             ${proposal.fund_requested?.toLocaleString()}
                                         </div>
                                     </td>
@@ -388,7 +388,7 @@ const ProposalList: React.FC = () => {
                                                     <Link
                                                         key={action.key}
                                                         to={`/admin/proposals/${proposal.id}`}
-                                                        className={`p-2 rounded-lg transition-colors text-slate-500 hover:bg-white/5 hover:text-slate-200 ${action.color}`}
+                                                        className={`p-2 rounded-lg transition-colors text-slate-500 hover:bg-slate-100 hover:text-slate-800 ${action.color}`}
                                                         title={action.label}
                                                     >
                                                         <action.icon size={16} />
@@ -397,7 +397,7 @@ const ProposalList: React.FC = () => {
                                                     <button
                                                         key={action.key}
                                                         onClick={() => handleAction(action.key, proposal)}
-                                                        className={`p-2 rounded-lg transition-colors text-slate-500 hover:bg-white/5 hover:text-slate-200 ${action.color}`}
+                                                        className={`p-2 rounded-lg transition-colors text-slate-500 hover:bg-slate-100 hover:text-slate-800 ${action.color}`}
                                                         title={action.label}
                                                     >
                                                         <action.icon size={16} />

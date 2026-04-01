@@ -206,7 +206,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <div className="font-medium text-slate-200">{reviewer.user_name}</div>
+                                                    <div className="font-medium text-slate-800">{reviewer.user_name}</div>
                                                     <div className="text-sm text-slate-500">{reviewer.area_of_expertise || reviewer.department || 'No expertise added'}</div>
                                                     {reviewer.overload_warning && (
                                                         <div className="mt-1 text-xs font-medium text-amber-700">

@@ -167,17 +167,17 @@ const Stage2ReviewForm: React.FC = () => {
                 <div>
                     <button
                         onClick={() => navigate('/reviewer/dashboard')}
-                        className="flex items-center text-slate-500 hover:text-slate-200 mb-2"
+                        className="flex items-center text-slate-500 hover:text-slate-800 mb-2"
                     >
                         <ArrowLeft size={16} className="mr-1" />
                         Back to Dashboard
                     </button>
-                    <h1 className="text-2xl font-bold text-slate-100">Stage 2 Review</h1>
+                    <h1 className="text-2xl font-bold text-slate-800">Stage 2 Review</h1>
                     <p className="text-slate-500">{assignment?.proposal_code} - {assignment?.proposal_title}</p>
                 </div>
                 <div className="text-right">
                     <div className="text-sm text-slate-500">Deadline</div>
-                    <div className="font-medium text-slate-200">
+                    <div className="font-medium text-slate-800">
                         {assignment?.deadline && new Date(assignment.deadline).toLocaleDateString()}
                     </div>
                 </div>
@@ -198,7 +198,7 @@ const Stage2ReviewForm: React.FC = () => {
             {/* Stage 1 Summary */}
             {stage1Reviews.length > 0 && (
                 <div className="card p-6">
-                    <h2 className="text-base font-semibold text-slate-200 mb-4">Stage 1 Review Summary</h2>
+                    <h2 className="text-base font-semibold text-slate-800 mb-4">Stage 1 Review Summary</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                         <div className="text-center p-3 rounded-lg">
                             <div className="text-2xl font-bold text-brand-400">{stage1Reviews.length}</div>
@@ -248,7 +248,7 @@ const Stage2ReviewForm: React.FC = () => {
             <div className="card p-6">
                 <div className="flex items-center mb-4">
                     <FileText size={24} className="mr-3 text-teal-600" />
-                    <h2 className="text-base font-semibold text-slate-200">Documents for Comparison</h2>
+                    <h2 className="text-base font-semibold text-slate-800">Documents for Comparison</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="border border-blue-200 bg-blue-50 rounded-lg p-4">
@@ -294,7 +294,7 @@ const Stage2ReviewForm: React.FC = () => {
 
             {/* Concerns Addressed */}
             <div className="card p-6">
-                <h2 className="text-base font-semibold text-slate-200 mb-4">
+                <h2 className="text-base font-semibold text-slate-800 mb-4">
                     Were the Stage 1 concerns adequately addressed? <span className="text-red-500">*</span>
                 </h2>
                 <div className="grid grid-cols-3 gap-4">
@@ -318,7 +318,7 @@ const Stage2ReviewForm: React.FC = () => {
                                 className={`mx-auto mb-2 ${concernsAddressed === option.value ? option.activeText : 'text-slate-600'
                                     }`}
                             />
-                            <div className="font-medium text-slate-200">{option.label}</div>
+                            <div className="font-medium text-slate-800">{option.label}</div>
                             <div className="text-xs text-slate-500">{option.desc}</div>
                         </button>
                     ))}
@@ -327,7 +327,7 @@ const Stage2ReviewForm: React.FC = () => {
 
             {/* Revised Recommendation */}
             <div className="card p-6">
-                <h2 className="text-base font-semibold text-slate-200 mb-4">
+                <h2 className="text-base font-semibold text-slate-800 mb-4">
                     Revised Recommendation <span className="text-red-500">*</span>
                 </h2>
                 <div className="grid grid-cols-2 gap-4">
@@ -345,7 +345,7 @@ const Stage2ReviewForm: React.FC = () => {
                             className={`mx-auto mb-3 ${revisedRecommendation === 'ACCEPT' ? 'text-emerald-400' : 'text-slate-600'
                                 }`}
                         />
-                        <div className="font-semibold text-lg text-slate-200">Recommend for Funding</div>
+                        <div className="font-semibold text-lg text-slate-800">Recommend for Funding</div>
                         <div className="text-sm text-slate-500">The proposal is ready for funding consideration</div>
                     </button>
                     <button
@@ -362,7 +362,7 @@ const Stage2ReviewForm: React.FC = () => {
                             className={`mx-auto mb-3 ${revisedRecommendation === 'REJECT' ? 'text-red-400' : 'text-slate-600'
                                 }`}
                         />
-                        <div className="font-semibold text-lg text-slate-200">Do Not Recommend</div>
+                        <div className="font-semibold text-lg text-slate-800">Do Not Recommend</div>
                         <div className="text-sm text-slate-500">The proposal does not meet funding criteria</div>
                     </button>
                 </div>
@@ -371,7 +371,7 @@ const Stage2ReviewForm: React.FC = () => {
             {/* Comments */}
             <div className="card p-6 space-y-4">
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Revised Score
                         <span className="ml-1 text-sm font-normal text-slate-600">(optional, 0-100)</span>
                     </label>
@@ -387,7 +387,7 @@ const Stage2ReviewForm: React.FC = () => {
                     />
                 </div>
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Technical Comments <span className="text-red-500">*</span>
                     </label>
                     <p className="text-sm text-slate-500 mb-3">
@@ -403,7 +403,7 @@ const Stage2ReviewForm: React.FC = () => {
                     />
                 </div>
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Budget Comments
                     </label>
                     <p className="text-sm text-slate-500 mb-3">

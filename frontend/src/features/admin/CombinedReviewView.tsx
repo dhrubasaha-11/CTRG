@@ -115,7 +115,7 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                 {/* Header */}
                 <div className="sticky top-0  border-b  p-6 flex items-center justify-between rounded-t-2xl z-10">
                     <div>
-                        <h2 className="text-base font-semibold text-slate-200">Combined Review Report</h2>
+                        <h2 className="text-base font-semibold text-slate-800">Combined Review Report</h2>
                         <p className="text-sm text-slate-500">{proposal.proposal_code} - {proposal.title}</p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -227,7 +227,7 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
 
                             {/* Individual Stage 1 Reviews */}
                             <div>
-                                <h3 className="text-base font-semibold text-slate-200 mb-4">Stage 1 Reviews</h3>
+                                <h3 className="text-base font-semibold text-slate-800 mb-4">Stage 1 Reviews</h3>
                                 {stage1Reviews.length === 0 ? (
                                     <p className="text-slate-500 text-sm">No completed Stage 1 reviews yet.</p>
                                 ) : (
@@ -235,7 +235,7 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                                         {stage1Reviews.map((review, idx) => (
                                             <div key={review.id} className=" border  rounded-xl p-5">
                                                 <div className="flex items-center justify-between mb-3">
-                                                    <h4 className="font-semibold text-slate-200">Reviewer {idx + 1}</h4>
+                                                    <h4 className="font-semibold text-slate-800">Reviewer {idx + 1}</h4>
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-lg font-bold text-brand-400">
                                                             {review.stage1_score?.total_score}/100
@@ -248,7 +248,7 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                                                 <div className="grid grid-cols-4 gap-2 mb-3">
                                                     {Object.entries(SCORE_LABELS).map(([key, { label, max }]) => (
                                                         <div key={key} className="text-center p-2  rounded">
-                                                            <div className="font-semibold text-slate-200">{(review.stage1_score as any)?.[key]}</div>
+                                                            <div className="font-semibold text-slate-800">{(review.stage1_score as any)?.[key]}</div>
                                                             <div className="text-xs text-slate-500">{label} (/{max})</div>
                                                         </div>
                                                     ))}
@@ -276,14 +276,14 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
 
                             {/* Stage 2 Reviews */}
                             <div>
-                                <h3 className="text-base font-semibold text-slate-200 mb-4">Stage 2 Reviews</h3>
+                                <h3 className="text-base font-semibold text-slate-800 mb-4">Stage 2 Reviews</h3>
                                 {stage2Reviews.length === 0 && chairStage2Reviews.length === 0 ? (
                                     <p className="text-slate-500 text-sm">No completed Stage 2 reviews yet.</p>
                                 ) : (
                                     <div className="space-y-4">
                                         {stage2Reviews.map((review, idx) => (
                                             <div key={review.id} className=" border  rounded-xl p-5">
-                                                <h4 className="font-semibold text-slate-200 mb-3">Reviewer {idx + 1}</h4>
+                                                <h4 className="font-semibold text-slate-800 mb-3">Reviewer {idx + 1}</h4>
                                                 <div className="grid grid-cols-2 gap-4 mb-3">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-sm text-slate-500">Concerns Addressed:</span>
@@ -315,7 +315,7 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                                         ))}
                                         {chairStage2Reviews.map((review) => (
                                             <div key={review.id} className=" border  rounded-xl p-5">
-                                                <h4 className="font-semibold text-slate-200 mb-3">SRC Chair</h4>
+                                                <h4 className="font-semibold text-slate-800 mb-3">SRC Chair</h4>
                                                 <div className="grid grid-cols-2 gap-4 mb-3">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-sm text-slate-500">Concerns Addressed:</span>

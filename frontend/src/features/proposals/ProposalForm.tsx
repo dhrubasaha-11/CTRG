@@ -300,12 +300,12 @@ const ProposalForm: React.FC = () => {
             <div>
                 <button
                     onClick={() => navigate(returnPath)}
-                    className="flex items-center text-slate-500 hover:text-slate-200 mb-2"
+                    className="flex items-center text-slate-500 hover:text-slate-800 mb-2"
                 >
                     <ArrowLeft size={16} className="mr-1" />
                     {returnLabel}
                 </button>
-                <h1 className="text-2xl font-bold text-slate-100">
+                <h1 className="text-2xl font-bold text-slate-800">
                     {isEditing ? 'Edit Proposal' : 'New Proposal'}
                 </h1>
                 <p className="text-slate-500">
@@ -324,7 +324,7 @@ const ProposalForm: React.FC = () => {
             <div className="card p-6 space-y-6">
                 {/* Grant Cycle */}
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Grant Cycle <span className="text-red-500">*</span>
                     </label>
                     <select
@@ -345,7 +345,7 @@ const ProposalForm: React.FC = () => {
                 {/* PI Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block font-medium text-slate-200 mb-2">
+                        <label className="block font-medium text-slate-800 mb-2">
                             PI Name <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -358,7 +358,7 @@ const ProposalForm: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label className="block font-medium text-slate-200 mb-2">
+                        <label className="block font-medium text-slate-800 mb-2">
                             Department <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -374,7 +374,7 @@ const ProposalForm: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block font-medium text-slate-200 mb-2">
+                        <label className="block font-medium text-slate-800 mb-2">
                             PI Email <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -387,7 +387,7 @@ const ProposalForm: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label className="block font-medium text-slate-200 mb-2">
+                        <label className="block font-medium text-slate-800 mb-2">
                             Co-Investigators
                         </label>
                         <input
@@ -403,7 +403,7 @@ const ProposalForm: React.FC = () => {
 
                 {/* Title */}
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Proposal Title <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -418,7 +418,7 @@ const ProposalForm: React.FC = () => {
 
                 {/* Abstract */}
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Abstract <span className="text-red-500">*</span>
                     </label>
                     <p className="text-sm text-slate-500 mb-2">
@@ -436,7 +436,7 @@ const ProposalForm: React.FC = () => {
 
                 {/* Funding Amount */}
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Requested Funding (USD) <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -456,7 +456,7 @@ const ProposalForm: React.FC = () => {
 
                 {/* Keywords */}
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Research Keywords <span className="text-red-500">*</span>
                     </label>
                     <p className="text-sm text-slate-500 mb-2">
@@ -474,7 +474,7 @@ const ProposalForm: React.FC = () => {
 
                 {/* File Upload */}
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Proposal Document <span className="text-red-500">*</span>
                     </label>
                     <p className="text-sm text-slate-500 mb-3">
@@ -495,7 +495,7 @@ const ProposalForm: React.FC = () => {
                             <div className="flex items-center">
                                 <FileText size={24} className="text-brand-400 mr-3" />
                                 <div>
-                                    <p className="font-medium text-slate-200">{formData.file.name}</p>
+                                    <p className="font-medium text-slate-800">{formData.file.name}</p>
                                     <p className="text-sm text-slate-500">
                                         {(formData.file.size / (1024 * 1024)).toFixed(2)} MB
                                     </p>
@@ -524,7 +524,7 @@ const ProposalForm: React.FC = () => {
 
                 {/* Application Template Upload */}
                 <div>
-                    <label className="block font-medium text-slate-200 mb-2">
+                    <label className="block font-medium text-slate-800 mb-2">
                         Application Template
                     </label>
                     <p className="text-sm text-slate-500 mb-3">
@@ -545,7 +545,7 @@ const ProposalForm: React.FC = () => {
                             <div className="flex items-center">
                                 <FileText size={24} className="text-emerald-400 mr-3" />
                                 <div>
-                                    <p className="font-medium text-slate-200">{formData.templateFile.name}</p>
+                                    <p className="font-medium text-slate-800">{formData.templateFile.name}</p>
                                     <p className="text-sm text-slate-500">
                                         {(formData.templateFile.size / (1024 * 1024)).toFixed(2)} MB
                                     </p>

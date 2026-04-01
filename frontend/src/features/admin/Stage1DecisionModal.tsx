@@ -129,7 +129,7 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                                 {proposal.proposal_code} · {proposal.title}
                             </p>
                         </div>
-                        <button onClick={onClose} className="rounded-full border border-white/20 /10 p-2 text-white/80 hover:/20 hover:text-white">
+                        <button onClick={onClose} className="rounded-full border border-slate-300 /10 p-2 text-white/80 hover:/20 hover:text-white">
                             <X size={20} />
                         </button>
                     </div>
@@ -198,7 +198,7 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                                     >
                                         <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
                                             <div>
-                                                <span className="text-sm font-medium text-slate-200">Reviewer {idx + 1}</span>
+                                                <span className="text-sm font-medium text-slate-800">Reviewer {idx + 1}</span>
                                                 <span className="ml-2 text-sm text-slate-500">({review.reviewer_name})</span>
                                                 {review.review_validity_display && (
                                                     <span className={`ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${review.review_validity === 'REJECTED'
@@ -289,7 +289,7 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                                         }`}
                                 >
                                     <CheckCircle size={24} className={`mx-auto mb-2 ${decision === 'ACCEPT' ? 'text-emerald-400' : 'text-slate-600'}`} />
-                                    <div className="font-medium text-slate-200">Accept</div>
+                                    <div className="font-medium text-slate-800">Accept</div>
                                     <div className="text-xs text-slate-500">Editorial approval without revisions</div>
                                 </button>
 
@@ -302,7 +302,7 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                                         }`}
                                 >
                                     <AlertTriangle size={24} className={`mx-auto mb-2 ${decision === 'TENTATIVELY_ACCEPT' ? 'text-amber-400' : 'text-slate-600'}`} />
-                                    <div className="font-medium text-slate-200">Tentative Accept</div>
+                                    <div className="font-medium text-slate-800">Tentative Accept</div>
                                     <div className="text-xs text-slate-500">Proceed with revision request</div>
                                 </button>
 
@@ -315,7 +315,7 @@ const Stage1DecisionModal: React.FC<Props> = ({ proposal, onClose, onSuccess }) 
                                         }`}
                                 >
                                     <XCircle size={24} className={`mx-auto mb-2 ${decision === 'REJECT' ? 'text-red-400' : 'text-slate-600'}`} />
-                                    <div className="font-medium text-slate-200">Reject</div>
+                                    <div className="font-medium text-slate-800">Reject</div>
                                     <div className="text-xs text-slate-500">Editorial decline at Stage 1</div>
                                 </button>
                             </div>

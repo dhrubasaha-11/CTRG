@@ -216,7 +216,7 @@ const ReviewerRegistration: React.FC = () => {
                         <div className="absolute inset-0 opacity-[0.14]" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.18) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.18) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
                         <div className="absolute -right-24 top-[-70px] h-[240px] w-[240px] rounded-full bg-[radial-gradient(circle,_rgba(212,160,23,0.38)_0%,_rgba(212,160,23,0)_72%)]" />
                         <div className="relative z-10 flex h-full flex-col">
-                            <button onClick={() => navigate('/login')} className="inline-flex items-center gap-2 self-start rounded-full border border-white/20 bg-white/8 px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/14">
+                            <button onClick={() => navigate('/login')} className="inline-flex items-center gap-2 self-start rounded-full border border-slate-300 bg-white/8 px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/14">
                                 <ArrowLeft size={16} />
                                 Back to Login
                             </button>

@@ -277,7 +277,7 @@ const ReviewerManagement: React.FC = () => {
                 <div className="flex items-center space-x-3">
                     <button
                         onClick={handleDownloadReport}
-                        className="flex items-center px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-800 shadow-sm transition-colors"
+                        className="flex items-center px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 shadow-sm transition-colors"
                     >
                         <Download size={18} className="mr-2" />
                         Download Report

@@ -222,7 +222,7 @@ const SRCChairDashboard: React.FC = () => {
                 <div className="lg:col-span-2 card p-6">
                     <div className="mb-5 flex items-center justify-between">
                         <div>
-                            <h2 className="text-base font-semibold text-slate-200">Proposal Status Distribution</h2>
+                            <h2 className="text-base font-semibold text-slate-800">Proposal Status Distribution</h2>
                             <p className="mt-0.5 text-xs text-slate-500">Overview of all proposals across stages</p>
                         </div>
                         <BarChart3 className="h-5 w-5 text-slate-600" />
@@ -247,7 +247,7 @@ const SRCChairDashboard: React.FC = () => {
                                          style={{ background: `${action.color}20`, border: `1px solid ${action.color}30` }}>
                                         <action.icon className="h-4 w-4" style={{ color: action.color }} />
                                     </div>
-                                    <span className="text-sm font-medium text-slate-300 group-hover:text-slate-100 transition-colors">{action.label}</span>
+                                    <span className="text-sm font-medium text-slate-300 group-hover:text-slate-800 transition-colors">{action.label}</span>
                                     <ChevronRight className="ml-auto h-4 w-4 text-slate-600 group-hover:text-slate-400 transition-colors" />
                                 </Link>
                             ))}
@@ -266,7 +266,7 @@ const SRCChairDashboard: React.FC = () => {
             <div className="card p-6">
                 <div className="mb-5 flex items-center justify-between">
                     <div>
-                        <h2 className="text-base font-semibold text-slate-200">Recent Proposals</h2>
+                        <h2 className="text-base font-semibold text-slate-800">Recent Proposals</h2>
                         <p className="mt-0.5 text-xs text-slate-500">Latest submissions across all cycles</p>
                     </div>
                     <Link to="/admin/proposals" className="btn btn-ghost btn-sm flex items-center gap-1.5">
@@ -288,7 +288,7 @@ const SRCChairDashboard: React.FC = () => {
                                  onMouseLeave={e => (e.currentTarget.style.background = '')}>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                                        <span className="text-sm font-semibold text-slate-200">{p.proposal_code}</span>
+                                        <span className="text-sm font-semibold text-slate-800">{p.proposal_code}</span>
                                         <span className={`badge ${statusBadgeClass(p.status)}`}>
                                             {p.status_display ?? p.status.replace(/_/g, ' ')}
                                         </span>

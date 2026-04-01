@@ -181,7 +181,7 @@ const Login: React.FC = () => {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-0.5">
                                                 <span className="login-track-label">{t.label}</span>
-                                                <span className="text-[13px] font-semibold text-slate-200">{t.title}</span>
+                                                <span className="text-[13px] font-semibold text-slate-800">{t.title}</span>
                                             </div>
                                             <p className="text-xs text-slate-500 leading-relaxed">{t.desc}</p>
                                         </div>
@@ -221,7 +221,7 @@ const Login: React.FC = () => {
                             </div>
                             <div>
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-brand-400">NSU · CTRG</p>
-                                <p className="text-sm font-semibold text-slate-200">Grant Portal</p>
+                                <p className="text-sm font-semibold text-slate-800">Grant Portal</p>
                             </div>
                         </div>
 
@@ -240,7 +240,7 @@ const Login: React.FC = () => {
                                         <BookOpen className="h-4 w-4 text-brand-400" />
                                         <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-brand-400">Welcome Back</p>
                                     </div>
-                                    <h2 className="text-[22px] font-bold text-slate-100" style={{ letterSpacing: '-0.025em' }}>
+                                    <h2 className="text-[22px] font-bold text-slate-800" style={{ letterSpacing: '-0.025em' }}>
                                         Sign in to continue
                                     </h2>
                                     <p className="mt-1.5 text-[13px] text-slate-500">

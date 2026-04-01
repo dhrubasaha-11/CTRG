@@ -44,9 +44,9 @@ const EmailReviewersModal: React.FC<Props> = ({ reviewers, onClose, onSuccess })
 
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-            <div className="w-[min(640px,calc(100vw-2rem))] max-h-[90vh] overflow-hidden rounded-2xl bg-[#111c34] shadow-2xl">
+            <div className="w-[min(640px,calc(100vw-2rem))] max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl">
                 {/* Header */}
-                <div className="p-6 border-b border-white/10 bg-gradient-to-r from-emerald-600 to-teal-600">
+                <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-emerald-600 to-teal-600">
                     <div className="flex justify-between items-start">
                         <div className="text-white">
                             <h2 className="text-xl font-semibold">Email Reviewers</h2>
@@ -73,7 +73,7 @@ const EmailReviewersModal: React.FC<Props> = ({ reviewers, onClose, onSuccess })
                             <div className="mx-auto w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
                                 <Check size={24} className="text-emerald-600" />
                             </div>
-                            <h3 className="text-base font-semibold text-slate-200 mb-2">Emails Sent</h3>
+                            <h3 className="text-base font-semibold text-slate-800 mb-2">Emails Sent</h3>
                             <p className="text-slate-500">
                                 Successfully sent to {result.sent_count} reviewer{result.sent_count !== 1 ? 's' : ''}.
                                 {result.failed_count > 0 && (
@@ -88,7 +88,7 @@ const EmailReviewersModal: React.FC<Props> = ({ reviewers, onClose, onSuccess })
                             {/* Recipients */}
                             <div className="mb-5">
                                 <label className="block text-sm font-medium text-slate-400 mb-2">Recipients</label>
-                                <div className="flex flex-wrap gap-2 p-3 border border-white/10 rounded-lg max-h-28 overflow-y-auto">
+                                <div className="flex flex-wrap gap-2 p-3 border border-slate-200 rounded-lg max-h-28 overflow-y-auto">
                                     {reviewers.map((r) => (
                                         <span
                                             key={r.id}
@@ -136,7 +136,7 @@ const EmailReviewersModal: React.FC<Props> = ({ reviewers, onClose, onSuccess })
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-white/10 flex justify-end space-x-3">
+                <div className="p-6 border-t border-slate-200 flex justify-end space-x-3">
                     {result ? (
                         <button
                             type="button"
