@@ -2,7 +2,7 @@
  * Reviewer Management Component for SRC Chair.
  * View and manage reviewer profiles and workloads.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Users, Mail, BarChart3, CheckCircle, XCircle, AlertCircle, Edit2, ToggleLeft, ToggleRight, Plus, Upload, Send, Download, UserPlus } from 'lucide-react';
 import { reviewerApi, type Reviewer } from '../../services/api';
 import api from '../../services/api';
@@ -19,6 +19,7 @@ const ReviewerManagement: React.FC = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [excelFile, setExcelFile] = useState<File | null>(null);
     const [importingExcel, setImportingExcel] = useState(false);
+    const excelFileInputRef = useRef<HTMLInputElement>(null);
     const [selectedForEmail, setSelectedForEmail] = useState<Set<number>>(new Set());
     const [showEmailModal, setShowEmailModal] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
@@ -205,35 +206,24 @@ const ReviewerManagement: React.FC = () => {
         }
     };
 
-    const handleExcelImport = async () => {
-        if (!excelFile) {
-            alert('Please choose an .xlsx file first.');
-            return;
-        }
-
+    const handleExcelImportWithFile = async (file: File) => {
         try {
             setImportingExcel(true);
             const token = localStorage.getItem('token') || '';
-            const result = await importReviewersFromExcel(excelFile, token);
+            const result = await importReviewersFromExcel(file, token);
             await loadReviewers();
-
-            const tempPasswords = result.created
-                .filter(item => item.temporary_password)
-                .map(item => `${item.email}: ${item.temporary_password}`)
-                .join('\n');
 
             let message = `Imported ${result.created_count} reviewer(s).`;
             if (result.error_count > 0) {
                 message += ` ${result.error_count} row(s) failed.`;
             }
-            if (tempPasswords) {
-                message += `\n\nTemporary passwords:\n${tempPasswords}`;
-            }
             alert(message);
             setExcelFile(null);
+            if (excelFileInputRef.current) excelFileInputRef.current.value = '';
         } catch (err: any) {
             const apiError = err?.response?.data?.error;
             alert(apiError || err.message || 'Failed to import reviewers from Excel');
+            if (excelFileInputRef.current) excelFileInputRef.current.value = '';
         } finally {
             setImportingExcel(false);
         }
@@ -676,10 +666,15 @@ const ReviewerManagement: React.FC = () => {
                         <div className="p-6 border-b border-slate-200 space-y-3">
                             <div className="text-sm font-medium text-slate-400">Bulk Import (.xlsx)</div>
                             <input
+                                ref={excelFileInputRef}
                                 type="file"
                                 accept=".xlsx"
-                                onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
-                                className="block w-full text-sm text-slate-500"
+                                className="hidden"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0] || null;
+                                    setExcelFile(file);
+                                    if (file) handleExcelImportWithFile(file);
+                                }}
                             />
                             <div className="flex justify-between items-center">
                                 <p className="text-xs text-slate-500">
@@ -687,12 +682,12 @@ const ReviewerManagement: React.FC = () => {
                                 </p>
                                 <button
                                     type="button"
-                                    onClick={handleExcelImport}
-                                    disabled={importingExcel || !excelFile}
-                                    className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                                    onClick={() => excelFileInputRef.current?.click()}
+                                    disabled={importingExcel}
+                                    className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Upload size={14} className="mr-2" />
-                                    {importingExcel ? 'Importing...' : 'Import File'}
+                                    {importingExcel ? 'Importing...' : 'Choose & Import .xlsx'}
                                 </button>
                             </div>
                         </div>
