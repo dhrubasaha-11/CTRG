@@ -17,7 +17,6 @@ const ReviewerManagement: React.FC = () => {
     const [filter, setFilter] = useState<'all' | 'active' | 'available'>('all');
     const [saving, setSaving] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [excelFile, setExcelFile] = useState<File | null>(null);
     const [importingExcel, setImportingExcel] = useState(false);
     const excelFileInputRef = useRef<HTMLInputElement>(null);
     const [selectedForEmail, setSelectedForEmail] = useState<Set<number>>(new Set());
@@ -179,7 +178,7 @@ const ReviewerManagement: React.FC = () => {
             // Refresh list
             await loadReviewers();
             setShowAddModal(false);
-            setExcelFile(null);
+            if (excelFileInputRef.current) excelFileInputRef.current.value = '';
             setAddFormData({
                 first_name: '',
                 last_name: '',
@@ -218,7 +217,6 @@ const ReviewerManagement: React.FC = () => {
                 message += ` ${result.error_count} row(s) failed.`;
             }
             alert(message);
-            setExcelFile(null);
             if (excelFileInputRef.current) excelFileInputRef.current.value = '';
         } catch (err: any) {
             const apiError = err?.response?.data?.error;
@@ -282,7 +280,7 @@ const ReviewerManagement: React.FC = () => {
                     </button>
                     <button
                         onClick={() => {
-                            setExcelFile(null);
+                            if (excelFileInputRef.current) excelFileInputRef.current.value = '';
                             setAddFormData({
                                 first_name: '',
                                 last_name: '',
@@ -671,8 +669,7 @@ const ReviewerManagement: React.FC = () => {
                                 accept=".xlsx"
                                 className="hidden"
                                 onChange={(e) => {
-                                    const file = e.target.files?.[0] || null;
-                                    setExcelFile(file);
+                                    const file = e.target.files?.[0];
                                     if (file) handleExcelImportWithFile(file);
                                 }}
                             />
@@ -778,7 +775,7 @@ const ReviewerManagement: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        setExcelFile(null);
+                                        if (excelFileInputRef.current) excelFileInputRef.current.value = '';
                                         setShowAddModal(false);
                                     }}
                                     className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200"
