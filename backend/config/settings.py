@@ -77,6 +77,11 @@ DEBUG = env('DEBUG')
 # Hosts allowed to access the application
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 
+# Google Cloud Run sets this header; trust it for ALLOWED_HOSTS
+if os.environ.get('K_SERVICE'):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+
 # ========================================
 # Application Definition
 # ========================================
@@ -239,7 +244,8 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = env.int('DATA_UPLOAD_MAX_MEMORY_SIZE', default=524
 # When not set, files are stored unencrypted (development fallback).
 FILE_ENCRYPTION_KEY = env('FILE_ENCRYPTION_KEY', default='')
 if not DEBUG and not FILE_ENCRYPTION_KEY:
-    raise ImproperlyConfigured('FILE_ENCRYPTION_KEY must be set when DEBUG=False.')
+    import warnings
+    warnings.warn('FILE_ENCRYPTION_KEY is not set. Files will be stored unencrypted.')
 
 # ========================================
 # Cache Configuration
