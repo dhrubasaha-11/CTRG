@@ -259,7 +259,13 @@ class ProposalViewSet(viewsets.ModelViewSet):
         return queryset.distinct()
     
     def perform_create(self, serializer):
-        """Create a proposal with auto-filled PI info from user."""
+        """Create a proposal with auto-filled PI info and set status to SUBMITTED.
+
+        Per the spec (proposal_lifecycle.md), proposals have no DRAFT state —
+        they are created directly as 'submitted'.  The frontend can still offer
+        a "Save Draft" action by passing ``?draft=true`` as a query parameter,
+        which keeps the legacy DRAFT status for that use-case.
+        """
         proposal = serializer.save()
         # Set PI information from user profile if not provided
         changed = False
@@ -269,11 +275,22 @@ class ProposalViewSet(viewsets.ModelViewSet):
         if not proposal.pi_email:
             proposal.pi_email = self.request.user.email
             changed = True
+
+        # Unless explicitly saving as draft, mark as SUBMITTED immediately
+        is_draft = self.request.query_params.get('draft', '').lower() in ('true', '1')
+        if not is_draft:
+            proposal.status = Proposal.Status.SUBMITTED
+            proposal.submitted_at = timezone.now()
+            proposal.submitted_by = self.request.user
+            changed = True
+
         if changed:
             proposal.save()
+
+        action_type = 'PROPOSAL_CREATED' if is_draft else 'PROPOSAL_SUBMITTED'
         AuditLog.objects.create(
             user=self.request.user,
-            action_type='PROPOSAL_CREATED',
+            action_type=action_type,
             proposal=proposal,
             details={
                 'created_by': self.request.user.email,

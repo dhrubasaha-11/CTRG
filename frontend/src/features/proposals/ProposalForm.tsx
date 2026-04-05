@@ -130,21 +130,25 @@ const ProposalForm: React.FC = () => {
         }));
     };
 
-    /** Validate file type and size before accepting the proposal document upload. */
+    /** Validate file by extension and size. MIME type checking removed — browsers
+     *  report inconsistent MIME types across OS/browser combos. */
+    const validateFile = (file: File): boolean => {
+        if (file.size > MAX_FILE_SIZE) {
+            setError('File size exceeds 50MB limit');
+            return false;
+        }
+        const allowedExtensions = ['.pdf', '.doc', '.docx'];
+        const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        if (!allowedExtensions.includes(ext)) {
+            setError('Only PDF and Word documents are allowed');
+            return false;
+        }
+        return true;
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            if (file.size > MAX_FILE_SIZE) {
-                setError('File size exceeds 50MB limit');
-                return;
-            }
-            // Accept PDF (.pdf), legacy Word (.doc), and modern Word (.docx)
-            const allowedExtensions = ['.pdf', '.doc', '.docx'];
-            const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-            if (!allowedExtensions.includes(ext) || !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
-                setError('Only PDF and Word documents are allowed');
-                return;
-            }
+        if (file && validateFile(file)) {
             setFormData(prev => ({ ...prev, file }));
             setError(null);
         }
@@ -152,15 +156,7 @@ const ProposalForm: React.FC = () => {
 
     const handleTemplateFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            if (file.size > MAX_FILE_SIZE) {
-                setError('File size exceeds 50MB limit');
-                return;
-            }
-            if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
-                setError('Only PDF and Word documents are allowed');
-                return;
-            }
+        if (file && validateFile(file)) {
             setFormData(prev => ({ ...prev, templateFile: file }));
             setError(null);
         }
@@ -176,30 +172,17 @@ const ProposalForm: React.FC = () => {
 
     /** Validate required fields before formal submission (not needed for drafts). */
     const validateForm = (): boolean => {
-        if (!formData.title.trim()) {
-            setError('Title is required');
+        const fail = (msg: string) => {
+            setError(msg);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             return false;
-        }
-        if (!formData.abstract.trim()) {
-            setError('Abstract is required');
-            return false;
-        }
-        if (!formData.cycle) {
-            setError('Please select a grant cycle');
-            return false;
-        }
-        if (formData.fund_requested <= 0) {
-            setError('Please enter a valid funding amount');
-            return false;
-        }
-        if (!formData.keywords_input.trim()) {
-            setError('Please add at least one keyword');
-            return false;
-        }
-        if (!isEditing && !formData.file && !existingFile) {
-            setError('Please upload a proposal document');
-            return false;
-        }
+        };
+        if (!formData.title.trim()) return fail('Title is required');
+        if (!formData.abstract.trim()) return fail('Abstract is required');
+        if (!formData.cycle) return fail('Please select a grant cycle');
+        if (formData.fund_requested <= 0) return fail('Please enter a valid funding amount');
+        if (!formData.keywords_input.trim()) return fail('Please add at least one keyword');
+        if (!isEditing && !formData.file && !existingFile) return fail('Please upload a proposal document');
         return true;
     };
 
@@ -220,8 +203,7 @@ const ProposalForm: React.FC = () => {
         return data;
     };
 
-    /** Save Draft: persists current form state without validation.
-     *  Creates a new proposal or updates the existing one, then navigates away. */
+    /** Save Draft: persists current form state without validation. */
     const handleSaveDraft = async () => {
         try {
             setSubmitting(true);
@@ -232,25 +214,40 @@ const ProposalForm: React.FC = () => {
             if (isEditing) {
                 await proposalApi.update(Number(id), data);
             } else {
-                await proposalApi.create(data);
+                await proposalApi.createDraft(data);
             }
 
             alert('Draft saved successfully!');
             navigate(returnPath);
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to save draft');
+            setError(extractErrorMessage(err));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setSubmitting(false);
         }
     };
 
-    /** Submit Proposal: validates, saves, then calls the separate submit endpoint.
-     *  This is a two-step process because the backend requires the proposal to
-     *  exist (with a file) before it can transition to SUBMITTED status. */
+    /** Extract a readable error message from various DRF error response shapes. */
+    const extractErrorMessage = (err: any): string => {
+        const data = err.response?.data;
+        if (!data) return err.message || 'Network error — is the server running?';
+        if (typeof data === 'string') return data;
+        if (data.error) return data.error;
+        if (data.detail) return data.detail;
+        // DRF field-level errors: { field: ["msg", ...] }
+        const fieldErrors = Object.entries(data)
+            .filter(([, v]) => Array.isArray(v))
+            .map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`)
+            .join('; ');
+        return fieldErrors || JSON.stringify(data);
+    };
+
+    /** Submit Proposal: validates then creates/updates in one step.
+     *  Per the spec, proposals are created directly as SUBMITTED — no
+     *  separate submit call needed. */
     const handleSubmit = async () => {
         if (!validateForm()) return;
 
-        // Confirmation dialog — submission is irreversible
         if (!window.confirm('Are you sure you want to submit this proposal? You will not be able to edit it after submission.')) {
             return;
         }
@@ -260,27 +257,22 @@ const ProposalForm: React.FC = () => {
             setError(null);
 
             const data = buildFormData();
-            let proposalId = isEditing ? Number(id) : null;
 
-            // Step 1: Save/create the proposal with all form data and files
-            if (isEditing && proposalId !== null) {
-                await proposalApi.update(proposalId, data);
+            if (isEditing) {
+                // Update then submit (for drafts being finalized)
+                await proposalApi.update(Number(id), data);
+                await proposalApi.submit(Number(id));
             } else {
-                const createResponse = await proposalApi.create(data);
-                proposalId = createResponse.data.id;
+                // Single call — backend sets status to SUBMITTED directly
+                await proposalApi.create(data);
             }
-
-            if (proposalId === null || Number.isNaN(proposalId)) {
-                throw new Error('Unable to determine proposal ID for submission');
-            }
-
-            // Step 2: Transition status from DRAFT -> SUBMITTED
-            await proposalApi.submit(proposalId);
 
             alert('Proposal submitted successfully!');
             navigate(returnPath);
         } catch (err: any) {
-            setError(err.response?.data?.error || err.message || 'Failed to submit proposal');
+            console.error('[ProposalForm] submit error:', err.response?.data || err);
+            setError(extractErrorMessage(err));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setSubmitting(false);
         }
@@ -314,9 +306,9 @@ const ProposalForm: React.FC = () => {
             </div>
 
             {error && (
-                <div className="p-4 rounded-xl" style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)"}}>
-                    <AlertCircle size={20} className="mr-2 flex-shrink-0" />
-                    {error}
+                <div className="p-4 rounded-xl flex items-center" style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)"}}>
+                    <AlertCircle size={20} className="mr-2 flex-shrink-0 text-red-500" />
+                    <span className="text-red-700">{error}</span>
                 </div>
             )}
 
@@ -576,13 +568,15 @@ const ProposalForm: React.FC = () => {
             {/* Actions */}
             <div className="flex justify-between items-center">
                 <button
+                    type="button"
                     onClick={() => navigate(returnPath)}
-                    className="px-4 py-2 border border-gray-300 text-slate-400 rounded-lg hover:"
+                    className="px-4 py-2 border border-gray-300 text-slate-400 rounded-lg hover:bg-gray-50"
                 >
                     Cancel
                 </button>
                 <div className="flex space-x-3">
                     <button
+                        type="button"
                         onClick={handleSaveDraft}
                         disabled={submitting}
                         className="flex items-center px-4 py-2 bg-gray-100 text-slate-400 rounded-lg hover:bg-gray-200 disabled:opacity-50"
@@ -591,12 +585,13 @@ const ProposalForm: React.FC = () => {
                         Save Draft
                     </button>
                     <button
+                        type="button"
                         onClick={handleSubmit}
                         disabled={submitting}
                         className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                     >
                         <Send size={18} className="mr-2" />
-                        Submit Proposal
+                        {submitting ? 'Submitting...' : 'Submit Proposal'}
                     </button>
                 </div>
             </div>

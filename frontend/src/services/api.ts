@@ -390,6 +390,9 @@ export const proposalApi = {
     create: (data: FormData) => api.post<Proposal>('/proposals/', data, {
         headers: { 'Content-Type': 'multipart/form-data' },
     }),
+    createDraft: (data: FormData) => api.post<Proposal>('/proposals/?draft=true', data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    }),
     update: (id: number, data: FormData) => api.put<Proposal>(`/proposals/${id}/`, data, {
         headers: { 'Content-Type': 'multipart/form-data' },
     }),

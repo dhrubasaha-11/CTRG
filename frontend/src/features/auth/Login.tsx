@@ -45,7 +45,7 @@ const Login: React.FC = () => {
         setError('');
         setLoading(true);
         try {
-            const res = await login(email, password);
+            const res = await login(email.trim(), password);
             if (res.redirect_to) { navigate(res.redirect_to); return; }
             const r = res.role?.toLowerCase();
             if (r === 'src_chair' || res.user?.is_staff) navigate('/admin/dashboard');
