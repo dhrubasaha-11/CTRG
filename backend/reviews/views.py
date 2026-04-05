@@ -19,6 +19,7 @@ from .serializers import (
     Stage1ScoreSerializer, Stage2ReviewSerializer,
     ReviewerWorkloadSerializer, EmailReviewersSerializer,
     ReviewValidityUpdateSerializer,
+    ReReviewRequestSerializer,
 )
 from proposals.services import ReviewerService, EmailService, ProposalService
 from proposals.models import AuditLog
@@ -316,6 +317,82 @@ class ReviewAssignmentViewSet(viewsets.ModelViewSet):
         )
 
         return Response(ReviewAssignmentSerializer(assignment).data)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def request_rereview(self, request, pk=None):
+        """
+        Reopen a completed assignment so the same reviewer can revise and resubmit the review.
+        Keeps the previous review data as draft content instead of creating a duplicate assignment.
+        """
+        assignment = self.get_object()
+        serializer = ReReviewRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if assignment.status != ReviewAssignment.Status.COMPLETED:
+            return Response(
+                {'error': 'Only completed reviews can be sent back for re-review.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        reason = serializer.validated_data['chair_rejection_reason'].strip()
+        new_deadline = serializer.validated_data.get('deadline')
+
+        assignment.status = ReviewAssignment.Status.PENDING
+        assignment.review_validity = ReviewAssignment.ReviewValidity.INCLUDED
+        assignment.chair_rejection_reason = reason
+        assignment.chair_rejected_at = timezone.now()
+        assignment.chair_rejected_by = request.user
+        assignment.notification_sent = False
+        if new_deadline is not None:
+            assignment.deadline = new_deadline
+
+        update_fields = [
+            'status',
+            'review_validity',
+            'chair_rejection_reason',
+            'chair_rejected_at',
+            'chair_rejected_by',
+            'notification_sent',
+            'updated_at',
+        ]
+        if new_deadline is not None:
+            update_fields.append('deadline')
+        assignment.save(update_fields=update_fields)
+
+        if assignment.stage == ReviewAssignment.Stage.STAGE_1:
+            try:
+                stage1_score = assignment.stage1_score
+                stage1_score.is_draft = True
+                stage1_score.save(update_fields=['is_draft'])
+            except Stage1Score.DoesNotExist:
+                pass
+        elif assignment.stage == ReviewAssignment.Stage.STAGE_2:
+            try:
+                stage2_review = assignment.stage2_review
+                stage2_review.is_draft = True
+                stage2_review.save(update_fields=['is_draft'])
+            except Stage2Review.DoesNotExist:
+                pass
+
+        AuditLog.objects.create(
+            user=request.user,
+            action_type='REVIEW_REREQUESTED',
+            proposal=assignment.proposal,
+            details={
+                'assignment_id': assignment.id,
+                'reviewer_id': assignment.reviewer_id,
+                'stage': assignment.stage,
+                'reason': reason,
+                'deadline': assignment.deadline.isoformat() if assignment.deadline else None,
+            }
+        )
+
+        try:
+            EmailService.send_reviewer_assignment_email(assignment)
+        except Exception:
+            logger.exception("Failed to send re-review notification for assignment %s", assignment.id)
+
+        return Response(ReviewAssignmentSerializer(assignment).data, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['post'])
     def submit_score(self, request, pk=None):

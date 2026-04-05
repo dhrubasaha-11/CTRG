@@ -53,7 +53,13 @@ const PIDashboard: React.FC = () => {
     const loadProposals = async () => {
         try {
             setLoading(true);
-            const res = await proposalApi.getMyProposals();
+            let res;
+            try {
+                res = await proposalApi.getMyProposals();
+            } catch (primaryError) {
+                console.warn('Failed to load PI proposals from /my_proposals/, falling back to /proposals/.', primaryError);
+                res = await proposalApi.getAll();
+            }
             setProposals(res.data);
             setStats({
                 submitted_proposals: res.data.filter(p => p.status !== 'DRAFT').length,

@@ -97,9 +97,9 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 px-3 py-4 sm:px-6 sm:py-8">
             <div className="flex min-h-full items-start justify-center">
-                <div className="my-auto w-full max-w-4xl overflow-hidden rounded-2xl  shadow-2xl">
+                <div className="my-auto w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
                 {/* Header */}
-                <div className="border-b  bg-gradient-to-r from-blue-600 to-indigo-600 p-4 sm:p-6">
+                <div className="border-b border-slate-200 bg-gradient-to-r from-blue-600 to-indigo-600 p-4 sm:p-6">
                     <div className="flex justify-between items-start">
                         <div className="text-white">
                             <h2 className="text-xl font-semibold">Assign Reviewers</h2>
@@ -111,7 +111,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="max-h-[calc(100vh-13rem)] overflow-y-auto p-4 sm:p-6">
+                <form onSubmit={handleSubmit} className="max-h-[calc(100vh-13rem)] overflow-y-auto bg-white p-4 text-slate-800 sm:p-6">
                     {error && (
                         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
                             <AlertCircle size={18} className="mr-2" />
@@ -121,9 +121,9 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
 
                     {/* Stage Selection */}
                     <div className="mb-6">
-                        <label className="block text-sm font-medium text-slate-400 mb-2">Review Stage</label>
+                        <label className="mb-2 block text-sm font-medium text-slate-600">Review Stage</label>
                         <div className="grid gap-3 sm:grid-cols-2">
-                            <label className={`flex items-center px-4 py-2 border rounded-lg cursor-pointer transition-colors ${stage === 1 ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:'}`}>
+                            <label className={`flex items-center rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${stage === 1 ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'}`}>
                                 <input
                                     type="radio"
                                     name="stage"
@@ -134,7 +134,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                                 />
                                 Stage 1 Review
                             </label>
-                            <label className={`flex items-center px-4 py-2 border rounded-lg cursor-pointer transition-colors ${stage === 2 ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:'}`}>
+                            <label className={`flex items-center rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${stage === 2 ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'} ${!canAssignStage2 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
                                 <input
                                     type="radio"
                                     name="stage"
@@ -156,7 +156,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
 
                     {/* Deadline */}
                     <div className="mb-6">
-                        <label className="block text-sm font-medium text-slate-400 mb-2">Review Deadline</label>
+                        <label className="mb-2 block text-sm font-medium text-slate-600">Review Deadline</label>
                         <input
                             type="datetime-local"
                             value={deadline}
@@ -169,7 +169,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                     {/* Reviewer Selection */}
                     <div className="mb-6">
                         <div className="flex justify-between items-center mb-2">
-                            <label className="text-sm font-medium text-slate-400">Select Reviewers</label>
+                            <label className="text-sm font-medium text-slate-600">Select Reviewers</label>
                             <span className="text-sm text-slate-500">
                                 {selectedReviewers.length} selected
                             </span>
@@ -180,7 +180,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                             </div>
                         ) : (
-                            <div className="space-y-2 max-h-64 overflow-y-auto border  rounded-lg">
+                            <div className="max-h-64 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/70 p-2">
                                 {availableReviewers.length === 0 ? (
                                     <div className="p-4 text-center text-slate-500">
                                         <Users size={24} className="mx-auto mb-2 opacity-50" />
@@ -191,9 +191,9 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                                         <div
                                             key={reviewer.id}
                                             onClick={() => toggleReviewer(reviewer.user)}
-                                            className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${selectedReviewers.includes(reviewer.user)
-                                                ? 'bg-blue-50 border-l-4 border-blue-500'
-                                                : 'hover: border-l-4 border-transparent'
+                                            className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors ${selectedReviewers.includes(reviewer.user)
+                                                ? 'border-blue-200 bg-blue-50 ring-1 ring-blue-100'
+                                                : 'border-transparent bg-white hover:border-slate-200 hover:bg-slate-50'
                                                 }`}
                                         >
                                             <div className="flex items-center">
@@ -235,17 +235,17 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                 </form>
 
                 {/* Footer */}
-                <div className="flex flex-wrap items-center justify-end gap-3 border-t   p-4 sm:p-6">
+                <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:px-6 sm:py-5">
                     {assignedIds.length > 0 ? (
                         <>
-                            <span className="mr-auto flex text-sm text-emerald-400">
+                            <span className="mr-auto flex text-sm font-medium text-emerald-600">
                                 <Check size={16} className="mr-1" />
                                 {assignedIds.length} reviewer(s) assigned successfully
                             </span>
                             <button
                                 type="button"
                                 onClick={onSuccess}
-                                className="px-4 py-2 border border-gray-300 text-slate-400 rounded-lg hover:bg-gray-100"
+                                className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 transition-colors hover:bg-white"
                             >
                                 Close
                             </button>
@@ -272,7 +272,7 @@ const ReviewerAssignmentModal: React.FC<Props> = ({ proposal, onClose, onSuccess
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-4 py-2 border border-gray-300 text-slate-400 rounded-lg hover:bg-gray-100"
+                                className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 transition-colors hover:bg-white"
                             >
                                 Cancel
                             </button>

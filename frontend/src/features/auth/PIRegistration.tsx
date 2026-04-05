@@ -45,7 +45,7 @@ const PIRegistration: React.FC = () => {
                 password: form.password,
                 role: 'PI',
             });
-            alert('Account created successfully! You can now log in.');
+            alert('Account created successfully and is pending SRC Chair approval. You will be able to log in after approval.');
             navigate('/login');
         } catch (err: any) {
             const data = err.response?.data;
@@ -96,8 +96,8 @@ const PIRegistration: React.FC = () => {
                                 </div>
                                 <div className="rounded-2xl border border-white/16 bg-white/8 p-4 backdrop-blur-sm">
                                     <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#f1d27e]">Step 2</p>
-                                    <p className="mt-2 text-sm font-semibold text-white">Submit proposals</p>
-                                    <p className="mt-2 text-xs leading-6 text-[#d7e1f6]">Log in and start submitting research grant proposals.</p>
+                                    <p className="mt-2 text-sm font-semibold text-white">Await approval</p>
+                                    <p className="mt-2 text-xs leading-6 text-[#d7e1f6]">Your PI account must be approved by the SRC Chair before you can log in.</p>
                                 </div>
                             </div>
                         </div>
@@ -110,7 +110,7 @@ const PIRegistration: React.FC = () => {
                                 <div className="border-b border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.88)_0%,rgba(248,250,252,0.92)_100%)] px-6 py-6 sm:px-8">
                                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7b89a5]">Self Registration</p>
                                     <h2 className="mt-2 font-serif text-3xl leading-tight text-[#1b2747] sm:text-4xl">PI Account</h2>
-                                    <p className="mt-3 text-sm leading-6 text-[#5f6e8b]">Use your institutional email to register.</p>
+                                    <p className="mt-3 text-sm leading-6 text-[#5f6e8b]">Use your institutional email to register. New PI accounts remain inactive until SRC Chair approval.</p>
                                 </div>
 
                                 <div className="px-6 py-6 sm:px-8 sm:py-8">
@@ -193,6 +193,10 @@ const PIRegistration: React.FC = () => {
                                             className="btn w-full rounded-xl border border-[#1e2a4a] bg-[linear-gradient(140deg,#1e2a4a_0%,#2a3a5f_100%)] py-3 text-base font-bold text-white shadow-[0_14px_26px_rgba(30,42,74,0.32)] transition-all hover:brightness-110 disabled:opacity-70 disabled:cursor-not-allowed">
                                             {submitting ? 'Creating account...' : 'Create PI Account'}
                                         </button>
+
+                                        <div className="rounded-2xl border border-[#d4a017]/28 bg-[linear-gradient(140deg,rgba(212,160,23,0.1)_0%,rgba(212,160,23,0.04)_100%)] px-4 py-3">
+                                            <p className="text-sm font-medium text-[#5b4000]">PI accounts remain inactive until SRC Chair approval.</p>
+                                        </div>
 
                                         <div className="border-t border-[#e7edf5] pt-5 text-center text-sm text-[#5f6e8b]">
                                             Already have an account?{' '}

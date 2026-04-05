@@ -5,7 +5,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { X, Download, Star, MessageSquare, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { proposalApi, type Proposal, type ReviewAssignment, type Stage2Review } from '../../services/api';
+import { assignmentApi, proposalApi, type Proposal, type ReviewAssignment, type Stage2Review } from '../../services/api';
 
 interface Props {
     proposal: Proposal;
@@ -27,6 +27,9 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
     const [reviews, setReviews] = useState<ReviewAssignment[]>([]);
     const [chairStage2Reviews, setChairStage2Reviews] = useState<Stage2Review[]>([]);
     const [loading, setLoading] = useState(true);
+    const [reviewActionTarget, setReviewActionTarget] = useState<ReviewAssignment | null>(null);
+    const [rejectReason, setRejectReason] = useState('');
+    const [reviewActionLoading, setReviewActionLoading] = useState(false);
 
     useEffect(() => {
         loadReviews();
@@ -106,6 +109,75 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
             window.URL.revokeObjectURL(url);
         } catch {
             alert(errorMessage);
+        }
+    };
+
+    const handleRequestReReview = async (review: ReviewAssignment) => {
+        const reason = window.prompt(`Why are you sending ${review.reviewer_name}'s review back for revision?`, review.chair_rejection_reason || '');
+        if (!reason || !reason.trim()) return;
+
+        const existingLocal = review.deadline ? new Date(review.deadline).toISOString().slice(0, 16) : '';
+        const deadlineInput = window.prompt('Optional: set a new deadline for this reviewer (YYYY-MM-DDTHH:mm). Leave unchanged to keep current deadline.', existingLocal);
+        const trimmedDeadline = deadlineInput?.trim() || '';
+
+        try {
+            await assignmentApi.requestReReview(review.id, reason.trim(), trimmedDeadline || undefined);
+            await loadReviews();
+            alert(`Re-review requested from ${review.reviewer_name}.`);
+        } catch (err: any) {
+            const message = err?.response?.data?.error
+                || err?.response?.data?.chair_rejection_reason?.[0]
+                || err?.response?.data?.detail
+                || 'Failed to request re-review.';
+            alert(message);
+        }
+    };
+
+    const openRejectModal = (review: ReviewAssignment) => {
+        setReviewActionTarget(review);
+        setRejectReason(review.chair_rejection_reason || '');
+    };
+
+    const closeRejectModal = () => {
+        if (reviewActionLoading) return;
+        setReviewActionTarget(null);
+        setRejectReason('');
+    };
+
+    const handleRejectReview = async () => {
+        if (!reviewActionTarget) return;
+        if (!rejectReason.trim()) {
+            alert('Please enter a comment before rejecting this review.');
+            return;
+        }
+
+        try {
+            setReviewActionLoading(true);
+            await assignmentApi.setReviewValidity(reviewActionTarget.id, 'REJECTED', rejectReason.trim());
+            await loadReviews();
+            closeRejectModal();
+            alert(`Rejected ${reviewActionTarget.reviewer_name}'s review.`);
+        } catch (err: any) {
+            const message = err?.response?.data?.chair_rejection_reason?.[0]
+                || err?.response?.data?.error
+                || err?.response?.data?.detail
+                || 'Failed to reject review.';
+            alert(message);
+        } finally {
+            setReviewActionLoading(false);
+        }
+    };
+
+    const handleReinstateReview = async (review: ReviewAssignment) => {
+        try {
+            await assignmentApi.setReviewValidity(review.id, 'INCLUDED');
+            await loadReviews();
+            alert(`Reinstated ${review.reviewer_name}'s review.`);
+        } catch (err: any) {
+            const message = err?.response?.data?.error
+                || err?.response?.data?.detail
+                || 'Failed to reinstate review.';
+            alert(message);
         }
     };
 
@@ -235,14 +307,53 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                                         {stage1Reviews.map((review, idx) => (
                                             <div key={review.id} className=" border  rounded-xl p-5">
                                                 <div className="flex items-center justify-between mb-3">
-                                                    <h4 className="font-semibold text-slate-800">Reviewer {idx + 1}</h4>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-lg font-bold text-brand-400">
-                                                            {review.stage1_score?.total_score}/100
-                                                        </span>
-                                                        <span className="text-sm text-slate-500">
-                                                            ({review.stage1_score?.percentage_score}%)
-                                                        </span>
+                                                    <div>
+                                                        <h4 className="font-semibold text-slate-800">{review.reviewer_name || `Reviewer ${idx + 1}`}</h4>
+                                                        <p className="text-xs text-slate-500">{review.reviewer_email}</p>
+                                                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                            <span className={`badge ${review.status === 'COMPLETED' ? 'badge-green' : 'badge-amber'}`}>{review.status_display}</span>
+                                                            {review.review_validity_display && (
+                                                                <span className={`badge ${review.review_validity === 'REJECTED' ? 'badge-red' : 'badge-cyan'}`}>
+                                                                    {review.review_validity_display}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-lg font-bold text-brand-400">
+                                                                {review.stage1_score?.total_score}/100
+                                                            </span>
+                                                            <span className="text-sm text-slate-500">
+                                                                ({review.stage1_score?.percentage_score}%)
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex flex-wrap justify-end gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRequestReReview(review)}
+                                                                className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+                                                            >
+                                                                Send Back To Reviewer
+                                                            </button>
+                                                            {review.review_validity === 'REJECTED' ? (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleReinstateReview(review)}
+                                                                    className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
+                                                                >
+                                                                    Reinstate Review
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => openRejectModal(review)}
+                                                                    className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition-colors hover:bg-rose-100"
+                                                                >
+                                                                    Reject This Review
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-4 gap-2 mb-3">
@@ -268,6 +379,12 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                                                         <p className="text-sm text-slate-400 whitespace-pre-wrap">{review.stage1_score.narrative_comments}</p>
                                                     </div>
                                                 )}
+                                                {review.chair_rejection_reason && (
+                                                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Chair Feedback To Reviewer</p>
+                                                        <p className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">{review.chair_rejection_reason}</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -283,7 +400,46 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                                     <div className="space-y-4">
                                         {stage2Reviews.map((review, idx) => (
                                             <div key={review.id} className=" border  rounded-xl p-5">
-                                                <h4 className="font-semibold text-slate-800 mb-3">Reviewer {idx + 1}</h4>
+                                                <div className="mb-3 flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <h4 className="font-semibold text-slate-800">{review.reviewer_name || `Reviewer ${idx + 1}`}</h4>
+                                                        <p className="text-xs text-slate-500">{review.reviewer_email}</p>
+                                                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                            <span className={`badge ${review.status === 'COMPLETED' ? 'badge-green' : 'badge-amber'}`}>{review.status_display}</span>
+                                                            {review.review_validity_display && (
+                                                                <span className={`badge ${review.review_validity === 'REJECTED' ? 'badge-red' : 'badge-cyan'}`}>
+                                                                    {review.review_validity_display}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-wrap justify-end gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRequestReReview(review)}
+                                                            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+                                                        >
+                                                            Send Back To Reviewer
+                                                        </button>
+                                                        {review.review_validity === 'REJECTED' ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleReinstateReview(review)}
+                                                                className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
+                                                            >
+                                                                Reinstate Review
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openRejectModal(review)}
+                                                                className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition-colors hover:bg-rose-100"
+                                                            >
+                                                                Reject This Review
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
                                                 <div className="grid grid-cols-2 gap-4 mb-3">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-sm text-slate-500">Concerns Addressed:</span>
@@ -309,6 +465,12 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                                                     <div className="mt-2">
                                                         <span className="text-xs font-semibold text-slate-500 uppercase">Budget Comments</span>
                                                         <p className="text-sm text-slate-400 mt-1">{review.stage2_review.budget_comments}</p>
+                                                    </div>
+                                                )}
+                                                {review.chair_rejection_reason && (
+                                                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Chair Feedback To Reviewer</p>
+                                                        <p className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">{review.chair_rejection_reason}</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -341,6 +503,62 @@ const CombinedReviewView: React.FC<Props> = ({ proposal, onClose }) => {
                     )}
                 </div>
             </div>
+            {reviewActionTarget && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 p-4">
+                    <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
+                        <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+                            <div>
+                                <h3 className="text-lg font-semibold text-slate-900">Reject Reviewer Submission</h3>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    {reviewActionTarget.reviewer_name} for {reviewActionTarget.proposal_code}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={closeRejectModal}
+                                className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="px-6 py-5">
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                Comment for the reviewer
+                            </label>
+                            <textarea
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                rows={5}
+                                placeholder="Explain why this review is being rejected and what should be corrected."
+                                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+                            />
+                            <p className="mt-2 text-xs text-slate-500">
+                                This comment is stored on the reviewer assignment so the SRC Chair can track why it was rejected.
+                            </p>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
+                            <button
+                                type="button"
+                                onClick={closeRejectModal}
+                                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-white"
+                                disabled={reviewActionLoading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleRejectReview}
+                                className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={reviewActionLoading}
+                            >
+                                {reviewActionLoading ? 'Rejecting...' : 'Reject Review'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

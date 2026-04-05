@@ -328,3 +328,8 @@ class ReviewValidityUpdateSerializer(serializers.Serializer):
                 'chair_rejection_reason': 'Reason is required when rejecting a reviewer review.'
             })
         return attrs
+
+
+class ReReviewRequestSerializer(serializers.Serializer):
+    chair_rejection_reason = serializers.CharField(required=True, allow_blank=False)
+    deadline = serializers.DateTimeField(required=False)

@@ -48,6 +48,7 @@ const ReviewerRegistration: React.FC = () => {
         lastName: '',
         cv: null as File | null,
     });
+    const [usernameTouched, setUsernameTouched] = useState(false);
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -85,8 +86,28 @@ const ReviewerRegistration: React.FC = () => {
         validateToken();
     }, [token]);
 
+    useEffect(() => {
+        if (!invitedEmail || usernameTouched || formData.username.trim()) {
+            return;
+        }
+
+        const suggestedUsername = invitedEmail
+            .split('@')[0]
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9._-]+/g, '.')
+            .replace(/^\.+|\.+$/g, '');
+
+        if (suggestedUsername) {
+            setFormData((prev) => ({ ...prev, username: suggestedUsername }));
+        }
+    }, [invitedEmail, usernameTouched, formData.username]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, files } = e.target;
+        if (name === 'username') {
+            setUsernameTouched(true);
+        }
         setFormData({
             ...formData,
             [name]: name === 'cv' ? (files?.[0] ?? null) : value,
@@ -110,6 +131,16 @@ const ReviewerRegistration: React.FC = () => {
 
         if (formData.password.length < 8) {
             setError('Password must be at least 8 characters long');
+            return;
+        }
+
+        if (/^admin123$/i.test(formData.password.trim())) {
+            setError('Choose a stronger password. Avoid common passwords like "admin123".');
+            return;
+        }
+
+        if (!formData.username.trim()) {
+            setError('Username is required.');
             return;
         }
 
@@ -147,10 +178,13 @@ const ReviewerRegistration: React.FC = () => {
                 const errorMessages = [];
                 if (errorData.token) errorMessages.push(`Token: ${Array.isArray(errorData.token) ? errorData.token[0] : errorData.token}`);
                 if (errorData.username) errorMessages.push(`Username: ${Array.isArray(errorData.username) ? errorData.username[0] : errorData.username}`);
+                if (errorData.email) errorMessages.push(`Email: ${Array.isArray(errorData.email) ? errorData.email[0] : errorData.email}`);
                 if (errorData.password) errorMessages.push(`Password: ${Array.isArray(errorData.password) ? errorData.password[0] : errorData.password}`);
                 if (errorData.first_name) errorMessages.push(`First Name: ${Array.isArray(errorData.first_name) ? errorData.first_name[0] : errorData.first_name}`);
                 if (errorData.last_name) errorMessages.push(`Last Name: ${Array.isArray(errorData.last_name) ? errorData.last_name[0] : errorData.last_name}`);
                 if (errorData.cv) errorMessages.push(`CV: ${Array.isArray(errorData.cv) ? errorData.cv[0] : errorData.cv}`);
+                if (errorData.non_field_errors) errorMessages.push(Array.isArray(errorData.non_field_errors) ? errorData.non_field_errors[0] : errorData.non_field_errors);
+                if (errorData.detail) errorMessages.push(Array.isArray(errorData.detail) ? errorData.detail[0] : errorData.detail);
 
                 if (errorMessages.length > 0) {
                     setError(errorMessages.join('\n'));
@@ -264,19 +298,21 @@ const ReviewerRegistration: React.FC = () => {
                                                     type="email"
                                                     value={invitedEmail}
                                                     disabled
+                                                    autoComplete="email"
                                                     className="input has-icon-left rounded-xl border-[#cbd5e5] bg-slate-100 text-[#1d2b4d] cursor-not-allowed"
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">First Name</label><div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type="text" name="firstName" placeholder="John" className="input has-icon-left rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.firstName} onChange={handleChange} required /></div></div>
-                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">Last Name</label><div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type="text" name="lastName" placeholder="Doe" className="input has-icon-left rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.lastName} onChange={handleChange} required /></div></div>
+                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">First Name</label><div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type="text" name="firstName" placeholder="John" autoComplete="given-name" className="input has-icon-left rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.firstName} onChange={handleChange} required /></div></div>
+                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">Last Name</label><div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type="text" name="lastName" placeholder="Doe" autoComplete="family-name" className="input has-icon-left rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.lastName} onChange={handleChange} required /></div></div>
                                         </div>
 
                                         <div>
                                             <label className="mb-2 block text-sm font-semibold text-[#384867]">Username</label>
-                                            <div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type="text" name="username" placeholder="john.doe" className="input has-icon-left rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.username} onChange={handleChange} required /></div>
+                                            <div className="relative"><User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type="text" name="username" placeholder="john.doe" autoComplete="username" spellCheck={false} className="input has-icon-left rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.username} onChange={handleChange} required /></div>
+                                            <p className="mt-2 text-xs leading-5 text-[#66758f]">A suggested username is filled from your invitation email. You can change it if needed.</p>
                                         </div>
 
                                         <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#fbfdff_0%,#f6f9fd_100%)] p-5">
@@ -286,8 +322,8 @@ const ReviewerRegistration: React.FC = () => {
                                         </div>
 
                                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">Password</label><div className="relative"><Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type={showPassword ? 'text' : 'password'} name="password" placeholder="Create a secure password" className="input has-icon-left has-icon-right rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.password} onChange={handleChange} required /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7b89a6] transition-colors hover:text-[#1e2a4a]">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></div>
-                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">Confirm Password</label><div className="relative"><Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" placeholder="Repeat your password" className="input has-icon-left has-icon-right rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.confirmPassword} onChange={handleChange} required /><button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7b89a6] transition-colors hover:text-[#1e2a4a]">{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></div>
+                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">Password</label><div className="relative"><Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type={showPassword ? 'text' : 'password'} name="password" placeholder="Create a secure password" autoComplete="new-password" className="input has-icon-left has-icon-right rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.password} onChange={handleChange} required /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7b89a6] transition-colors hover:text-[#1e2a4a]">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div><p className="mt-2 text-xs leading-5 text-[#66758f]">Use at least 8 characters and avoid common passwords such as "admin123".</p></div>
+                                            <div><label className="mb-2 block text-sm font-semibold text-[#384867]">Confirm Password</label><div className="relative"><Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8ca8]" size={18} /><input type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" placeholder="Repeat your password" autoComplete="new-password" className="input has-icon-left has-icon-right rounded-xl border-[#cbd5e5] bg-[#f8fafd] text-[#1d2b4d] placeholder:text-[#90a0bd] focus:border-[#1e2a4a] focus:bg-white" value={formData.confirmPassword} onChange={handleChange} required /><button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7b89a6] transition-colors hover:text-[#1e2a4a]">{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></div>
                                         </div>
 
                                         <div className="rounded-2xl border border-[#d4a017]/28 bg-[linear-gradient(140deg,rgba(212,160,23,0.1)_0%,rgba(212,160,23,0.04)_100%)] px-4 py-3">

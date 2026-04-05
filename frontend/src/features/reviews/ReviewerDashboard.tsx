@@ -139,8 +139,10 @@ const ReviewerDashboard: React.FC = () => {
                                                     </span>
                                                 )}
                                             </div>
-                                            {assignment.review_validity === 'REJECTED' && assignment.chair_rejection_reason && (
-                                                <p className="mt-1.5 text-xs text-red-400">Chair: {assignment.chair_rejection_reason}</p>
+                                            {assignment.chair_rejection_reason && (
+                                                <p className={`mt-1.5 text-xs ${assignment.status === 'PENDING' ? 'text-amber-700' : 'text-red-400'}`}>
+                                                    Chair: {assignment.chair_rejection_reason}
+                                                </p>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2 flex-shrink-0">

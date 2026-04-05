@@ -293,6 +293,7 @@ export interface ReviewAssignment {
     review_validity_display?: string;
     chair_rejection_reason?: string;
     chair_rejected_at?: string | null;
+    notification_sent?: boolean;
     deadline: string;
     stage1_score?: Stage1Score;
     stage2_review?: Stage2Review;
@@ -466,6 +467,11 @@ export const assignmentApi = {
         api.post<ReviewAssignment>(`/assignments/${id}/set_review_validity/`, {
             review_validity,
             chair_rejection_reason,
+        }),
+    requestReReview: (id: number, chair_rejection_reason: string, deadline?: string) =>
+        api.post<ReviewAssignment>(`/assignments/${id}/request_rereview/`, {
+            chair_rejection_reason,
+            deadline,
         }),
     submitScore: (id: number, data: Record<string, unknown>) =>
         api.post(`/assignments/${id}/submit_score/`, data),

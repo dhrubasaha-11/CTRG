@@ -44,7 +44,7 @@ const PIManagement: React.FC = () => {
             setLoading(true);
             setPageError(null);
             const res = await userApi.listByRole('PI');
-            setPIs(res.data.results ?? []);
+            setPIs(Array.isArray(res.data) ? res.data : res.data.results ?? []);
         } catch {
             setPageError('Failed to load PI accounts. Please try again.');
             setPIs([]);

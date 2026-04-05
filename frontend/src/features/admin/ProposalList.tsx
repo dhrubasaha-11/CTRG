@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Download, Eye, Plus, UserPlus, CheckSquare, FileText, Mail, Clock, ChevronLeft, ChevronRight, Send } from 'lucide-react';
+import { Search, Filter, Download, Eye, Plus, UserPlus, CheckSquare, FileText, Mail, Clock, ChevronLeft, ChevronRight, Send, ShieldCheck } from 'lucide-react';
 import { proposalApi, assignmentApi, type Proposal, cycleApi, type GrantCycle } from '../../services/api';
 import ReviewerAssignmentModal from './ReviewerAssignmentModal';
 import Stage1DecisionModal from './Stage1DecisionModal';
@@ -131,6 +131,11 @@ const ProposalList: React.FC = () => {
             actions.push({ key: 'submit', label: 'Submit Proposal', icon: Send, color: 'text-emerald-600' });
         }
 
+        // Submitted proposals need an explicit SRC Chair approval step to enter Stage 1 review.
+        if (proposal.status === 'SUBMITTED') {
+            actions.push({ key: 'approve_for_review', label: 'Approve Proposal', icon: ShieldCheck, color: 'text-emerald-600' });
+        }
+
         // Allow adding Stage 1 reviewers while the proposal is still in the Stage 1 workflow.
         if (['SUBMITTED', 'UNDER_STAGE_1_REVIEW'].includes(proposal.status)) {
             actions.push({ key: 'assign', label: 'Assign Reviewers', icon: UserPlus, color: 'text-blue-600' });
@@ -213,6 +218,7 @@ const ProposalList: React.FC = () => {
                 break;
             case 'assign':
             case 'assign_s2':
+            case 'approve_for_review':
                 setAssignModalProposal(proposal);
                 break;
             case 'stage1':

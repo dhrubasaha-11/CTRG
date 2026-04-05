@@ -379,7 +379,7 @@ class PIRegistrationView(generics.CreateAPIView):
 
     POST /api/auth/register-pi/
 
-    No authentication required. Creates an active PI account.
+    No authentication required. Creates an inactive PI account.
     Role is forced to 'PI' regardless of request data.
     """
     serializer_class = UserCreateSerializer
@@ -391,15 +391,17 @@ class PIRegistrationView(generics.CreateAPIView):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        user.is_active = False
+        user.save(update_fields=['is_active'])
         _audit_user_event(
             request,
             action_type='USER_CREATED',
             actor=user,
             target_user=user,
-            details={'role': 'PI', 'self_registered': True},
+            details={'role': 'PI', 'self_registered': True, 'pending_approval': True},
         )
         return Response(
-            {'message': 'PI account created successfully. You can now log in.'},
+            {'message': 'PI account created successfully and is pending SRC Chair approval.'},
             status=status.HTTP_201_CREATED,
         )
 
