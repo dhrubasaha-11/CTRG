@@ -211,7 +211,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'first_name': {'required': True},
             'last_name': {'required': True},
-            'username': {'required': False},
+            'username': {'required': False, 'validators': []},
         }
 
     def validate_email(self, value):
@@ -226,11 +226,9 @@ class UserCreateSerializer(serializers.ModelSerializer):
         max_review_load = validated_data.pop('max_review_load', 5)
         is_active_reviewer = validated_data.pop('is_active_reviewer', True)
 
-        # Auto-generate unique username from email if not provided or if it already exists
+        # Always auto-generate unique username from email
         from users.views import _generate_unique_username
-        username = validated_data.get('username', '')
-        if not username or User.objects.filter(username=username).exists():
-            validated_data['username'] = _generate_unique_username(validated_data['email'])
+        validated_data['username'] = _generate_unique_username(validated_data['email'])
 
         # Create user with hashed password
         user = User.objects.create_user(**validated_data)
@@ -491,7 +489,7 @@ class ReviewerRegistrationSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'first_name': {'required': True},
             'last_name': {'required': True},
-            'username': {'required': False},
+            'username': {'required': False, 'validators': []},
         }
 
     def validate_email(self, value):
@@ -540,12 +538,10 @@ class ReviewerRegistrationSerializer(serializers.ModelSerializer):
         Returns:
             User: Newly created reviewer user instance (is_active=False)
         """
-        # Auto-generate unique username from email if not provided
+        # Always auto-generate unique username from email
         from users.views import _generate_unique_username
         cv = validated_data.pop('cv', None)
-        username = validated_data.get('username', '')
-        if not username or User.objects.filter(username=username).exists():
-            validated_data['username'] = _generate_unique_username(validated_data['email'])
+        validated_data['username'] = _generate_unique_username(validated_data['email'])
 
         user = User.objects.create_user(**validated_data)
 
